@@ -6,25 +6,91 @@ import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.s
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "./interfaces/IDepositContract.sol";
 
 contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+    /*********************************************************************
+    EVENTS
+    *********************************************************************/
+    event Stake(address depositContractAddress, address caller);
+
+    /*********************************************************************
+    ERRORS
+    *********************************************************************/
+    ///@notice thrown when attempting to stake when there is not enough eth in the contract
+    error NOT_ENOUGH_ETH();
+
+    ///@notice thrown when the provided withdrawal credentials do not point to the current contract.
+    error WITHDRAWAL_CREDENTIAL_MISMATCH();
+
+    /*********************************************************************
+    MODIFIERS
+    *********************************************************************/
+
+    /*********************************************************************
+    STORAGE
+    *********************************************************************/
+    IDepositContract public depositContract;
+
+    uint256 activeValidators;
+    uint256 ethDeposits;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) initializer public {
+    function initialize(address initialOwner, address _depositContract) initializer public {
         __ERC20_init("AP-Restaked-Eth", "APETH");
         __Ownable_init(initialOwner);
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
-
-        _mint(msg.sender, 1000000 * 10 ** decimals());
+        depositContract = IDepositContract(_depositContract);
     }
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
+
+    /*********************************************************************
+    FROM FRENS
+    *********************************************************************/
+
+        ///@dev stakes 32 ETH from this pool to the deposit contract, accepts validator info
+    function stake(
+        bytes calldata _pubKey,
+        bytes calldata _withdrawal_credentials,
+        bytes calldata _signature,
+        bytes32 _deposit_data_root
+    ) external onlyOwner {
+        if(address(this).balance < 32 ether)  revert NOT_ENOUGH_ETH();
+        //compare expected withdrawal_credentials to provided
+        if(
+            keccak256(_withdrawal_credentials) !=
+                keccak256(_getWithdrawalCred())
+        ) {
+            revert WITHDRAWAL_CREDENTIAL_MISMATCH();
+        }
+        depositContract.deposit{value: 32 ether}(
+            _pubKey,
+            _withdrawal_credentials,
+            _signature,
+            _deposit_data_root
+        );
+        activeValidators += 1;
+        emit Stake(address(depositContract), msg.sender);
+    }
+
+    ///@dev translates the addres of this contract to withdrawal credential format
+    function _getWithdrawalCred() private view returns (bytes memory) {
+        return abi.encodePacked(bytes1(0x01), bytes11(0x0), address(this));
+    }
+
+
+    /*********************************************************************
+    END FROM FRENS
+    *********************************************************************/
+
 
     function _authorizeUpgrade(address newImplementation)
         internal

@@ -13,6 +13,7 @@ contract APETHTest is Test {
     ERC1967Proxy proxy;
     address owner;
     address newOwner;
+    address depositContract;
 
     // Set up the test environment before running tests
     function setUp() public {
@@ -20,8 +21,11 @@ contract APETHTest is Test {
         APETH implementation = new APETH();
         // Define the owner address
         owner = vm.addr(1);
+        // Define Deposit Contract TODO: should check which chain we are deployig to to use correct address?
+        depositContract = 0x4242424242424242424242424242424242424242; //holesky
+        // depositContract = 0x00000000219ab540356cBB839Cbe05303d7705Fa; //minnet
         // Deploy the proxy and initialize the contract through the proxy
-        proxy = new ERC1967Proxy(address(implementation), abi.encodeCall(implementation.initialize, owner));
+        proxy = new ERC1967Proxy(address(implementation), abi.encodeCall(implementation.initialize, (owner, depositContract)));
         // Attach the APETH interface to the deployed proxy
         APEth = APETH(address(proxy));
         // Define a new owner address for upgrade tests
@@ -41,7 +45,7 @@ contract APETHTest is Test {
 
     // Test the upgradeability of the APETH contract
     function testUpgradeability() public {
-        // Upgrade the proxy to a new version; MyTokenV2
-        Upgrades.upgradeProxy(address(proxy), "MyTokenV2.sol:MyTokenV2", "", owner);
+        // Upgrade the proxy to a new version; APETHV2
+        Upgrades.upgradeProxy(address(proxy), "APETHV2.sol:APETHV2", "", owner);
     }
 }

@@ -6,18 +6,29 @@ import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.s
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "./interfaces/IDepositContract.sol";
 
 /// @custom:oz-upgrades-from APETH
-contract MyTokenV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+
+    /*********************************************************************
+    STORAGE
+    *********************************************************************/
+    IDepositContract public depositContract;
+
+    uint256 activeValidators;
+    uint256 ethDeposits;
+
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     function initialize(address initialOwner) initializer public {
-        __ERC20_init("MyTokenV2", "MTKV2");
+        __ERC20_init("AP-Restaked-Eth-V2", "APETHV2");
         __Ownable_init(initialOwner);
-        __ERC20Permit_init("MyTokenV2");
+        __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
 
         _mint(msg.sender, 1000000 * 10 ** decimals());
