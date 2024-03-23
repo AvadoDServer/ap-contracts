@@ -15,6 +15,18 @@ https://book.getfoundry.sh/
 
 ## Usage
 
+### Set Private Key
+
+```shell
+$ export PRIVATE_KEY=YOUR_PRIVATE_KEY
+```
+
+### Set Etherscan API Key
+
+```shell
+$ export ETHERSCAN_API_KEY=YOUR_ETHERSCAN_API_KEY
+```
+
 ### Build
 
 ```shell
@@ -24,7 +36,7 @@ $ forge build
 ### Test
 
 ```shell
-$ forge test
+$ forge test --ffi
 ```
 
 ### Format
@@ -48,7 +60,15 @@ $ anvil
 ### Deploy
 
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ forge script script/deployToken.s.sol:DeployTokenImplementation --rpc-url holesky --private-key $PRIVATE_KEY --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+```
+```shell
+$ forge script script/deployProxy.s.sol:DeployUUPSProxy --rpc-url holesky --private-key $PRIVATE_KEY --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+```
+### Verify
+
+```shell
+$ --etherscan-api-key $ETHERSCAN_API_KEY --verify
 ```
 
 ### Cast
