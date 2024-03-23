@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../src/MyToken.sol";
+import "../src/APETH.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/Script.sol";
 
@@ -12,7 +12,7 @@ contract DeployTokenImplementation is Script {
         // Use address provided in config to broadcast transactions
         vm.startBroadcast();
         // Deploy the ERC-20 token
-        MyToken implementation = new MyToken();
+        APETH implementation = new APETH();
 
         // Encode the initializer function call
         bytes memory data = abi.encodeWithSelector(

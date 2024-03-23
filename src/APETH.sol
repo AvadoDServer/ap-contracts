@@ -7,16 +7,16 @@ import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC2
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract MyToken is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     function initialize(address initialOwner) initializer public {
-        __ERC20_init("MyToken", "MTK");
+        __ERC20_init("AP-Restaked-Eth", "APETH");
         __Ownable_init(initialOwner);
-        __ERC20Permit_init("MyToken");
+        __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
 
         _mint(msg.sender, 1000000 * 10 ** decimals());

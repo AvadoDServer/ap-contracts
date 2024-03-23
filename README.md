@@ -38,6 +38,10 @@ $ forge build
 ```shell
 $ forge test --ffi
 ```
+if errors try
+```shell
+$ forge clean && forge build && forge test --ffi
+```
 
 ### Format
 
