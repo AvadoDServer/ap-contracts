@@ -62,14 +62,6 @@ $ anvil
 ```shell
 $ forge script script/deployToken.s.sol:DeployTokenImplementation --rpc-url holesky --private-key $PRIVATE_KEY --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
 ```
-```shell
-$ forge script script/deployProxy.s.sol:DeployUUPSProxy --rpc-url holesky --private-key $PRIVATE_KEY --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
-```
-### Verify
-
-```shell
-$ --etherscan-api-key $ETHERSCAN_API_KEY --verify
-```
 
 ### Cast
 
