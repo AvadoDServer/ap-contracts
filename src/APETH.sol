@@ -10,6 +10,13 @@ import "./interfaces/IDepositContract.sol";
 
 contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
     /*********************************************************************
+    STORAGE
+    *********************************************************************/
+    IDepositContract public depositContract;
+
+    uint256 activeValidators;
+
+    /*********************************************************************
     EVENTS
     *********************************************************************/
     event Stake(address depositContractAddress, address caller);
@@ -28,12 +35,8 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
     *********************************************************************/
 
     /*********************************************************************
-    STORAGE
+    FUNCTIONS
     *********************************************************************/
-    IDepositContract public depositContract;
-
-    uint256 activeValidators;
-    uint256 ethDeposits;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -48,8 +51,19 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         depositContract = IDepositContract(_depositContract);
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
+    function mint() public payable {
+        uint256 amount = msg.value * 1 ether / ethPerAPEth();
+        //TODO: add fee
+        _mint(msg.sender, amount);
+    }
+
+    function ethPerAPEth() public view returns(uint256) {
+        if(totalSupply() == 0) {
+            return 1 ether;
+        } else {
+            uint256 totalEth = address(this).balance + 32 ether * activeValidators;
+            return(totalEth * 1e18 / totalSupply());
+        }
     }
 
     /*********************************************************************
@@ -57,6 +71,7 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
     *********************************************************************/
 
         ///@dev stakes 32 ETH from this pool to the deposit contract, accepts validator info
+        // TODO: deposit to eigenpod
     function stake(
         bytes calldata _pubKey,
         bytes calldata _withdrawal_credentials,
@@ -97,4 +112,8 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         onlyOwner
         override
     {}
+
+    receive() external payable {}
+
+    fallback() external payable {}
 }

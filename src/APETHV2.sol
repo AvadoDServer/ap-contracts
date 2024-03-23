@@ -25,11 +25,12 @@ contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Pe
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) initializer public {
+    function initialize(address initialOwner, address _depositContract) initializer public {
         __ERC20_init("AP-Restaked-Eth-V2", "APETHV2");
         __Ownable_init(initialOwner);
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
+        depositContract = IDepositContract(_depositContract);
 
         _mint(msg.sender, 1000000 * 10 ** decimals());
     }

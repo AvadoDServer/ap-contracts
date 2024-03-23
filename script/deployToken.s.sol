@@ -26,7 +26,6 @@ contract DeployTokenImplementation is Script {
         vm.stopBroadcast();
         // Log the token address
         console.log("Token Implementation Address:", address(implementation));
-
         // Log the proxy address
         console.log("UUPS Proxy Address:", address(proxy));
 
