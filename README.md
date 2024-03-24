@@ -36,7 +36,7 @@ $ forge build
 ### Test
 
 ```shell
-$ forge test --ffi
+$ forge test --ffi --fork-url https://ethereum-holesky.publicnode.com
 ```
 if errors try
 ```shell

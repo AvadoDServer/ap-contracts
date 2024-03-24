@@ -17,7 +17,8 @@ contract DeployTokenImplementation is Script {
         // Encode the initializer function call
         bytes memory data = abi.encodeWithSelector(
             implementation.initialize.selector,
-            msg.sender // Initial owner/admin of the contract
+            msg.sender, // Initial owner/admin of the contract
+            0x4242424242424242424242424242424242424242 // Doposit Contract (Holesky)
         );
 
         // Deploy the proxy contract with the implementation address and initializer

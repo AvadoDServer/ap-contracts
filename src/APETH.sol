@@ -10,9 +10,11 @@ import "./interfaces/IDepositContract.sol";
 
 contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
     /*********************************************************************
-    STORAGE
+    STORAGE TODO: consider moving to its own contract
     *********************************************************************/
     IDepositContract public depositContract;
+
+    address ssvNetwork; // TODO: load in initiaizer or elsewhere
 
     uint256 activeValidators;
 
@@ -51,24 +53,28 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         depositContract = IDepositContract(_depositContract);
     }
 
+    receive() external payable {}
+
+    fallback() external payable {}
+
     function mint() public payable {
-        uint256 amount = msg.value * 1 ether / ethPerAPEth();
+        uint256 amount = msg.value * 1 ether / _ethPerAPEth(msg.value);
         //TODO: add fee
         _mint(msg.sender, amount);
     }
 
-    function ethPerAPEth() public view returns(uint256) {
+    function ethPerAPEth() external view returns(uint256) {
+        return _ethPerAPEth(0);
+    }
+
+    function _ethPerAPEth(uint _value) internal view returns(uint256) {
         if(totalSupply() == 0) {
             return 1 ether;
         } else {
-            uint256 totalEth = address(this).balance + 32 ether * activeValidators;
-            return(totalEth * 1e18 / totalSupply());
+            uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
+            return(totalEth * 1 ether / totalSupply());
         }
     }
-
-    /*********************************************************************
-    FROM FRENS
-    *********************************************************************/
 
         ///@dev stakes 32 ETH from this pool to the deposit contract, accepts validator info
         // TODO: deposit to eigenpod
@@ -101,19 +107,15 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         return abi.encodePacked(bytes1(0x01), bytes11(0x0), address(this));
     }
 
-
-    /*********************************************************************
-    END FROM FRENS
-    *********************************************************************/
-
+    function callSSVNetwork(bytes memory data) external onlyOwner {
+        //address ssvNetwork = frensStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
+        (bool success, ) = ssvNetwork.call(data);
+        require(success, "Call failed");
+    }
 
     function _authorizeUpgrade(address newImplementation)
         internal
         onlyOwner
         override
     {}
-
-    receive() external payable {}
-
-    fallback() external payable {}
 }

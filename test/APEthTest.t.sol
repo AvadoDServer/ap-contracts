@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../src/APETH.sol";
+import "../src/APETHV2.sol";
 import "forge-std/console.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
@@ -57,6 +58,7 @@ contract APETHTest is Test {
         //TODO: initialize upgraded contract (not sure why this didn't work)
         // Upgrade the proxy to a new version; APETHV2
         Upgrades.upgradeProxy(address(proxy), "APETHV2.sol:APETHV2", "", owner);
+        emit log_address(address(APEth.depositContract()));
     }
 
     // Test staking (requires using a forked chain with a deposit contract to test.)
@@ -74,5 +76,60 @@ contract APETHTest is Test {
             _signature,
             _deposit_data_root
         );
+
+        assertEq(address(APEth).balance, 1 ether);
     }
+
+    // test the accounting. the price should change predictibly when the contract recieves rewards
+    function testBasicAccounting() public {
+        hoax(alice);
+        // Mint 10 eth of tokens and assert the balance
+        APEth.mint{value: 10 ether}();
+        assertEq(APEth.balanceOf(alice), 10 ether);
+        assertEq(address(APEth).balance, 10 ether);
+        // Send eth to contract to increase balance
+        hoax(owner);
+        payable(address(APEth)).transfer(1 ether);
+        assertEq(address(APEth).balance, 11 ether);
+        //check eth per apeth
+        uint256 ethPerAPEth = 11 ether / 10;
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        hoax(vm.addr(3));
+        // Mint 10 eth of tokens and assert the balance
+        APEth.mint{value: 10 ether}();
+        uint256 expected = 10 ether * 1 ether / ethPerAPEth;
+        assertEq(APEth.balanceOf(vm.addr(3)), expected);
+        assertEq(address(APEth).balance, 21 ether);
+    }
+
+    function testBasicAccountingWithStaking() public {
+        hoax(alice);
+        // Mint 10 eth of tokens and assert the balance
+        APEth.mint{value: 50 ether}();
+        assertEq(APEth.balanceOf(alice), 50 ether);
+        assertEq(address(APEth).balance, 50 ether);
+        // Send eth to contract to increase balance
+        hoax(owner);
+        payable(address(APEth)).transfer(1 ether);
+        assertEq(address(APEth).balance, 51 ether);
+        //check eth per apeth
+        uint256 ethPerAPEth = 51 ether / 50;
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        vm.prank(owner);
+        APEth.stake(
+            _pubKey,
+            _withdrawal_credentials,
+            _signature,
+            _deposit_data_root
+        );
+        assertEq(address(APEth).balance, 19 ether);
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        hoax(vm.addr(3));
+        // Mint 10 eth of tokens and assert the balance
+        APEth.mint{value: 10 ether}();
+        uint256 expected = 10 ether * 1 ether / ethPerAPEth;
+        assertEq(APEth.balanceOf(vm.addr(3)), expected);
+        assertEq(address(APEth).balance, 29 ether);
+    }
+
 }
