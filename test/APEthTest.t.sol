@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "../src/APETH.sol";
 import "../src/APETHV2.sol";
+import "../src/APEthStorage.sol";
 import "forge-std/console.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
@@ -12,10 +13,17 @@ import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
 contract APETHTest is Test {
     APETH APEth;
     APETH implementation;
+    APEthStorage storageContract;
     ERC1967Proxy proxy;
     address owner;
     address newOwner;
-    address depositContract;
+    // Define Deposit Contract TODO: should check which chain we are deployig to to use correct address?
+    address depositContract = 0x4242424242424242424242424242424242424242; //holesky
+    // depositContract = 0x00000000219ab540356cBB839Cbe05303d7705Fa; //mainnet
+    address ssvNetwork = 0x38A4794cCEd47d3baf7370CcC43B560D3a1beEFA; //holesky
+    // address public SSVNetwork = 0xDD9BC35aE942eF0cFa76930954a156B3fF30a4E1; //mainnet
+    address eigenPodManager = 0x30770d7E3e71112d7A6b7259542D1f680a70e315; //holesky
+    // address eigenPodManager = 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338; //mainnet
     address alice;
 
     bytes _pubKey = hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
@@ -33,18 +41,22 @@ contract APETHTest is Test {
 
     // Set up the test environment before running tests
     function setUp() public {
+        // Deploy storage contract
+        storageContract = new  APEthStorage();
+        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "DepositContract")), depositContract);
+        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")), ssvNetwork);
         // Deploy the token implementation
         implementation = new APETH();
+        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")), address(implementation));
         // Define the owner and alice addresses
         owner = vm.addr(1);
         alice = vm.addr(2);
-        // Define Deposit Contract TODO: should check which chain we are deployig to to use correct address?
-        depositContract = 0x4242424242424242424242424242424242424242; //holesky
-        // depositContract = 0x00000000219ab540356cBB839Cbe05303d7705Fa; //minnet
         // Deploy the proxy and initialize the contract through the proxy
-        proxy = new ERC1967Proxy(address(implementation), abi.encodeCall(implementation.initialize, (owner, depositContract)));
+        proxy = new ERC1967Proxy(address(implementation), abi.encodeCall(implementation.initialize, (owner, address(storageContract))));
         // Attach the APETH interface to the deployed proxy
         APEth = APETH(payable(address(proxy)));
+        // Set as apEth in storage
+        storageContract.setAPEth(address(proxy));
         // Define a new owner address for upgrade tests
         newOwner = address(1);
         // Emit the owner address for debugging purposes
@@ -66,7 +78,7 @@ contract APETHTest is Test {
         //TODO: initialize upgraded contract (not sure why this didn't work)
         // Upgrade the proxy to a new version; APETHV2
         Upgrades.upgradeProxy(address(proxy), "APETHV2.sol:APETHV2", "", owner);
-        emit log_address(address(APEth.depositContract()));
+        emit log_address(address(APEth.apEthStorage()));
     }
 
     // Test staking (requires using a forked chain with a deposit contract to test.)

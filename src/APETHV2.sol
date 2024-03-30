@@ -7,6 +7,7 @@ import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC2
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IDepositContract.sol";
+import "./interfaces/IAPEthStorage.sol";
 
 /// @custom:oz-upgrades-from APETH
 contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
@@ -14,7 +15,7 @@ contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Pe
     /*********************************************************************
     STORAGE
     *********************************************************************/
-    IDepositContract public depositContract;
+    IAPEthStorage public apEthStorage;
 
     address ssvNetwork; //load in initiaizer or elsewhere
 

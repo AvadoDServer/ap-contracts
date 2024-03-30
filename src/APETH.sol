@@ -1,36 +1,44 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+/*********************************************************************
+IMPORTS
+*********************************************************************/
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IDepositContract.sol";
+import "./interfaces/IAPEthStorage.sol";
 
+/*********************************************************************
+ERRORS
+*********************************************************************/
+/// @notice thrown when attempting to stake when there is not enough eth in the contract
+error NOT_ENOUGH_ETH();
+
+/// @notice thrown when the provided withdrawal credentials do not point to the current contract.
+error WITHDRAWAL_CREDENTIAL_MISMATCH();
+
+/*********************************************************************
+CONTRACT
+*********************************************************************/
 contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
     /*********************************************************************
-    STORAGE TODO: consider moving to its own contract
+    STORAGE 
     *********************************************************************/
-    IDepositContract public depositContract;
-
-    address ssvNetwork; // TODO: load in initiaizer or elsewhere
-
-    uint256 activeValidators;
+    /// @dev storage outside of upgradeable storage
+    IAPEthStorage public apEthStorage;
 
     /*********************************************************************
     EVENTS
     *********************************************************************/
+    /// @notice occurs when a new validator is staked to the beacon chain
     event Stake(address depositContractAddress, address caller);
 
-    /*********************************************************************
-    ERRORS
-    *********************************************************************/
-    ///@notice thrown when attempting to stake when there is not enough eth in the contract
-    error NOT_ENOUGH_ETH();
-
-    ///@notice thrown when the provided withdrawal credentials do not point to the current contract.
-    error WITHDRAWAL_CREDENTIAL_MISMATCH();
+    /// @notice occurs when new APEth coins are minted
+    event Mint(address minter, uint256 amount);
 
     /*********************************************************************
     MODIFIERS
@@ -38,19 +46,19 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
 
     /*********************************************************************
     FUNCTIONS
+    TODO: ADD METHODS TO INTERACT WITH EIGENPOD
     *********************************************************************/
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, address _depositContract) initializer public {
+    function initialize(address initialOwner, address _APEthStorage) initializer public {
         __ERC20_init("AP-Restaked-Eth", "APETH");
         __Ownable_init(initialOwner);
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
-        depositContract = IDepositContract(_depositContract);
+        apEthStorage = IAPEthStorage(_APEthStorage);
     }
 
     receive() external payable {}
@@ -71,13 +79,13 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         if(totalSupply() == 0) {
             return 1 ether;
         } else {
+            uint256 activeValidators = apEthStorage.getUint(keccak256(abi.encodePacked("active.validators")));
             uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             return(totalEth * 1 ether / totalSupply());
         }
     }
 
-        ///@dev stakes 32 ETH from this pool to the deposit contract, accepts validator info
-        // TODO: deposit to eigenpod
+    ///@dev stakes 32 ETH from this pool to the deposit contract, accepts validator info
     function stake(
         bytes calldata _pubKey,
         bytes calldata _withdrawal_credentials,
@@ -92,23 +100,31 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         ) {
             revert WITHDRAWAL_CREDENTIAL_MISMATCH();
         }
+        IDepositContract depositContract = IDepositContract(apEthStorage.getAddress(
+            keccak256(abi.encodePacked("external.contract.address", "DepositContract"))
+        ));
         depositContract.deposit{value: 32 ether}(
             _pubKey,
             _withdrawal_credentials,
             _signature,
             _deposit_data_root
         );
-        activeValidators += 1;
+        apEthStorage.addUint(keccak256(abi.encodePacked("active.validators")), 1);
         emit Stake(address(depositContract), msg.sender);
     }
 
     ///@dev translates the addres of this contract to withdrawal credential format
     function _getWithdrawalCred() private view returns (bytes memory) {
-        return abi.encodePacked(bytes1(0x01), bytes11(0x0), address(this));
+        address eigenPod = apEthStorage.getAddress(keccak256(abi.encodePacked(
+            "external.contract.address", "EigenPod"
+        )));
+        return abi.encodePacked(bytes1(0x01), bytes11(0x0), eigenPod);
     }
 
     function callSSVNetwork(bytes memory data) external onlyOwner {
-        //address ssvNetwork = frensStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
+        address ssvNetwork = apEthStorage.getAddress(keccak256(
+            abi.encodePacked("external.contract.address", "SSVNetwork")
+        ));
         (bool success, ) = ssvNetwork.call(data);
         require(success, "Call failed");
     }
