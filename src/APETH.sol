@@ -99,7 +99,6 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
     ) external onlyOwner {
         if(address(this).balance < 32 ether)  revert NOT_ENOUGH_ETH();
         //compare expected withdrawal_credentials to provided
-        
         IEigenPodManager eigenPodManager = IEigenPodManager(apEthStorage.getAddress(
             keccak256(abi.encodePacked("external.contract.address", "EigenPodManager"))
         ));
@@ -119,6 +118,8 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         (bool success, ) = ssvNetwork.call(data);
         require(success, "Call failed");
     }
+
+    //TODO: ADD EIGENPOD INTERACTIONS
 
     function _authorizeUpgrade(address newImplementation)
         internal
