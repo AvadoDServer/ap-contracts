@@ -2,13 +2,16 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 import "../src/APETH.sol";
 import "../src/APETHV2.sol";
 import "../src/APEthStorage.sol";
 import "forge-std/console.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import { Create2 } from "@openzeppelin-contracts/utils/Create2.sol";
 import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 
 contract APETHTest is Test {
     APETH APEth;
@@ -25,43 +28,112 @@ contract APETHTest is Test {
     address eigenPodManager = 0x30770d7E3e71112d7A6b7259542D1f680a70e315; //holesky
     // address eigenPodManager = 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338; //mainnet
     address alice;
+   
+    //these are the create2 pre-deploy address calcs
+    address apEthPreDeploy;
+    address implementationAddressPreDeploy;
+    address storageContractPreDeploy;
 
     bytes _pubKey = hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
-    bytes _withdrawal_credentials = hex"0100000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b";
-    bytes _signature = hex"8fde897a0635609d54fa36a6601fe6388b28f2179ae1733d8c9ed0d6882bd431b123ace82cc5520514c3cfafdc92fe140d3120f0383981ccf864542732232aac2a262c587c5026eae0ed0cfa0a60cca9c554769ae64a60660dec832dc0519dec";
-    bytes32 _deposit_data_root = 0x9f9f188f55d400cd7bdd1e602346d1a399a1d6d75ac171760bef36391327bdf6;
+    bytes _signature = hex"a0696aefce9cd401fab9641e66799bd7af8b338fabac11aa42e6a6036a4cb03e80364a17ba0aa97182077aa3ab9b3f5611f4e99d1e96baad569f34960425e13991c661ee957475c14e8dc1e77d3deb29f2fabca34c20332598cf43e4fd95ef5b";
+    bytes32 _deposit_data_root = 0x0e88949943ac2da1b17b16e680a7d385f1e8598eb6ce434a6dcd992ef2bd4822;
 
     bytes _pubKey2 = hex"91bebd77cd834b056ff242331dfcd3baecf3b89fcba6d866860a7ace128fb204af9b892cc84dd2d4eb933f6f8d0499b1";
-    bytes _signature2 = hex"91dabec2eac585fc82bbae491f229601b6266388aa5ca6062b56d1fc353afff68f8f53b639221a9982b7ab6c7ce7a16700afe1fcdd25741197ebe09504de4f4f16372c1dc7ffcaf890b3291675b1520cdc953af978e38c61c97e6840a61b58ab";
-    bytes32 _deposit_data_root2 = 0x3efa8da312e06de7c1ebdc53f0c5a5e72c4a220bc311c488e5bc9de4c79bded8;
+    bytes _signature2 = hex"b62e860ebdd5fa85e9a0c79fe8f9abcd4cdd58af4f05f0525a0c15ddb243946afac6a18528d2d226e75d957a9b7d5b99024d3976f1f2b7b482f86fcec9009a00ca03c7b253a7045280be2ab016b5e778805306299b5a370e6c63652010a3336a";
+    bytes32 _deposit_data_root2 = 0xfdf0ad0bae5f3d8d4cd6f14323b00f535a82a6598699f1a088c2b114bae3e5a3;
 
     bytes _pubKey3 = hex"b6ee6088e5b1dca8a7013f702140ab1f4825d349b20f8c4ba8436af36814dfb3309c13d7423898f60c5e332655a54f17";
-    bytes _signature3 = hex"965ba9733efc6a26deaff2f26c1e48afbc0663876b704f9b552b573861a8d94b26095541ac662bf064cfccdc542ce7e00e319dfdf3135e3fabfc1b2be8b53fc3e657cd45f1af1cd498842a79f59490040faae20df90bce965de8752c0eb995ac";
-    bytes32 _deposit_data_root3 = 0x2930c69f919bc7843f0fa76e914b9b74687d2beaece9fd28fa839acaaaf1bc12;
+    bytes _signature3 = hex"9413c7e260ae520c4554eca2bb8fa646ea8661e907ad8cbe1dbf480ac5c8c5c8fc542af2fbc96bba57a07ed694c4a71506c4baf5333c31d4cf4cac3854083412496ac66d6cd9d0406e8fd955db0cc3fee6237970bb5a44044e706231a3cc562c";
+    bytes32 _deposit_data_root3 = 0x2bd142f6d9de4e22badefcd5b350b78c93a8dd25552eb3a39b0381de1ec97c51;
+
+    struct Salt {
+        bytes32 storageContract;
+        bytes32 implementation;
+        bytes32 apEth;
+    }
+
+    Salt public salt = Salt({
+        storageContract: 0x0000000000000000000000000000000000000000000000000000000000000000,
+        implementation: 0x0000000000000000000000000000000000000000000000000000000000000000,
+        apEth: 0x0000000000000000000000000000000000000000000000000000000000000000
+    });
+
 
     // Set up the test environment before running tests
     function setUp() public {
-        // Deploy storage contract
-        storageContract = new  APEthStorage();
-        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "DepositContract")), depositContract);
-        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")), ssvNetwork);
-        // Deploy the token implementation
-        implementation = new APETH();
-        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")), address(implementation));
         // Define the owner and alice addresses
         owner = vm.addr(1);
         alice = vm.addr(2);
-        // Deploy the proxy and initialize the contract through the proxy
-        proxy = new ERC1967Proxy(address(implementation), abi.encodeCall(implementation.initialize, (owner, address(storageContract))));
-        // Attach the APETH interface to the deployed proxy
-        APEth = APETH(payable(address(proxy)));
+
+        //calculate addresses TODO: WRITE CREATE2 SCRIPT TO CALC SALT TO ADD A BUNCH OF A's AT THE BEGINNING OF THE CONTRACTS
+        //storage
+        storageContractPreDeploy = Create2.computeAddress(
+            salt.storageContract,
+            keccak256(abi.encodePacked(type(APEthStorage).creationCode)),
+            address(this)
+        );
+        console.log("storage contract pre deploy", storageContractPreDeploy);
+        //implementation
+        implementationAddressPreDeploy = Create2.computeAddress(
+            salt.implementation,
+            keccak256(abi.encodePacked(type(APETH).creationCode)),
+            address(this)
+        );
+        console.log("implementation address pre deploy", implementationAddressPreDeploy);
+        //wrap as contract to generate the initialization code
+        APETH preImplementation = APETH(payable(implementationAddressPreDeploy));
+        //apEth(technically the proxy)
+        apEthPreDeploy = Create2.computeAddress(
+            salt.apEth,
+            keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementationAddressPreDeploy, abi.encodeCall(preImplementation.initialize, (owner, address(storageContractPreDeploy)))))),
+            address(this)
+        );
+        console.log("proxy address pre deploy", apEthPreDeploy);
+
+        //Deploy storage contract
+        if(storageContractPreDeploy.code.length == 0){ //TODO: can this compare for contract changes?
+            storageContract = new  APEthStorage{salt: salt.storageContract}();
+            console.log("storageContract deployed", address(storageContract));
+        } else {
+            storageContract = APEthStorage(storageContractPreDeploy);
+            console.log("storageContract exists", storageContractPreDeploy);
+        }
+        console.log("guardian address", storageContract.getGuardian());
+        console.log("should match address(this)", address(this));
+        //load addresses into storage
+        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "DepositContract")), depositContract);
+        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")), ssvNetwork);
+        storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")), eigenPodManager);
         // Set as apEth in storage
-        storageContract.setAPEth(address(proxy));
+        storageContract.setAPEth(apEthPreDeploy);        
+        console.log("storage initialised");
+
+        // Deploy the token implementation
+        if(implementationAddressPreDeploy.code.length == 0) {
+            implementation = new APETH{salt: salt.implementation}();
+            console.log("impementation deloyed", address(implementation));
+        } else {
+            implementation = APETH(payable(implementationAddressPreDeploy));
+            console.log("implementation exists", implementationAddressPreDeploy);
+        }
+       
+        // Deploy the proxy and initialize the proxy
+        if(apEthPreDeploy.code.length == 0) {
+            proxy = new ERC1967Proxy{salt: salt.apEth}(address(implementation), abi.encodeCall(implementation.initialize, (owner, address(storageContract))));
+            // Attach the APETH interface to the deployed proxy
+            APEth = APETH(payable(address(proxy)));
+            console.log("APEth deployed", (address(proxy)));
+        } else {
+            //TODO: THIS SHOULD HANDLE THE CASE FOR AN IMPLEMENTATION CHANGE (FOR DEPLOY SCRIPT, NOT FOR TEST)
+            APEth = APETH(payable(apEthPreDeploy));
+            console.log("APEth exists", apEthPreDeploy);
+        }
+        
         // Define a new owner address for upgrade tests
         newOwner = address(1);
-        // Emit the owner address for debugging purposes
-        emit log_address(owner);
-        emit log_address(address(proxy));
+
+        console.log("eigen Pod Address", storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod"))));
+        
     }
 
     // Test the basic ERC20 functionality of the APETH contract
@@ -75,7 +147,7 @@ contract APETHTest is Test {
 
     // Test the upgradeability of the APETH contract
     function testUpgradeability() public {
-        //TODO: initialize upgraded contract (not sure why this didn't work)
+        //TODO: add assertation
         // Upgrade the proxy to a new version; APETHV2
         Upgrades.upgradeProxy(address(proxy), "APETHV2.sol:APETHV2", "", owner);
         emit log_address(address(APEth.apEthStorage()));
@@ -92,7 +164,6 @@ contract APETHTest is Test {
         vm.prank(owner);
         APEth.stake(
             _pubKey,
-            _withdrawal_credentials,
             _signature,
             _deposit_data_root
         );
@@ -138,7 +209,6 @@ contract APETHTest is Test {
         vm.prank(owner);
         APEth.stake(
             _pubKey,
-            _withdrawal_credentials,
             _signature,
             _deposit_data_root
         );
@@ -177,7 +247,6 @@ contract APETHTest is Test {
             vm.prank(owner);
             APEth.stake(
                 _pubKey,
-                _withdrawal_credentials,
                 _signature,
                 _deposit_data_root
             );
@@ -187,7 +256,6 @@ contract APETHTest is Test {
             vm.prank(owner);
             APEth.stake(
                 _pubKey2,
-                _withdrawal_credentials,
                 _signature2,
                 _deposit_data_root2
             );
@@ -197,7 +265,6 @@ contract APETHTest is Test {
             vm.prank(owner);
             APEth.stake(
                 _pubKey3,
-                _withdrawal_credentials,
                 _signature3,
                 _deposit_data_root3
             );
