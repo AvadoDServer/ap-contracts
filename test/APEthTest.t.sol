@@ -227,8 +227,7 @@ contract APETHTest is Test {
         if(workingKeys) assertEq(address(APEth).balance, 29 ether);
     }
 
-//TODO: THIS SHOULD FAIL WHEN USING BAD KEYS AND IT DOES NOT.
-    function testBasicAccountingWithStakingAndFuzzing(uint32 x, uint32 y, uint32 z) public {
+    function testBasicAccountingWithStakingAndFuzzing(uint128 x, uint128 y, uint128 z) public {
         hoax(alice);
         // Mint x eth of tokens and assert the balance
         APEth.mint{value: x}();
@@ -239,6 +238,7 @@ contract APETHTest is Test {
         vm.prank(owner);
         payable(address(APEth)).transfer(y);
         uint256 balance = uint256(x) + uint256(y);
+        console.log("balance", balance);
         assertEq(address(APEth).balance, balance);
         //check eth per apeth
         uint256 ethPerAPEth;
@@ -251,6 +251,7 @@ contract APETHTest is Test {
         uint256 ethInValidators;
         if(balance >= 32 ether) {
             vm.prank(owner);
+            if(!workingKeys) vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             APEth.stake(
                 _pubKey,
                 _signature,
@@ -260,6 +261,7 @@ contract APETHTest is Test {
         }
         if(balance >= 64 ether) {
             vm.prank(owner);
+            if(!workingKeys) vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             APEth.stake(
                 _pubKey2,
                 _signature2,
@@ -269,6 +271,7 @@ contract APETHTest is Test {
         }
         if(balance >= 96 ether) {
             vm.prank(owner);
+            if(!workingKeys) vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             APEth.stake(
                 _pubKey3,
                 _signature3,
@@ -276,7 +279,8 @@ contract APETHTest is Test {
             );
             ethInValidators += 32 ether;
         }
-        uint256 newBalance = balance - ethInValidators;
+        uint256 newBalance = balance;
+        if(workingKeys) newBalance = balance - ethInValidators;
         assertEq(address(APEth).balance, newBalance);
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         hoax(vm.addr(3));
