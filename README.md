@@ -40,7 +40,7 @@ $ forge test --ffi --fork-url https://ethereum-holesky.publicnode.com
 ```
 if errors try
 ```shell
-$ forge clean && forge build && forge test --ffi --fork-url https://ethereum-holesky.publicnode.com
+$ forge clean && forge test --ffi --fork-url https://ethereum-holesky.publicnode.com
 ```
 
 ### Format

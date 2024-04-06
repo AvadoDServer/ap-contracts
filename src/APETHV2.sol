@@ -11,10 +11,11 @@ import "./interfaces/IAPEthStorage.sol";
 
 /// @custom:oz-upgrades-from APETH
 contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
-
-    /*********************************************************************
-    STORAGE
-    *********************************************************************/
+    /**
+     *
+     * STORAGE
+     *
+     */
     IAPEthStorage public apEthStorage;
 
     address ssvNetwork; //load in initiaizer or elsewhere
@@ -22,27 +23,21 @@ contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Pe
     uint256 activeValidators;
     uint256 ethDeposits;
 
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) initializer public {
+    function initialize(address initialOwner) public initializer {
         __ERC20_init("AP-Restaked-Eth-V2", "APETHV2");
         __Ownable_init(initialOwner);
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
-
     }
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        onlyOwner
-        override
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }
