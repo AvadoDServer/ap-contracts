@@ -6,7 +6,9 @@ import {console} from "forge-std/console.sol";
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
+import {DeployStorageContract} from "../script/deployStorage.s.sol";
 import {DeployTokenImplementation} from "../script/deployToken.s.sol";
+import {DeployTokenProxy} from "../script/deployProxy.s.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
@@ -46,9 +48,6 @@ contract APETHTest is Test {
 
     // Set up the test environment before running tests
     function setUp() public {
-        console.log("Test contract address", address(this));
-        console.log("test contract msg.sender", msg.sender);
-        console.log("test contract tx.origin", tx.origin);
         // Define the owner and alice addresses
         owner = vm.addr(1);
         console.log("owner", owner);
@@ -56,8 +55,14 @@ contract APETHTest is Test {
         bob = vm.addr(3);
         // Define a new owner address for upgrade tests
         newOwner = address(1);
-        DeployTokenImplementation deploy = new DeployTokenImplementation();
-        (storageContract, implementation, APEth) = deploy.run(owner);
+
+        DeployStorageContract deployStorage = new DeployStorageContract();
+        DeployTokenImplementation deployImplementation = new DeployTokenImplementation();
+        DeployTokenProxy deployProxy = new DeployTokenProxy();
+
+        (storageContract, implementation, APEth) = deployStorage.run(owner);
+        deployImplementation.run(owner);
+        deployProxy.run(owner);
     }
 
     //test minting the coin
@@ -95,7 +100,7 @@ contract APETHTest is Test {
         // Upgrade the proxy to a new version; APETHV2
         Upgrades.upgradeProxy(address(APEth), "APETHV2.sol:APETHV2", "", owner);
         assertEq(address(APEth.apEthStorage()), address(storageContract), "storage contract address did not migrate");
-        uint two = APETHV2(address(APEth)).version();
+        uint256 two = APETHV2(address(APEth)).version();
         assertEq(2, two, "APEth did not upgrade");
     }
 

@@ -1,7 +1,7 @@
 {
   "transactions": [
     {
-      "hash": "0xd56f4d66a75aedc6023bf86163da28e48b28d392b4182621655d6658cbb712c1",
+      "hash": null,
       "transactionType": "CREATE2",
       "contractName": "APETH",
       "contractAddress": "0x54a5a1Bd96D1D89681E34d2D9D0B308b8399Ad75",
@@ -21,55 +21,24 @@
       "isFixedGasLimit": false
     }
   ],
-  "receipts": [
-    {
-      "transactionHash": "0xd56f4d66a75aedc6023bf86163da28e48b28d392b4182621655d6658cbb712c1",
-      "transactionIndex": "0x4",
-      "blockHash": "0xa55917b8eb4cd6ad2e723121038f50b6b205acf4e51edc48e02ac1b73a71f7d7",
-      "blockNumber": "0x13d963",
-      "from": "0x51336769321dE54925E2da6881D7BDCb02258D5e",
-      "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
-      "cumulativeGasUsed": "0x2596ec",
-      "gasUsed": "0x22a516",
-      "contractAddress": null,
-      "logs": [
-        {
-          "address": "0x54a5a1Bd96D1D89681E34d2D9D0B308b8399Ad75",
-          "topics": [
-            "0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2"
-          ],
-          "data": "0x000000000000000000000000000000000000000000000000ffffffffffffffff",
-          "blockHash": "0xa55917b8eb4cd6ad2e723121038f50b6b205acf4e51edc48e02ac1b73a71f7d7",
-          "blockNumber": "0x13d963",
-          "transactionHash": "0xd56f4d66a75aedc6023bf86163da28e48b28d392b4182621655d6658cbb712c1",
-          "transactionIndex": "0x4",
-          "logIndex": "0x2",
-          "removed": false
-        }
-      ],
-      "status": "0x1",
-      "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000080000000000000000000000000100000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-      "type": "0x2",
-      "effectiveGasPrice": "0xb2d0ea73"
-    }
-  ],
+  "receipts": [],
   "libraries": [],
   "pending": [],
   "returns": {
-    "0": {
-      "internal_type": "contract APEthStorage",
-      "value": "0xe0E553473d2E82Bbc8daF38241C9e399dd218441"
-    },
     "1": {
       "internal_type": "contract APETH",
       "value": "0x54a5a1Bd96D1D89681E34d2D9D0B308b8399Ad75"
+    },
+    "0": {
+      "internal_type": "contract APEthStorage",
+      "value": "0xe0E553473d2E82Bbc8daF38241C9e399dd218441"
     },
     "2": {
       "internal_type": "contract APETH",
       "value": "0x0000000000000000000000000000000000000000"
     }
   },
-  "timestamp": 1712510354,
+  "timestamp": 1712510312,
   "chain": 17000,
   "commit": "6934e7e"
 }

@@ -39,7 +39,7 @@ contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Pe
         _mint(to, amount);
     }
 
-    function version() public pure returns(uint256){
+    function version() public pure returns (uint256) {
         return 2;
     }
 
