@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
+import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 contract DeployTokenImplementation is Script {
-
     struct Salt {
         bytes32 storageContract;
         bytes32 implementation;
@@ -44,33 +44,34 @@ contract DeployTokenImplementation is Script {
     address factory = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     bool isTest;
+    bool newImplementation;
 
-    function run(address _owner) public returns(APEthStorage,APETH,APETH) {
+    function run(address _owner) public returns (APEthStorage, APETH, APETH) {
         owner = _owner;
         isTest = true;
         salt.apEth = 0x0000000000000000000000000000000000000000000000000000000000000001; //different salt to avoid collisions with deploied contracts (its annoying)
         salt.implementation = 0x0000000000000000000000000000000000000000000000000000000000000001;
         salt.storageContract = 0x0000000000000000000000000000000000000000000000000000000000000001;
         run();
-        return(storageContract, implementation, APEth);
+        return (storageContract, implementation, APEth);
     }
 
-    function run() public returns(APEthStorage,APETH,APETH) {
-        if(owner == address(0)) owner = msg.sender;
-
+    function run() public returns (APEthStorage, APETH, APETH) {
+        if (owner == address(0)) owner = msg.sender;
 
         //calculate addresses TODO: WRITE CREATE2 SCRIPT TO CALC SALT TO ADD A BUNCH OF A's AT THE BEGINNING OF THE CONTRACTS
         //storage
         console.log("address(this)", address(this));
         storageContractPreDeploy = Create2.computeAddress(
-            salt.storageContract, keccak256(abi.encodePacked(type(APEthStorage).creationCode)), factory //weird work around but ok
+            salt.storageContract,
+            keccak256(abi.encodePacked(type(APEthStorage).creationCode)),
+            factory //weird work around but ok
         );
         console.log("storage contract pre deploy", storageContractPreDeploy);
-        
+
         //implementation
-        implementationAddressPreDeploy = Create2.computeAddress(
-            salt.implementation, keccak256(abi.encodePacked(type(APETH).creationCode)), factory
-        );
+        implementationAddressPreDeploy =
+            Create2.computeAddress(salt.implementation, keccak256(abi.encodePacked(type(APETH).creationCode)), factory);
         console.log("implementation address pre deploy", implementationAddressPreDeploy);
         //wrap as contract to generate the initialization code
         APETH preImplementation = APETH(payable(implementationAddressPreDeploy));
@@ -100,11 +101,15 @@ contract DeployTokenImplementation is Script {
             console.log("guardian address", storageContract.getGuardian());
             console.log("should match msg.sender", msg.sender);
             require(storageContractPreDeploy == address(storageContract), "storage contract address mismatch");
-            if(isTest){
+            if (isTest) {
                 vm.startBroadcast(storageContract.getGuardian());
-            }else vm.startBroadcast();
+            } else {
+                vm.startBroadcast();
+            }
             //set SSV network address in storage
-            storageContract.setAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")), ssvNetwork);
+            storageContract.setAddress(
+                keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")), ssvNetwork
+            );
             //Set eigen pod manager address in storage
             storageContract.setAddress(
                 keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")), eigenPodManager
@@ -124,36 +129,26 @@ contract DeployTokenImplementation is Script {
         console.log("guardian address", storageContract.getGuardian());
         console.log("should match msg.sender", msg.sender);
         require(storageContractPreDeploy == address(storageContract), "storage contract address mismatch");
-        
 
         // Deploy the token implementation
-        if (implementationAddressPreDeploy.code.length == 0) {
-            vm.startBroadcast();
-            implementation = new APETH{salt: salt.implementation}();
-            vm.stopBroadcast();
-            console.log("impementation deloyed", address(implementation));
-            require(implementationAddressPreDeploy == address(implementation), "implementation address mismatch");
-        } else {
+        if (implementationAddressPreDeploy.code.length == 0 && apEthPreDeploy.code.length == 0) {
+            // Deploy the token implementation
+            deployImplementation();
+            //deploy proxy
+            deployProxy();
+        } else if (implementationAddressPreDeploy.code.length != 0 && apEthPreDeploy.code.length == 0) {
             implementation = APETH(payable(implementationAddressPreDeploy));
             console.log("implementation exists", implementationAddressPreDeploy);
-        }
-        require(implementationAddressPreDeploy == address(implementation), "implementation address mismatch");
+            deployProxy();
+        } else if (implementationAddressPreDeploy.code.length == 0 && apEthPreDeploy.code.length != 0) {
+            Upgrades.upgradeProxy(address(APEth), "APETH.sol:APETH", "", owner);
+            console.log("Proxy exists", address(APEth));
 
-        // Deploy the proxy and initialize the proxy
-        if (apEthPreDeploy.code.length == 0) {
-            vm.startBroadcast();
-            proxy = new ERC1967Proxy{salt: salt.apEth}(
-                address(implementation), abi.encodeCall(implementation.initialize, (owner, address(storageContract)))
-            );
-            vm.stopBroadcast();
-            // Attach the APETH interface to the deployed proxy
-            APEth = APETH(payable(address(proxy)));
-            console.log("APEth deployed", (address(proxy)));
-            require(apEthPreDeploy == address(proxy), "proxy address mismatch");
-        } else {
-            //TODO: THIS SHOULD HANDLE THE CASE FOR AN IMPLEMENTATION CHANGE (FOR DEPLOY SCRIPT, NOT FOR TEST)
+        }else {
             APEth = APETH(payable(apEthPreDeploy));
-            console.log("APEth exists", apEthPreDeploy);
+            implementation = APETH(payable(implementationAddressPreDeploy)); //??
+            console.log("Proxy exists", address(APEth));
+            console.log("implementation exists", implementationAddressPreDeploy);
         }
 
         console.log(
@@ -161,7 +156,26 @@ contract DeployTokenImplementation is Script {
             storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")))
         );
 
-        return(storageContract, implementation, APEth);
+        return (storageContract, implementation, APEth);
+    }
 
+    function deployImplementation() public {
+        vm.startBroadcast();
+        implementation = new APETH{salt: salt.implementation}();
+        vm.stopBroadcast();
+        console.log("impementation deloyed", address(implementation));
+        require(implementationAddressPreDeploy == address(implementation), "implementation address mismatch");
+    }
+
+    function deployProxy() public {
+        vm.startBroadcast();
+        proxy = new ERC1967Proxy{salt: salt.apEth}(
+            address(implementation), abi.encodeCall(implementation.initialize, (owner, address(storageContract)))
+        );
+        vm.stopBroadcast();
+        console.log("APEth deployed", (address(proxy)));
+        require(apEthPreDeploy == address(proxy), "proxy address mismatch");
+        // Attach the APETH interface to the deployed proxy
+        APEth = APETH(payable(address(proxy)));
     }
 }

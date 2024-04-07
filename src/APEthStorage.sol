@@ -41,7 +41,9 @@ contract APEthStorage is IAPEthStorage {
      * @dev Throws if called by any account other than apEth or guardian address
      */
     modifier onlyGuardianOrAPEth() {
-        if (msg.sender != apEth && msg.sender != guardian) revert APEthStorage__ACCOUNT_IS_NOT_GUARDIAN_OR_APETH(msg.sender);
+        if (msg.sender != apEth && msg.sender != guardian) {
+            revert APEthStorage__ACCOUNT_IS_NOT_GUARDIAN_OR_APETH(msg.sender);
+        }
         _;
     }
 

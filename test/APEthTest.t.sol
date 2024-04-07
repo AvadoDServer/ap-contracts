@@ -19,7 +19,7 @@ contract APETHTest is Test {
     APEthStorage storageContract;
     address owner;
     address newOwner;
-    
+
     address alice;
     address bob;
 
@@ -58,7 +58,6 @@ contract APETHTest is Test {
         newOwner = address(1);
         DeployTokenImplementation deploy = new DeployTokenImplementation();
         (storageContract, implementation, APEth) = deploy.run(owner);
-        
     }
 
     //test minting the coin
@@ -81,14 +80,14 @@ contract APETHTest is Test {
     }
 
     // Test the basic ERC20 functionality of the APETH contract
-    function testERC20Functionality() public mintAlice(10 ether){
+    function testERC20Functionality() public mintAlice(10 ether) {
         uint256 aliceBalance = calculateAmountLessFee(10 ether);
-       //transfer to bob
-       vm.prank(alice);
-       APEth.transfer(bob, 5 ether);
-       assertEq(APEth.balanceOf(bob), 5 ether);
-       assertEq(APEth.balanceOf(alice), aliceBalance - 5 ether);
-       assertEq(address(APEth).balance, 10 ether);
+        //transfer to bob
+        vm.prank(alice);
+        APEth.transfer(bob, 5 ether);
+        assertEq(APEth.balanceOf(bob), 5 ether);
+        assertEq(APEth.balanceOf(alice), aliceBalance - 5 ether);
+        assertEq(address(APEth).balance, 10 ether);
     }
 
     // Test the upgradeability of the APETH contract
@@ -96,6 +95,8 @@ contract APETHTest is Test {
         // Upgrade the proxy to a new version; APETHV2
         Upgrades.upgradeProxy(address(APEth), "APETHV2.sol:APETHV2", "", owner);
         assertEq(address(APEth.apEthStorage()), address(storageContract), "storage contract address did not migrate");
+        uint two = APETHV2(address(APEth)).version();
+        assertEq(2, two, "APEth did not upgrade");
     }
 
     // Test staking (requires using a forked chain with a deposit contract to test.)
@@ -116,7 +117,7 @@ contract APETHTest is Test {
     }
 
     // test the accounting. the price should change predictibly when the contract recieves rewards
-    function testBasicAccounting() public mintAlice(10 ether){
+    function testBasicAccounting() public mintAlice(10 ether) {
         hoax(owner);
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 11 ether);
@@ -131,7 +132,7 @@ contract APETHTest is Test {
         assertEq(address(APEth).balance, 21 ether);
     }
 
-    function testBasicAccountingWithStaking() public mintAlice(50 ether){
+    function testBasicAccountingWithStaking() public mintAlice(50 ether) {
         // Send eth to contract to increase balance
         hoax(owner);
         payable(address(APEth)).transfer(1 ether);
@@ -154,7 +155,7 @@ contract APETHTest is Test {
         if (workingKeys) assertEq(address(APEth).balance, 29 ether);
     }
 
-    function testBasicAccountingWithStakingAndFuzzing(uint128 x, uint128 y, uint128 z) public mintAlice(x){
+    function testBasicAccountingWithStakingAndFuzzing(uint128 x, uint128 y, uint128 z) public mintAlice(x) {
         // Send eth to contract to increase balance
         vm.deal(owner, y);
         vm.prank(owner);
@@ -208,12 +209,12 @@ contract APETHTest is Test {
     }
 
     //internal functions
-    function calculateFee(uint256 amount) internal view returns(uint256){
+    function calculateFee(uint256 amount) internal view returns (uint256) {
         uint256 fee = amount * storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
         return fee;
     }
 
-    function calculateAmountLessFee(uint256 amount) internal view returns(uint256){
-        return(amount - calculateFee(amount));
+    function calculateAmountLessFee(uint256 amount) internal view returns (uint256) {
+        return (amount - calculateFee(amount));
     }
 }

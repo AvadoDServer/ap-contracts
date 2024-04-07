@@ -31,7 +31,7 @@ error APETH__NOT_ENOUGH_ETH();
 contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
     /**
      *
-     * STORAGE 
+     * STORAGE
      *
      */
     /// @dev storage outside of upgradeable storage
