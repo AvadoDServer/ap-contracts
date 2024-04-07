@@ -56,9 +56,8 @@ contract APETHTest is Test {
         bob = vm.addr(3);
         // Define a new owner address for upgrade tests
         newOwner = address(1);
-        address deployer = 0x4e59b44847b379578588920cA78FbF26c0B4956C; //I don't know what this is or where it came from this could be a real problem if not fixed in deployment...
         DeployTokenImplementation deploy = new DeployTokenImplementation();
-        (storageContract, implementation, APEth) = deploy.run(owner, deployer);
+        (storageContract, implementation, APEth) = deploy.run(owner);
         
     }
 
@@ -67,25 +66,28 @@ contract APETHTest is Test {
         // Mint 10 eth of tokens and assert the balance
         hoax(alice);
         APEth.mint{value: 10 ether}();
-        assertEq(APEth.balanceOf(alice), 10 ether);
+        uint256 aliceBalance = calculateAmountLessFee(10 ether);
+        assertEq(APEth.balanceOf(alice), aliceBalance);
         assertEq(address(APEth).balance, 10 ether);
     }
 
     modifier mintAlice(uint256 amount) {
         hoax(alice);
         APEth.mint{value: amount}();
-        assertEq(APEth.balanceOf(alice), amount);
+        uint256 aliceBalance = calculateAmountLessFee(amount);
+        assertEq(APEth.balanceOf(alice), aliceBalance);
         assertEq(address(APEth).balance, amount);
         _;
     }
 
     // Test the basic ERC20 functionality of the APETH contract
     function testERC20Functionality() public mintAlice(10 ether){
+        uint256 aliceBalance = calculateAmountLessFee(10 ether);
        //transfer to bob
        vm.prank(alice);
        APEth.transfer(bob, 5 ether);
        assertEq(APEth.balanceOf(bob), 5 ether);
-       assertEq(APEth.balanceOf(alice), 5 ether);
+       assertEq(APEth.balanceOf(alice), aliceBalance - 5 ether);
        assertEq(address(APEth).balance, 10 ether);
     }
 
@@ -100,7 +102,7 @@ contract APETHTest is Test {
     function testStake() public {
         // Impersonate the alice to call mint function
         hoax(alice);
-        // Mint 1 eth of tokens and assert the balance
+        // Mint 33 eth of tokens and assert the balance
         APEth.mint{value: 33 ether}();
         // Impersonate owner to call stake()
         if (!workingKeys) {
@@ -124,7 +126,7 @@ contract APETHTest is Test {
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
-        uint256 expected = 10 ether * 1 ether / ethPerAPEth;
+        uint256 expected = calculateAmountLessFee(10 ether * 1 ether / ethPerAPEth);
         assertEq(APEth.balanceOf(bob), expected);
         assertEq(address(APEth).balance, 21 ether);
     }
@@ -147,7 +149,7 @@ contract APETHTest is Test {
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
-        uint256 expected = 10 ether * 1 ether / ethPerAPEth;
+        uint256 expected = calculateAmountLessFee(10 ether * 1 ether / ethPerAPEth);
         assertEq(APEth.balanceOf(bob), expected);
         if (workingKeys) assertEq(address(APEth).balance, 29 ether);
     }
@@ -200,8 +202,18 @@ contract APETHTest is Test {
         hoax(bob);
         // Mint z eth of tokens and assert the balance
         APEth.mint{value: z}();
-        uint256 expected = uint256(z) * 1 ether / ethPerAPEth;
+        uint256 expected = calculateAmountLessFee(uint256(z) * 1 ether / ethPerAPEth);
         assertEq(APEth.balanceOf(bob), expected);
         assertEq(address(APEth).balance, newBalance + z);
+    }
+
+    //internal functions
+    function calculateFee(uint256 amount) internal view returns(uint256){
+        uint256 fee = amount * storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
+        return fee;
+    }
+
+    function calculateAmountLessFee(uint256 amount) internal view returns(uint256){
+        return(amount - calculateFee(amount));
     }
 }

@@ -18,7 +18,7 @@ https://book.getfoundry.sh/
 ### Set Private Key
 
 ```shell
-$ export PRIVATE_KEY=YOUR_PRIVATE_KEY
+$ cast wallet import defaultKey --interactive
 ```
 
 ### Set Etherscan API Key
@@ -64,7 +64,7 @@ $ anvil
 ### Deploy
 
 ```shell
-$ forge script script/deployToken.s.sol:DeployTokenImplementation --rpc-url holesky --private-key $PRIVATE_KEY --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+$ forge script script/deployToken.s.sol:DeployTokenImplementation --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
 ```
 
 ### Cast

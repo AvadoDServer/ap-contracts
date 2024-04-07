@@ -48,7 +48,7 @@ contract APEthStorage is IAPEthStorage {
     /// @dev Construct APEthStorage
     constructor() {
         // Set the guardian upon deployment
-        guardian = msg.sender;
+        guardian = tx.origin;
     }
 
     // Get guardian address

@@ -84,8 +84,11 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
 
     function mint() public payable {
         uint256 amount = msg.value * 1 ether / _ethPerAPEth(msg.value);
-        //TODO: add fee
+        uint256 fee = amount * apEthStorage.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
+        address feeRecipient = apEthStorage.getAddress(keccak256(abi.encodePacked("fee.recipient.address")));
+        amount = amount - fee;
         _mint(msg.sender, amount);
+        _mint(feeRecipient, fee);
     }
 
     function ethPerAPEth() external view returns (uint256) {
