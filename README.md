@@ -21,6 +21,12 @@ https://book.getfoundry.sh/
 $ cast wallet import defaultKey --interactive
 ```
 
+### View Public Key for the Private Key stored as "defaultKey"
+
+```shell
+$ cast wallet address --account defaultKey
+```
+
 ### Set Etherscan API Key
 
 ```shell
@@ -62,9 +68,20 @@ $ anvil
 ```
 
 ### Deploy
+Deploy in 2 parts:
 
 ```shell
+$ forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+```
+```shell
 $ forge script script/deployToken.s.sol:DeployTokenImplementation --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+```
+
+### Upgrade
+NOTE: currently set to upgrade to APETHV2 - change script/upgradeProxy.sol to change this
+
+```shell
+$ forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify --ffi
 ```
 
 ### Cast

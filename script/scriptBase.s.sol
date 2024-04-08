@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {APETH} from "../src/APETH.sol";
+import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Script} from "forge-std/Script.sol";
@@ -14,14 +15,14 @@ error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 contract ScriptBase is Script {
     struct Salt {
         bytes32 storageContract;
-        bytes32 implementation;
+        //bytes32 implementation;
         bytes32 apEth;
     }
 
     Salt public salt = Salt({
-        storageContract: 0x0000000000000000000000000000000000000000000000000000000000000669,
-        implementation: 0x0000000000000000000000000000000000000000000000000000000000000669,
-        apEth: 0x0000000000000000000000000000000000000000000000000000000000000669
+        storageContract: 0x0000000000000000000000000000000000000000000000000000000000001069,
+        //implementation: 0x0000000000000000000000000000000000000000000000000000000000001069,
+        apEth: 0x0000000000000000000000000000000000000000000000000000000000000969
     });
 
     APETH _APEth;
@@ -57,14 +58,6 @@ contract ScriptBase is Script {
         _storageContract = APEthStorage(_storageContractPreDeploy);
     }
 
-    function calcImplementationAddress() public {
-        _implementationAddressPreDeploy =
-            Create2.computeAddress(salt.implementation, keccak256(abi.encodePacked(type(APETH).creationCode)), _factory);
-        console.log("implementation address pre deploy", _implementationAddressPreDeploy);
-        //wrap as contract to generate the initialization code
-        _implementation = APETH(payable(_implementationAddressPreDeploy));
-    }
-
     function calcProxyAddress() public {
         if(address(_implementation) == address(0)) revert SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
         _apEthPreDeploy = Create2.computeAddress(
@@ -73,7 +66,26 @@ contract ScriptBase is Script {
                 abi.encodePacked(
                     type(ERC1967Proxy).creationCode,
                     abi.encode(
-                        _implementationAddressPreDeploy,
+                        address(_implementation),
+                        abi.encodeCall(_implementation.initialize, (_owner, address(_storageContractPreDeploy)))
+                    )
+                )
+            ),
+            _factory
+        );
+        console.log("proxy address pre deploy", _apEthPreDeploy);
+        _APEth = APETH(payable(_apEthPreDeploy));
+    }
+
+    function calcProxyAddress(address implementation) public {
+        _implementation = APETH(payable(implementation));
+        _apEthPreDeploy = Create2.computeAddress(
+            salt.apEth,
+            keccak256(
+                abi.encodePacked(
+                    type(ERC1967Proxy).creationCode,
+                    abi.encode(
+                        address(_implementation),
                         abi.encodeCall(_implementation.initialize, (_owner, address(_storageContractPreDeploy)))
                     )
                 )
@@ -97,14 +109,16 @@ contract ScriptBase is Script {
 
     function deployImplementation() public {
         vm.startBroadcast();
-        _implementation = new APETH{salt: salt.implementation}();
+        _implementation = new APETH();
+        
         vm.stopBroadcast();
         console.log("impementation deloyed", address(_implementation));
-        require(_implementationAddressPreDeploy == address(_implementation), "implementation address mismatch");
     }
 
     function deployProxy() public {
         vm.startBroadcast();
+        //Set as apEth in storage
+        _storageContract.setAPEth(address(_apEthPreDeploy));
         _proxy = new ERC1967Proxy{salt: salt.apEth}(
             address(_implementation), abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
         );

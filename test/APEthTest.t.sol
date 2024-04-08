@@ -8,7 +8,7 @@ import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
 import {DeployStorageContract} from "../script/deployStorage.s.sol";
 import {DeployTokenImplementation} from "../script/deployToken.s.sol";
-import {DeployTokenProxy} from "../script/deployProxy.s.sol";
+import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
@@ -58,11 +58,9 @@ contract APETHTest is Test {
 
         DeployStorageContract deployStorage = new DeployStorageContract();
         DeployTokenImplementation deployImplementation = new DeployTokenImplementation();
-        DeployTokenProxy deployProxy = new DeployTokenProxy();
 
-        (storageContract, implementation, APEth) = deployStorage.run(owner);
-        deployImplementation.run(owner);
-        deployProxy.run(owner);
+        storageContract = deployStorage.run(owner);
+        (implementation, APEth) = deployImplementation.run(owner);
     }
 
     //test minting the coin
@@ -97,8 +95,10 @@ contract APETHTest is Test {
 
     // Test the upgradeability of the APETH contract
     function testUpgradeability() public {
+        //deploy upgrade script
+        UpgradeProxy upgradeProxy = new UpgradeProxy();
         // Upgrade the proxy to a new version; APETHV2
-        Upgrades.upgradeProxy(address(APEth), "APETHV2.sol:APETHV2", "", owner);
+        upgradeProxy.run(owner, address(APEth));
         assertEq(address(APEth.apEthStorage()), address(storageContract), "storage contract address did not migrate");
         uint256 two = APETHV2(address(APEth)).version();
         assertEq(2, two, "APEth did not upgrade");
