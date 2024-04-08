@@ -9,7 +9,7 @@ error DEPLOY_PROXY__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 error DEPLOY_PROXY__MUST_CALC_ADDRESS_FIRST(string);
 
 contract UpgradeProxy is ScriptBase {
-    address _proxyAddress = 0x9107423Fb53043294373A5276063825C902e12b2; //insure that this uses the correct proxy address!!!
+    address _proxyAddress = 0x41a818122Cf340b69A3106c209c20171Cad1f5B6; //insure that this uses the correct proxy address!!!
     
     function run(address owner_, address proxyAddress_) public {
         _owner = owner_;

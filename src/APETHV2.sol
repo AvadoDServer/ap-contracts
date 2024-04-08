@@ -18,11 +18,6 @@ contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Pe
      */
     IAPEthStorage public apEthStorage;
 
-    address ssvNetwork; //load in initiaizer or elsewhere
-
-    uint256 activeValidators;
-    uint256 ethDeposits;
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();

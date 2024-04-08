@@ -71,17 +71,17 @@ $ anvil
 Deploy in 2 parts:
 
 ```shell
-$ forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+$ forge clean && forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
 ```
 ```shell
-$ forge script script/deployToken.s.sol:DeployTokenImplementation --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+$ forge clean && forge script script/deployToken.s.sol:DeployTokenImplementation --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
 ```
 
 ### Upgrade
-NOTE: currently set to upgrade to APETHV2 - change script/upgradeProxy.sol to change this
+NOTE: check the implementation and the proxy address in script/upGradeProxy
 
 ```shell
-$ forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify --ffi
+$ forge clean && forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify --ffi
 ```
 
 ### Cast
