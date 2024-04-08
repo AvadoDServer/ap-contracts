@@ -139,5 +139,10 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         require(success, "Call failed");
     }
 
+    function transferToken(address tokenAddress, address to, uint amount) external onlyOwner {
+        IERC20 token = IERC20(tokenAddress);
+        token.transfer(to, amount);
+    }
+
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }
