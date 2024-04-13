@@ -111,7 +111,7 @@ contract APETHTest is Test {
         // Mint 33 eth of tokens and assert the balance
         APEth.mint{value: 33 ether}();
         // Impersonate owner to call stake()
-        if (!workingKeys) {
+        if (!workingKeys && block.chainid != 31337) {
             vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
         }
         assertEq(address(APEth).balance, 33 ether);
@@ -146,7 +146,7 @@ contract APETHTest is Test {
         uint256 ethPerAPEth = 51 ether / 50;
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         vm.prank(owner);
-        if (!workingKeys) {
+        if (!workingKeys && block.chainid != 31337) {
             vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
         }
         APEth.stake(_pubKey, _signature, _deposit_data_root);
@@ -179,7 +179,7 @@ contract APETHTest is Test {
         uint256 ethInValidators;
         if (balance >= 32 ether) {
             vm.prank(owner);
-            if (!workingKeys) {
+            if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
             APEth.stake(_pubKey, _signature, _deposit_data_root);
@@ -187,7 +187,7 @@ contract APETHTest is Test {
         }
         if (balance >= 64 ether) {
             vm.prank(owner);
-            if (!workingKeys) {
+            if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
             APEth.stake(_pubKey2, _signature2, _deposit_data_root2);
@@ -195,15 +195,15 @@ contract APETHTest is Test {
         }
         if (balance >= 96 ether) {
             vm.prank(owner);
-            if (!workingKeys) {
+            if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
             APEth.stake(_pubKey3, _signature3, _deposit_data_root3);
             ethInValidators += 32 ether;
         }
         uint256 newBalance = balance;
-        if (workingKeys) newBalance = balance - ethInValidators;
-        assertEq(address(APEth).balance, newBalance);
+        if (workingKeys || block.chainid == 31337) newBalance = balance - ethInValidators;
+        assertEq(address(APEth).balance, newBalance, "contract balance does not mach calculated");
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         hoax(bob);
         // Mint z eth of tokens and assert the balance

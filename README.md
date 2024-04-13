@@ -40,11 +40,11 @@ $ forge build
 ```
 
 ### Test
-
+locally
 ```shell
-$ forge test --ffi --fork-url https://ethereum-holesky.publicnode.com
+$ forge clean && forge test --ffi
 ```
-if errors try
+on Holesky
 ```shell
 $ forge clean && forge test --ffi --fork-url https://ethereum-holesky.publicnode.com
 ```

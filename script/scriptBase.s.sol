@@ -98,8 +98,7 @@ contract ScriptBase is Script {
         vm.stopBroadcast();
         console.log("storageContract deployed", address(_storageContract));
         console.log("guardian address", _storageContract.getGuardian());
-        console.log("should match msg.sender", msg.sender);
-        console.log("tx.origin", tx.origin);
+        console.log("should match ", tx.origin);
         require(_storageContractPreDeploy == address(_storageContract), "storage contract address mismatch");
     }
 

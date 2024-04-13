@@ -2,8 +2,11 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
+import {console} from "forge-std/console.sol";
+import {MockSsvNetwork} from "../test/mocks/MockSsvNetwork.sol";
+import {MockEigenPodManager} from "../test/mocks/MockEigenPodManager.sol";
 
-contract HelperConfig {
+contract HelperConfig is Script {
 
     struct NetworkConfig {
         address ssvNetwork;
@@ -15,7 +18,8 @@ contract HelperConfig {
     constructor() {
         if(block.chainid == 1) activeNetworkConfig = getMainnetConfig();
         if(block.chainid == 17000) activeNetworkConfig = getHoleskyConfig();
-        //if(block.chainid == )
+        //if(block.chainid == 11155111) activeNetworkConfig = getSepoliaConfig(); No ssv on sepolia
+        if(block.chainid == 31337) activeNetworkConfig = getLocalConfig();
     }
 
     function getMainnetConfig() public pure returns(NetworkConfig memory){
@@ -34,8 +38,17 @@ contract HelperConfig {
         return holeskyConfig;
     }
 
-    function getLocalConfig() public pure returns(NetworkConfig memory){
-
+    function getLocalConfig() public returns(NetworkConfig memory){
+        console.log("***deploying mocks***");
+        vm.startBroadcast();
+        MockSsvNetwork _ssvNetwork = new MockSsvNetwork();
+        MockEigenPodManager _eigenpodManager = new MockEigenPodManager();
+        vm.stopBroadcast();
+        NetworkConfig memory localConfig = NetworkConfig({
+            ssvNetwork: address(_ssvNetwork),
+            eigenpodManager: address(_eigenpodManager)
+        });
+        return localConfig;
     }
 
 

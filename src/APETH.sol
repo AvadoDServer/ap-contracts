@@ -11,8 +11,8 @@ import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.s
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
-import "@eigenlayer-contracts/interfaces/IEigenPod.sol";
+import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
+import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
 
 /**

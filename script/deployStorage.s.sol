@@ -18,6 +18,8 @@ contract DeployStorageContract is ScriptBase {
     function run() public returns (APEthStorage) {
         HelperConfig helperConfig = new HelperConfig();
         (_ssvNetwork, _eigenPodManager) = helperConfig.activeNetworkConfig();
+        console.log("ssvNetwork", _ssvNetwork);
+        console.log("eigenPodManager", _eigenPodManager);
 
         if (_owner == address(0)) _owner = msg.sender;
         console.log("***Deploying Storage***");
