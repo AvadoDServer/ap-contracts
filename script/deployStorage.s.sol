@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ScriptBase, APEthStorage, APETH, console, Create2, ERC1967Proxy, Upgrades} from "./scriptBase.s.sol";
+import {ScriptBase, APEthStorage, APETH, console, Create2, ERC1967Proxy, Upgrades, HelperConfig} from "./scriptBase.s.sol";
 
 contract DeployStorageContract is ScriptBase {
     
@@ -16,6 +16,9 @@ contract DeployStorageContract is ScriptBase {
     }
 
     function run() public returns (APEthStorage) {
+        HelperConfig helperConfig = new HelperConfig();
+        (_ssvNetwork, _eigenPodManager) = helperConfig.activeNetworkConfig();
+
         if (_owner == address(0)) _owner = msg.sender;
         console.log("***Deploying Storage***");
         //calculate addresses TODO: WRITE CREATE2 SCRIPT TO CALC SALT TO ADD A BUNCH OF A's AT THE BEGINNING OF THE CONTRACTS

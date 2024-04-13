@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
+import {HelperConfig} from "./HelperConfig.s.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
@@ -30,13 +31,8 @@ contract ScriptBase is Script {
     APEthStorage _storageContract;
     ERC1967Proxy _proxy;
 
-    // // Define Deposit Contract TODO: should check which chain we are deployig to to use correct address?
-    // address depositContract = 0x4242424242424242424242424242424242424242; //holesky
-    // depositContract = 0x00000000219ab540356cBB839Cbe05303d7705Fa; //mainnet
-    address _ssvNetwork = 0x38A4794cCEd47d3baf7370CcC43B560D3a1beEFA; //holesky
-    // address public _ssvNetwork = 0xDD9BC35aE942eF0cFa76930954a156B3fF30a4E1; //mainnet
-    address _eigenPodManager = 0x30770d7E3e71112d7A6b7259542D1f680a70e315; //holesky
-    // address _eigenPodManager = 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338; //mainnet
+    address _ssvNetwork;
+    address _eigenPodManager;
 
     //these are the create2 pre-deploy address calcs
     address _apEthPreDeploy;
