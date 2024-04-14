@@ -11,6 +11,8 @@ import {DeployTokenImplementation} from "../script/deployToken.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
+import {IMockEigenPodManager} from "./mocks/MockEigenPodManager.sol";
+import {IMockEigenPod} from "./mocks/MockEigenPod.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
@@ -267,7 +269,41 @@ contract APETHTest is Test {
     function testSSVCallFailBadCall() public {
         vm.prank(owner);
         vm.expectRevert("Call failed");
-        APEth.callSSVNetwork(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()")),address(APEth)));
+        APEth.callSSVNetwork(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")),address(APEth)));
+    }
+
+    function testEigenPodManagerCall() public {
+        vm.prank(owner);
+        APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+    }
+
+    function testEigenPodManagerCallFailNotOwner() public {
+        vm.prank(vm.addr(69));
+        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+    }
+
+    function testEigenPodManagerCallFailBadCall() public {
+        vm.prank(owner);
+        vm.expectRevert("Call failed");
+        APEth.callEigenPodManager(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")),address(APEth)));
+    }
+
+    function testEigenPodCall() public {
+        vm.prank(owner);
+        APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+    }
+
+    function testEigenPodCallFailNotOwner() public {
+        vm.prank(vm.addr(69));
+        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+    }
+
+    function testEigenPodCallFailBadCall() public {
+        vm.prank(owner);
+        vm.expectRevert("Call failed");
+        APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
 
     //internal functions

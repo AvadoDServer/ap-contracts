@@ -2,7 +2,13 @@
 pragma solidity 0.8.20;
 
 import {MockEigenPodManager, IMockEigenPodManager} from "./MockEigenPodManager.sol";
+import {console} from "forge-std/console.sol";
 
+interface IMockEigenPod{
+    function eigenPodManager() external view returns (IMockEigenPodManager);
+    function podOwner() external view returns (address);
+    function initialize(address _owner) external;
+}
 
 contract MockEigenPod{
     IMockEigenPodManager manager;
@@ -18,6 +24,7 @@ contract MockEigenPod{
 
     /// @notice The owner of this EigenPod
     function podOwner() external view returns (address) {
+        console.log("podOwner() called");
         return(owner);
     }
 

@@ -9,7 +9,7 @@ pragma solidity 0.8.20;
 import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
 
 error APEthStorage__ACCOUNT_IS_NOT_GUARDIAN();
-error APEthStorage__ACCOUNT_IS_NOT_GUARDIAN_OR_APETH(address);
+error APEthStorage__ACCOUNT_IS_NOT_GUARDIAN_OR_APETH();
 error APEthStorage__MUST_COME_FROM_NEW_GUARDIAN();
 error APEthStorage__CAN_ONLY_BE_SET_ONCE();
 error APEthStorage__MUST_SET_TO_0X0_FIRST();
@@ -26,7 +26,7 @@ contract APEthStorage is IAPEthStorage {
 
     // Guardian address
     address private guardian;
-    address private newGuardian;
+    address private newGuardian = address(0xdead);
     address private apEth;
 
     /**
@@ -42,7 +42,7 @@ contract APEthStorage is IAPEthStorage {
      */
     modifier onlyGuardianOrAPEth() {
         if (msg.sender != apEth && msg.sender != guardian) {
-            revert APEthStorage__ACCOUNT_IS_NOT_GUARDIAN_OR_APETH(msg.sender);
+            revert APEthStorage__ACCOUNT_IS_NOT_GUARDIAN_OR_APETH();
         }
         _;
     }
@@ -72,7 +72,7 @@ contract APEthStorage is IAPEthStorage {
         address oldGuardian = guardian;
         // Update guardian and clear storage
         guardian = newGuardian;
-        delete newGuardian;
+        newGuardian = address(0xdead);
         // Emit event
         emit GuardianChanged(oldGuardian, guardian);
     }
