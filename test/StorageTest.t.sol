@@ -7,7 +7,7 @@ import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
 import {DeployStorageContract} from "../script/deployStorage.s.sol";
-import {DeployTokenImplementation} from "../script/deployToken.s.sol";
+import {DeployProxy} from "../script/deployToken.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
@@ -61,10 +61,10 @@ contract StorageTest is Test {
         newOwner = address(1);
 
         DeployStorageContract deployStorage = new DeployStorageContract();
-        DeployTokenImplementation deployImplementation = new DeployTokenImplementation();
+        DeployProxy deployProxy = new DeployProxy();
 
-        storageContract = deployStorage.run(owner);
-        (implementation, APEth) = deployImplementation.run(owner);
+        (storageContract, implementation) = deployStorage.run(owner);
+        APEth = deployProxy.run(owner, address(storageContract), address(implementation));
     }
 
     //this is mainly to get the coverage for the contract o 100%
@@ -101,12 +101,11 @@ contract StorageTest is Test {
         vm.startPrank(alice);
         storageContract.confirmGuardian();
         assertEq(storageContract.getGuardian(), alice);
-        vm.expectRevert(0xad5111f6); // "APEthStorage__MUST_SET_TO_0X0_FIRST()"
+        vm.expectRevert(0x840d41b1); // "APEthStorage__MUST_SET_TO_0Xdead_FIRST()"
         storageContract.burnKeys();
-        storageContract.setGuardian(address(0));
+        storageContract.setGuardian(address(0xdead));
         storageContract.burnKeys();
         vm.expectRevert(0x7783a63d); // "APEthStorage__ACCOUNT_IS_NOT_GUARDIAN_OR_APETH()"
         storageContract.setUint(keccak256(abi.encodePacked("test.uint256")), 69);
     }
-
 }

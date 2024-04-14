@@ -7,7 +7,7 @@ import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
 import {DeployStorageContract} from "../script/deployStorage.s.sol";
-import {DeployTokenImplementation} from "../script/deployToken.s.sol";
+import {DeployProxy} from "../script/deployToken.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
@@ -52,6 +52,7 @@ contract APETHTest is Test {
 
     // Set up the test environment before running tests
     function setUp() public {
+        console.log("chain ID: ", block.chainid);
         // Define the owner and alice addresses
         owner = vm.addr(1);
         console.log("owner", owner);
@@ -61,10 +62,10 @@ contract APETHTest is Test {
         newOwner = address(1);
 
         DeployStorageContract deployStorage = new DeployStorageContract();
-        DeployTokenImplementation deployImplementation = new DeployTokenImplementation();
+        DeployProxy deployProxy = new DeployProxy();
 
-        storageContract = deployStorage.run(owner);
-        (implementation, APEth) = deployImplementation.run(owner);
+        (storageContract, implementation) = deployStorage.run(owner);
+        APEth = deployProxy.run(owner, address(storageContract), address(implementation));
     }
 
     //test minting the coin
@@ -219,15 +220,15 @@ contract APETHTest is Test {
         assertEq(address(APEth).balance, newBalance + z);
     }
 
-    function testStakeFailNotEnoughEth() public mintAlice(5){
+    function testStakeFailNotEnoughEth() public mintAlice(5) {
         vm.prank(owner);
         vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
         APEth.stake(_pubKey, _signature, _deposit_data_root);
     }
 
-    function testStakeFailNotOwner() public mintAlice(32 ether){
+    function testStakeFailNotOwner() public mintAlice(32 ether) {
         vm.prank(vm.addr(69));
-        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         APEth.stake(_pubKey, _signature, _deposit_data_root);
     }
 
@@ -245,15 +246,18 @@ contract APETHTest is Test {
         ERC20Mock mockCoin = new ERC20Mock();
         mockCoin.mint(address(APEth), 1 ether);
         vm.prank(vm.addr(69));
-        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         APEth.transferToken(address(mockCoin), alice, 1 ether);
     }
 
     function testSSVCall() public {
         vm.prank(owner);
-        APEth.callSSVNetwork(abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")),address(APEth)));
-        if(block.chainid == 31337){
-            address ssvNetworkAddress = storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
+        APEth.callSSVNetwork(
+            abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+        );
+        if (block.chainid == 31337) {
+            address ssvNetworkAddress =
+                storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
             MockSsvNetwork ssvNetwork = MockSsvNetwork(ssvNetworkAddress);
             address feeRecip = ssvNetwork.feeRecipient(address(APEth));
             assertEq(feeRecip, address(APEth), "feeRecip not set in ssv contract");
@@ -262,14 +266,18 @@ contract APETHTest is Test {
 
     function testSSVCallFailNotOwner() public {
         vm.prank(vm.addr(69));
-        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.callSSVNetwork(abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")),address(APEth)));
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.callSSVNetwork(
+            abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+        );
     }
 
     function testSSVCallFailBadCall() public {
         vm.prank(owner);
         vm.expectRevert("Call failed");
-        APEth.callSSVNetwork(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")),address(APEth)));
+        APEth.callSSVNetwork(
+            abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+        );
     }
 
     function testEigenPodManagerCall() public {
@@ -279,14 +287,16 @@ contract APETHTest is Test {
 
     function testEigenPodManagerCallFailNotOwner() public {
         vm.prank(vm.addr(69));
-        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
     }
 
     function testEigenPodManagerCallFailBadCall() public {
         vm.prank(owner);
         vm.expectRevert("Call failed");
-        APEth.callEigenPodManager(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")),address(APEth)));
+        APEth.callEigenPodManager(
+            abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+        );
     }
 
     function testEigenPodCall() public {
@@ -296,7 +306,7 @@ contract APETHTest is Test {
 
     function testEigenPodCallFailNotOwner() public {
         vm.prank(vm.addr(69));
-        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 

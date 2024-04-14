@@ -23,15 +23,14 @@ $ cast wallet import defaultKey --interactive
 
 ### View Public Key for the Private Key stored as "defaultKey"
 
+use this in the .env as sender
 ```shell
 $ cast wallet address --account defaultKey
 ```
 
-### Set Etherscan API Key
+### Set Etherscan API Key and RPC keys
 
-```shell
-$ export ETHERSCAN_API_KEY=YOUR_ETHERSCAN_API_KEY
-```
+populate values in .env.expample save as .env
 
 ### Build
 
@@ -46,7 +45,7 @@ $ forge clean && forge test --ffi
 ```
 on Holesky
 ```shell
-$ forge clean && forge test --ffi --fork-url https://ethereum-holesky.publicnode.com
+$ forge clean && forge test --ffi --fork-url holesky
 ```
 
 ### Format
@@ -71,17 +70,18 @@ $ anvil
 Deploy in 2 parts:
 
 ```shell
-$ forge clean && forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+$ forge clean && forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
 ```
+UPDATE DeployToken.s.sol WITH CONTRACT VALUES FROM THE PREVIOUSLY DEPLOYED CONTRACTS
 ```shell
-$ forge clean && forge script script/deployToken.s.sol:DeployTokenImplementation --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+$ forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
 ```
 
 ### Upgrade
 NOTE: check the implementation and the proxy address in script/upGradeProxy
 
 ```shell
-$ forge clean && forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --sender <public key of defaultKey> --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify --ffi
+$ forge clean && forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify --ffi
 ```
 
 ### Cast
