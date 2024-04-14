@@ -67,11 +67,6 @@ contract ScriptBase is Script {
         vm.stopBroadcast();
         console.log("storageContract deployed", address(_storageContract));
         console.log("guardian address", _storageContract.getGuardian());
-        if(_isTest){
-            console.log("should match ", tx.origin);
-        }else {
-            console.log("should match ", msg.sender);
-        }
     }
 
     function deployImplementation() public {
@@ -93,5 +88,20 @@ contract ScriptBase is Script {
         require(_apEthPreDeploy == address(_proxy), "proxy address mismatch");
         // Attach the APETH interface to the deployed proxy
         _APEth = APETH(payable(address(_proxy)));
+    }
+
+    function computeProxyInitCodeHash() public view {
+        bytes32 hash = 
+            keccak256(
+                abi.encodePacked(
+                    type(ERC1967Proxy).creationCode,
+                    abi.encode(
+                        address(_implementation),
+                        abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
+                    )
+                )
+            );
+        console.log("init code hash");
+        console.logBytes32(hash);
     }
 }

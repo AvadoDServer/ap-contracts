@@ -17,18 +17,21 @@ contract DeployProxy is ScriptBase {
     }
 
     function run() public {
-        console.log("***Deploying Implementation***");
+        console.log("***Deploying Proxy***");
         if (_owner == address(0)) _owner = msg.sender;
 
         if(!_isTest){
-            salt.apEth = 0x0000000000000000000000000000000000000000000000000000000000000123; // calculate with vanity address generator manually enter
-            _storageContract = APEthStorage(0xe66a3Eb56866420fF2a6CC6F114A6DF6Dd78F95c); //manually enter after deploying
-            _implementation = APETH(payable(0x28eE43c5385219FB0A928da2107a128468b23193)); //manually enter after deploying
+            salt.apEth = 0x97d61c875f32d0c5b4cd0bf0810dee2b8adb825ee168ddf6653b1cc8fd2a482b; // calculate with vanity address generator manually enter
+            console.logBytes32(salt.apEth);
+            _storageContract = APEthStorage(0x23c7065F408737d75a74227a0F01F4613E22c65e); //manually enter after deploying
+            console.log("storage", address(_storageContract));
+            _implementation = APETH(payable(0xDaa1faEaBBA7a48Bf5BDFfF5439A9BcDA08E26F2)); //manually enter after deploying
+            console.log("implementation", address(_implementation));
         }
-
-        calcProxyAddress(); //here is where we could update the salt to have a vanity address (start with 'aaaaaa')
+        calcProxyAddress(); 
         deployProxy();
-            
+        address podAddress = _storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")));
+        console.log("Eigen Pod Address: ", podAddress);
         _APEth = APETH(payable(_apEthPreDeploy));
     }
 }

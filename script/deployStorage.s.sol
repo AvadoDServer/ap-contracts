@@ -54,5 +54,7 @@ contract DeployStorageContract is ScriptBase {
         } else {
             deployImplementation();
         }
+
+        computeProxyInitCodeHash();
     }
 }
