@@ -125,7 +125,7 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
     }
 
     // TODO: THIS WOULD ALLOW THE CONTRACT OWNER TO SEAL FUNDS -
-    // BUT SINCE THE CONTRACT IS UPGRADABLE, THEY CN DO THAT ANYWAYS.
+    // BUT SINCE THE CONTRACT IS UPGRADABLE, THEY CAN DO THAT ANYWAYS.
     function callEigenPod(bytes memory data) external onlyOwner {
         address eigenPod = apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")));
         (bool success,) = eigenPod.call(data);

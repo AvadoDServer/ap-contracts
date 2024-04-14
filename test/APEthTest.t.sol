@@ -9,6 +9,8 @@ import {APEthStorage} from "../src/APEthStorage.sol";
 import {DeployStorageContract} from "../script/deployStorage.s.sol";
 import {DeployTokenImplementation} from "../script/deployToken.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
+import {ERC20Mock} from "./mocks/ERC20Mock.sol";
+import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
@@ -106,6 +108,8 @@ contract APETHTest is Test {
 
     // Test staking (requires using a forked chain with a deposit contract to test.)
     function testStake() public {
+        //branch test for case where totalsupply is 0
+        assertEq(APEth.ethPerAPEth(), 1 ether);
         // Impersonate the alice to call mint function
         hoax(alice);
         // Mint 33 eth of tokens and assert the balance
@@ -211,6 +215,59 @@ contract APETHTest is Test {
         uint256 expected = calculateAmountLessFee(uint256(z) * 1 ether / ethPerAPEth);
         assertEq(APEth.balanceOf(bob), expected);
         assertEq(address(APEth).balance, newBalance + z);
+    }
+
+    function testStakeFailNotEnoughEth() public mintAlice(5){
+        vm.prank(owner);
+        vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
+    }
+
+    function testStakeFailNotOwner() public mintAlice(32 ether){
+        vm.prank(vm.addr(69));
+        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
+    }
+
+    function testERC20Call() public {
+        ERC20Mock mockCoin = new ERC20Mock();
+        mockCoin.mint(address(APEth), 1 ether);
+        assertEq(mockCoin.balanceOf(address(APEth)), 1 ether);
+        vm.prank(owner);
+        APEth.transferToken(address(mockCoin), alice, 1 ether);
+        assertEq(mockCoin.balanceOf(alice), 1 ether);
+        assertEq(mockCoin.balanceOf(address(APEth)), 0);
+    }
+
+    function testERC20CallFailNotOwner() public {
+        ERC20Mock mockCoin = new ERC20Mock();
+        mockCoin.mint(address(APEth), 1 ether);
+        vm.prank(vm.addr(69));
+        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.transferToken(address(mockCoin), alice, 1 ether);
+    }
+
+    function testSSVCall() public {
+        vm.prank(owner);
+        APEth.callSSVNetwork(abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")),address(APEth)));
+        if(block.chainid == 31337){
+            address ssvNetworkAddress = storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
+            MockSsvNetwork ssvNetwork = MockSsvNetwork(ssvNetworkAddress);
+            address feeRecip = ssvNetwork.feeRecipient(address(APEth));
+            assertEq(feeRecip, address(APEth), "feeRecip not set in ssv contract");
+        }
+    }
+
+    function testSSVCallFailNotOwner() public {
+        vm.prank(vm.addr(69));
+        vm.expectRevert();// "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.callSSVNetwork(abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")),address(APEth)));
+    }
+
+    function testSSVCallFailBadCall() public {
+        vm.prank(owner);
+        vm.expectRevert("Call failed");
+        APEth.callSSVNetwork(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()")),address(APEth)));
     }
 
     //internal functions
