@@ -34,6 +34,9 @@ import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
 /// @notice thrown when attempting to stake when there is not enough eth in the contract
 error APETH__NOT_ENOUGH_ETH();
 
+/// @notice thrown when attempting to mint over cap
+error APETH__CAP_REACHED();
+
 /**
  *
  * CONTRACT
@@ -69,7 +72,7 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, address _APEthStorage) public initializer {
+    function initialize(address initialOwner, address _APEthStorage, uint256 _InitialCap) public initializer {
         __ERC20_init("AP-Restaked-Eth", "APETH");
         __Ownable_init(initialOwner);
         __ERC20Permit_init("AP-Restaked-Eth");
@@ -80,6 +83,7 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         );
         address eigenPod = eigenPodManager.createPod();
         apEthStorage.setAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")), eigenPod);
+        apEthStorage.setUint(keccak256(abi.encodePacked("cap.Amount")),_InitialCap);
     }
 
     receive() external payable {}
@@ -92,6 +96,8 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
      */
     function mint() public payable {
         uint256 amount = msg.value * 1 ether / _ethPerAPEth(msg.value);
+        uint256 cap = amount * apEthStorage.getUint(keccak256(abi.encodePacked("cap.Amount")));
+        if (totalSupply() + amount > cap) revert APETH__CAP_REACHED();
         uint256 fee = amount * apEthStorage.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
         address feeRecipient = apEthStorage.getAddress(keccak256(abi.encodePacked("fee.recipient.address")));
         amount = amount - fee;

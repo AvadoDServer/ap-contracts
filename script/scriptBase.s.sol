@@ -40,6 +40,8 @@ contract ScriptBase is Script {
     address _owner;
     address _factory = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
+    uint256 _initialCap = 100000 ether;
+
     bool _isTest;
 
     function calcProxyAddress() public {
@@ -51,7 +53,7 @@ contract ScriptBase is Script {
                     type(ERC1967Proxy).creationCode,
                     abi.encode(
                         address(_implementation),
-                        abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
+                        abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract), uint256(_initialCap)))
                     )
                 )
             ),
@@ -81,7 +83,7 @@ contract ScriptBase is Script {
         //Set as apEth in storage
         _storageContract.setAPEth(address(_apEthPreDeploy));
         _proxy = new ERC1967Proxy{salt: salt.apEth}(
-            address(_implementation), abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
+            address(_implementation), abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract), uint256(_initialCap)))
         );
         vm.stopBroadcast();
         console.log("APEth (proxy) deployed", (address(_proxy)));
@@ -97,7 +99,7 @@ contract ScriptBase is Script {
                     type(ERC1967Proxy).creationCode,
                     abi.encode(
                         address(_implementation),
-                        abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
+                        abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract), uint256(_initialCap)))
                     )
                 )
             );
