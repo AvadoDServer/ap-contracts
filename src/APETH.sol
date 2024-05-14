@@ -96,7 +96,7 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
      */
     function mint() public payable {
         uint256 amount = msg.value * 1 ether / _ethPerAPEth(msg.value);
-        uint256 cap = amount * apEthStorage.getUint(keccak256(abi.encodePacked("cap.Amount")));
+        uint256 cap = apEthStorage.getUint(keccak256(abi.encodePacked("cap.Amount")));
         if (totalSupply() + amount > cap) revert APETH__CAP_REACHED();
         uint256 fee = amount * apEthStorage.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
         address feeRecipient = apEthStorage.getAddress(keccak256(abi.encodePacked("fee.recipient.address")));

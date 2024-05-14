@@ -79,10 +79,18 @@ contract APETHTest is Test {
     }
 
     modifier mintAlice(uint256 amount) {
+        uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
+        uint256 aliceBalance = calculateAmountLessFee(amount);
+        if(amount > cap) {
+            aliceBalance = 0;
+            vm.expectRevert(); //APETH__CAP_REACHED()
+        }
         hoax(alice);
         APEth.mint{value: amount}();
-        uint256 aliceBalance = calculateAmountLessFee(amount);
         assertEq(APEth.balanceOf(alice), aliceBalance);
+        if(amount > cap) {
+            vm.expectRevert(); //APETH__CAP_REACHED()
+        }
         assertEq(address(APEth).balance, amount);
         _;
     }
@@ -172,8 +180,11 @@ contract APETHTest is Test {
         vm.deal(owner, y);
         vm.prank(owner);
         payable(address(APEth)).transfer(y);
+        uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
         uint256 balance = uint256(x) + uint256(y);
-        console.log("balance", balance);
+        if(uint256(x) > cap) {
+            balance = uint256(y);
+        }
         assertEq(address(APEth).balance, balance);
         //check eth per apeth
         uint256 ethPerAPEth;
@@ -182,7 +193,7 @@ contract APETHTest is Test {
         } else {
             ethPerAPEth = balance * 1 ether / uint256(x);
         }
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethPerAPEth not correct");
         uint256 ethInValidators;
         if (balance >= 32 ether) {
             vm.prank(owner);
@@ -210,14 +221,19 @@ contract APETHTest is Test {
         }
         uint256 newBalance = balance;
         if (workingKeys || block.chainid == 31337) newBalance = balance - ethInValidators;
-        assertEq(address(APEth).balance, newBalance, "contract balance does not mach calculated");
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        assertEq(address(APEth).balance, newBalance, "contract balance does not match calculated");
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethperAPEth not correct after staking");
+        uint256 amount = uint256(x) + (uint256(z) *1 ether / ethPerAPEth);
+        assertEq(APEth.totalSupply(), uint256(x));
+        if(amount > cap) vm.expectRevert(); //APETH__CAP_REACHED()
         hoax(bob);
         // Mint z eth of tokens and assert the balance
         APEth.mint{value: z}();
         uint256 expected = calculateAmountLessFee(uint256(z) * 1 ether / ethPerAPEth);
-        assertEq(APEth.balanceOf(bob), expected);
-        assertEq(address(APEth).balance, newBalance + z);
+        if(amount <= cap){
+            assertEq(APEth.balanceOf(bob), expected);
+            assertEq(address(APEth).balance, newBalance + z);
+        }
     }
 
     function testStakeFailNotEnoughEth() public mintAlice(5) {

@@ -72,7 +72,7 @@ Deploy in 2 parts:
 ```shell
 $ forge clean && forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
 ```
-for vanity address:
+for vanity address (deployer address here is the Create2 contract):
 ```shell
 $ cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C --init-code-hash <get this from previous deployment logs>
 ```
