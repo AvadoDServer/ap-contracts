@@ -72,7 +72,7 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, address _APEthStorage, uint256 _InitialCap) public initializer {
+    function initialize(address initialOwner, address _APEthStorage) public initializer {
         __ERC20_init("AP-Restaked-Eth", "APETH");
         __Ownable_init(initialOwner);
         __ERC20Permit_init("AP-Restaked-Eth");
@@ -83,7 +83,6 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
         );
         address eigenPod = eigenPodManager.createPod();
         apEthStorage.setAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")), eigenPod);
-        apEthStorage.setUint(keccak256(abi.encodePacked("cap.Amount")),_InitialCap);
     }
 
     receive() external payable {}

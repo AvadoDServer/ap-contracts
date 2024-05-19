@@ -6,6 +6,10 @@ import {
 } from "./scriptBase.s.sol";
 
 contract DeployStorageContract is ScriptBase {
+
+    uint256 _initialCap = 100000 ether;
+    uint256 _initialFee = 500; //fee units are in 1/1000ths of a percent so 500 = 0.5%
+
     function run(address owner_) public returns (APEthStorage, APETH) {
         _owner = owner_;
         _isTest = true;
@@ -44,9 +48,11 @@ contract DeployStorageContract is ScriptBase {
         //set fee recipient in storage
         _storageContract.setAddress(keccak256(abi.encodePacked("fee.recipient.address")), _owner);
         //set fee rate in storage
-        _storageContract.setUint(keccak256(abi.encodePacked("fee.Amount")), 500); //fee units are in 1/1000ths of a percent so 500 = 0.5%
-        vm.stopBroadcast();
+        _storageContract.setUint(keccak256(abi.encodePacked("fee.Amount")), _initialFee); 
+        //set initial mint cap amount
+        _storageContract.setUint(keccak256(abi.encodePacked("cap.Amount")), _initialCap);
         console.log("storage initialised");
+        vm.stopBroadcast();
 
         //Deploy the token implementation
         if (address(_storageContract).code.length == 0) {
