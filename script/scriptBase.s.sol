@@ -37,7 +37,7 @@ contract ScriptBase is Script {
     //these are the create2 pre-deploy address calcs
     address _apEthPreDeploy;
 
-    address _owner;
+    address _owner = 0xe250fbBc81Af47663a6E9a38eE77e96B1a93bf6B;
     address _factory = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     bool _isTest;
@@ -78,6 +78,7 @@ contract ScriptBase is Script {
 
     function deployProxy() public {
         vm.startBroadcast();
+        if (_owner == address(0)) _owner = msg.sender;
         //Set as apEth in storage
         _storageContract.setAPEth(address(_apEthPreDeploy));
         _proxy = new ERC1967Proxy{salt: salt.apEth}(

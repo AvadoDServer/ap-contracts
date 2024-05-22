@@ -13,9 +13,6 @@ contract DeployStorageContract is ScriptBase {
     function run(address owner_) public returns (APEthStorage, APETH) {
         _owner = owner_;
         _isTest = true;
-        salt.apEth = 0x0000000000000000000000000000000000000000000000000101010101010101; //different salt to avoid collisions with deploied contracts (its annoying)
-        //salt.implementation = 0x0000000000000000000000000000000000000000000000000101010101010101;
-        //salt.storageContract = 0x0000000000000000000000000000000000000000000000000101010101010101;
         run();
         return (_storageContract, _implementation);
     }

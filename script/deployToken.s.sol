@@ -7,9 +7,6 @@ contract DeployProxy is ScriptBase {
     function run(address owner_, address storage_, address implementation_) public returns (APETH) {
         _owner = owner_;
         _isTest = true;
-        salt.apEth = 0x0000000000000000000000000000000000000000000000000101010101010101; //different salt to avoid collisions with deploied contracts (its annoying)
-        //salt.implementation = 0x0000000000000000000000000000000000000000000000000101010101010101;
-        //salt.storageContract = 0x0000000000000000000000000000000000000000000000000101010101010101;
         _storageContract = APEthStorage(storage_);
         _implementation = APETH(payable(implementation_));
         run();
@@ -18,14 +15,13 @@ contract DeployProxy is ScriptBase {
 
     function run() public {
         console.log("***Deploying Proxy***");
-        if (_owner == address(0)) _owner = msg.sender;
 
         if(!_isTest){
-            salt.apEth = 0x97d61c875f32d0c5b4cd0bf0810dee2b8adb825ee168ddf6653b1cc8fd2a482b; // calculate with vanity address generator manually enter
+            salt.apEth = 0x5310c668dd699d3b7975c1b9680acc961b8e8e849815a26af78f1d2e97960654; // calculate with vanity address generator manually enter
             console.logBytes32(salt.apEth);
-            _storageContract = APEthStorage(0x23c7065F408737d75a74227a0F01F4613E22c65e); //manually enter after deploying
+            _storageContract = APEthStorage(0x868d0997A8b97294Cd6aBcF3A8e4E40D8864216D); //manually enter after deploying
             console.log("storage", address(_storageContract));
-            _implementation = APETH(payable(0xDaa1faEaBBA7a48Bf5BDFfF5439A9BcDA08E26F2)); //manually enter after deploying
+            _implementation = APETH(payable(0x3A824bf129D44961ab67b3dE3e86A173E0f54d76)); //manually enter after deploying
             console.log("implementation", address(_implementation));
         }
         calcProxyAddress(); 

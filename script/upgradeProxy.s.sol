@@ -13,16 +13,13 @@ contract UpgradeProxy is ScriptBase {
         _owner = owner_;
         _proxyAddress = proxyAddress_;
         _isTest = true;
-        salt.apEth = 0x0000000000000000000000000000000000000000000000000101010101010101; //different salt to avoid collisions with deploied contracts (its annoying)
-        //salt.implementation = 0x0000000000000000000000000000000000000000000000000101010101010101;
-        //salt.storageContract = 0x0000000000000000000000000000000000000000000000000101010101010101;
         run();
     }
 
     function run() public {
         console.log("***Upgrading Proxy***");
-        if (_owner == address(0)) _owner = msg.sender;
         if (!_isTest) vm.startBroadcast();
+        if (_owner == address(0)) _owner = msg.sender;
         Upgrades.upgradeProxy(_proxyAddress, "APETHV2.sol:APETHV2", "", _owner);
         if (!_isTest) vm.stopBroadcast();
         console.log("upgraded");

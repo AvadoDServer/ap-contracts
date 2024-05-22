@@ -30,7 +30,7 @@ contract APETHTest is Test {
     address bob;
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
-    bool workingKeys = true;
+    bool workingKeys = false;
 
     bytes _pubKey =
         hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
