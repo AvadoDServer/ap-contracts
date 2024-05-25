@@ -106,12 +106,4 @@ contract ScriptBase is Script {
         console.log("init code hash");
         console.logBytes32(hash);
     }
-
-    function bytesToAddress(
-        bytes memory bys
-    ) private pure returns (address addr) {
-        assembly {
-            addr := mload(add(bys, 32))
-        }
-    }
 }
