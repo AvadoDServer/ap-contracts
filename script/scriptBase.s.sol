@@ -10,6 +10,7 @@ import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 
@@ -37,7 +38,7 @@ contract ScriptBase is Script {
     //these are the create2 pre-deploy address calcs
     address _apEthPreDeploy;
 
-    address _owner = 0xe250fbBc81Af47663a6E9a38eE77e96B1a93bf6B;
+    address _owner = 0x51336769321dE54925E2da6881D7BDCb02258D5e; //set to the address that will own the token.
     address _factory = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     bool _isTest;
@@ -104,5 +105,13 @@ contract ScriptBase is Script {
             );
         console.log("init code hash");
         console.logBytes32(hash);
+    }
+
+    function bytesToAddress(
+        bytes memory bys
+    ) private pure returns (address addr) {
+        assembly {
+            addr := mload(add(bys, 32))
+        }
     }
 }
