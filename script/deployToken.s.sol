@@ -5,16 +5,6 @@ import {ScriptBase, APEthStorage, APETH, console, Create2, ERC1967Proxy, Upgrade
 
 contract DeployProxy is ScriptBase {
 
-    /*******************************************
-    FILL THESE FROM TERMINAL LOGS
-    ********************************************/
-    bytes saltForVanityAddress = 0x09f8a99918b189f55c1dd77559b5d9c90b6df10b28e7b6c1b53674af9a43614f; // calculate with vanity address generator manually enter
-    address storageContractAddress = 0x0000000000000000000000000000000000000000;
-    address payable implementationContractAddress = 0x0000000000000000000000000000000000000000;
-    /*******************************************
-    ********************************************/
-    
-
     function run(address owner_, address storage_, address implementation_) public returns (APETH) {
         _owner = owner_;
         _isTest = true;

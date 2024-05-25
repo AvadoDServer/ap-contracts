@@ -83,9 +83,9 @@ for vanity address (deployer address here is the Create2 contract):
 $ cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C --init-code-hash <get this from previous deployment logs>
 ```
 
-UPDATE DeployToken.s.sol WITH CONTRACT VALUES FROM THE PREVIOUSLY DEPLOYED CONTRACTS (AND SALT FOR VANITY ADDRESS)
+UPDATE scriptBase.s.sol WITH CONTRACT VALUES FROM THE PREVIOUSLY DEPLOYED CONTRACTS (AND SALT FOR VANITY ADDRESS)
 ```shell
-$ forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
+$ forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url holesky --account defaultKey --broadcast
 ```
 
 ### Upgrade

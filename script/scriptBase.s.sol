@@ -15,6 +15,18 @@ import {stdJson} from "forge-std/StdJson.sol";
 error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 
 contract ScriptBase is Script {
+
+    /*******************************************
+    FILL THESE FROM TERMINAL LOGS
+    ********************************************/
+    bytes32 saltForVanityAddress = 0xf2cba114011070072d32111b445bc7653a190ffbadccdb6301c45f6750a720ab; // calculate with vanity address generator manually enter
+    address storageContractAddress = 0x9546bDda1d003eFe8AC035F28fa57d887A785178;
+    address payable implementationContractAddress = payable(0xa929Db0Cf6960ba709252D80355aD7BB848A3E9c);
+    address _owner = 0x51336769321dE54925E2da6881D7BDCb02258D5e; //set to the address that will own the token.
+    /*******************************************
+    ********************************************/
+
+
     struct Salt {
         //bytes32 storageContract;
         //bytes32 implementation;
@@ -22,8 +34,6 @@ contract ScriptBase is Script {
     }
 
     Salt public salt = Salt({
-        //storageContract: 0x0000000000000000000000000000000000000000000000000000000000007069,
-        //implementation: 0x0000000000000000000000000000000000000000000000000000000000001069,
         apEth: 0x0000000000000000000000000000000000000000000000000000000000000969
     });
 
@@ -38,7 +48,6 @@ contract ScriptBase is Script {
     //these are the create2 pre-deploy address calcs
     address _apEthPreDeploy;
 
-    address _owner = 0x51336769321dE54925E2da6881D7BDCb02258D5e; //set to the address that will own the token.
     address _factory = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     bool _isTest;
