@@ -29,26 +29,26 @@ contract APETHTest is Test {
     address alice;
     address bob;
 
-    //set bool to 1 when fresh keys are added, set to 0 to kill "reconstructed DepositData does not match supplied deposit_data_root"
+    //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool workingKeys = true;
 
     bytes _pubKey =
         hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
     bytes _signature =
-        hex"b747dcd5cd420b617cb6277dd68742916bc795fd046e00084d59213648f785d5b449916f299915d35ab4c3a5f8b31ba40995acb8423d613059e31e18ba66f4f479780b668657d64e5d3d722bb743a7e19f0482d494ff1ec0289bab1bcf5b91ea";
-    bytes32 _deposit_data_root = 0xd00b287a792df9348a87bad63ed4bb11d25841b26828936bf0d27b6fd4ddb6e2;
+        hex"896a621b4e4fad8d14108111c45141370572882362f40b4a6c4c9bce3f1b13c9e59774a270198448b4e535638916d71d0edbe18a74bc9b087972dbf60c14ef214f77fac423848d75f377ae1214cc0dcb09e2b1f3d2da60e74ac9540d8c6b62c7";
+    bytes32 _deposit_data_root = 0x955de0af387a6cc447bb8f2b5554c51245e2239426c7a251381f3175bf99769a;
 
     bytes _pubKey2 =
         hex"91bebd77cd834b056ff242331dfcd3baecf3b89fcba6d866860a7ace128fb204af9b892cc84dd2d4eb933f6f8d0499b1";
     bytes _signature2 =
-        hex"a7527419c6cc895fad0158cc9fe44149424cdb0594e52bf29cf5e575614e687bb6f1d24b25b693b6ce7548cc7412b4840deb493572b52fee31155b9a1c69ce682669b1c02900a310878e45ba081fcef6e634bb9e9e9bcc3089b03dfef409ab33";
-    bytes32 _deposit_data_root2 = 0xe56a59e2aa45495f82aaf9e58acb298a9f4e2e32e97ab30a43af41990563462b;
+        hex"b00761c3426f8df64b5f048edc547b6478e947261ca9a9fbd88afdbbb7463f430fbf46a276d392c39113bd05b034f21905958415f561ca842a3b094a52d8d5651c8866b6ac4a6a37b3ac1fd5bcc1a483966127a30e41eafed621d9aa48734553";
+    bytes32 _deposit_data_root2 = 0x657fe2c0d7a9ea7cc56cdad00edd249f4bf7a9f48f845b4f2d4bbcd5f241ca46;
 
     bytes _pubKey3 =
         hex"b6ee6088e5b1dca8a7013f702140ab1f4825d349b20f8c4ba8436af36814dfb3309c13d7423898f60c5e332655a54f17";
     bytes _signature3 =
-        hex"8e6f0fd540c74869aa5ae20df1bafede3d1a1d3dedbdf4d02823d60a91b4f0d00d47322b4fb97e107ae960fc089cc13811fd07984ffcd6adf6599c7ec3f9e8b9f28ef9a15720a59f2f7634811a9575d0f8d2310f3a7badaae150894ccb34ad9c";
-    bytes32 _deposit_data_root3 = 0x3afcd33e48a280ab4ef87fc3508c481f0ffef926b2977ad320a1b60b9831c6a2;
+        hex"96dcbfd6aa228d56f81cc2ebb0145db72c12a295d531c37f955bb1ab6dfcd0f8fe8ecb0f134cd026fa32520d0fd6ef100e375f697eb0ee441d47a54cdd0a5fcd5598eab5f8d35fd8fdd812a6f3897a8dd972183f1b5a5fc9aa000051e6106376";
+    bytes32 _deposit_data_root3 = 0x02d2bd6e36896af49cebf39e52e6a0ae926dfaa8dfbd70cad4188e3aa12e3bae;
 
     // Set up the test environment before running tests
     function setUp() public {
@@ -79,12 +79,28 @@ contract APETHTest is Test {
     }
 
     modifier mintAlice(uint256 amount) {
+        uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
+        uint256 aliceBalance = calculateAmountLessFee(amount);
+        if (amount > cap) {
+            aliceBalance = 0;
+            vm.expectRevert(); //APETH__CAP_REACHED()
+        }
         hoax(alice);
         APEth.mint{value: amount}();
-        uint256 aliceBalance = calculateAmountLessFee(amount);
         assertEq(APEth.balanceOf(alice), aliceBalance);
+        if (amount > cap) {
+            vm.expectRevert(); //APETH__CAP_REACHED()
+        }
         assertEq(address(APEth).balance, amount);
         _;
+    }
+
+    function testCap() public mintAlice(100000 ether) {
+        uint256 aliceBalance = APEth.balanceOf(alice);
+        vm.expectRevert(); //APETH__CAP_REACHED()
+        hoax(alice);
+        APEth.mint{value: 1}();
+        assertEq(APEth.balanceOf(alice), aliceBalance);
     }
 
     // Test the basic ERC20 functionality of the APETH contract
@@ -172,8 +188,11 @@ contract APETHTest is Test {
         vm.deal(owner, y);
         vm.prank(owner);
         payable(address(APEth)).transfer(y);
+        uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
         uint256 balance = uint256(x) + uint256(y);
-        console.log("balance", balance);
+        if (uint256(x) > cap) {
+            balance = uint256(y);
+        }
         assertEq(address(APEth).balance, balance);
         //check eth per apeth
         uint256 ethPerAPEth;
@@ -182,7 +201,7 @@ contract APETHTest is Test {
         } else {
             ethPerAPEth = balance * 1 ether / uint256(x);
         }
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethPerAPEth not correct");
         uint256 ethInValidators;
         if (balance >= 32 ether) {
             vm.prank(owner);
@@ -210,14 +229,19 @@ contract APETHTest is Test {
         }
         uint256 newBalance = balance;
         if (workingKeys || block.chainid == 31337) newBalance = balance - ethInValidators;
-        assertEq(address(APEth).balance, newBalance, "contract balance does not mach calculated");
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        assertEq(address(APEth).balance, newBalance, "contract balance does not match calculated");
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethperAPEth not correct after staking");
+        uint256 amount = uint256(x) + (uint256(z) * 1 ether / ethPerAPEth);
+        assertEq(APEth.totalSupply(), uint256(x));
+        if (amount > cap) vm.expectRevert(); //APETH__CAP_REACHED()
         hoax(bob);
         // Mint z eth of tokens and assert the balance
         APEth.mint{value: z}();
         uint256 expected = calculateAmountLessFee(uint256(z) * 1 ether / ethPerAPEth);
-        assertEq(APEth.balanceOf(bob), expected);
-        assertEq(address(APEth).balance, newBalance + z);
+        if (amount <= cap) {
+            assertEq(APEth.balanceOf(bob), expected);
+            assertEq(address(APEth).balance, newBalance + z);
+        }
     }
 
     function testStakeFailNotEnoughEth() public mintAlice(5) {
@@ -314,6 +338,17 @@ contract APETHTest is Test {
         vm.prank(owner);
         vm.expectRevert("Call failed");
         APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
+    }
+
+    function testFeeChange() public {
+        vm.prank(storageContract.getGuardian());
+        storageContract.setUint(keccak256(abi.encodePacked("fee.Amount")), 10000);
+        assertEq(storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))), 10000);
+        hoax(alice);
+        APEth.mint{value: 10 ether}();
+        uint256 aliceBalance = calculateAmountLessFee(10 ether);
+        assertEq(APEth.balanceOf(alice), aliceBalance);
+        assertEq(address(APEth).balance, 10 ether);
     }
 
     //internal functions

@@ -34,6 +34,9 @@ import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
 /// @notice thrown when attempting to stake when there is not enough eth in the contract
 error APETH__NOT_ENOUGH_ETH();
 
+/// @notice thrown when attempting to mint over cap
+error APETH__CAP_REACHED();
+
 /**
  *
  * CONTRACT
@@ -92,6 +95,8 @@ contract APETH is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Perm
      */
     function mint() public payable {
         uint256 amount = msg.value * 1 ether / _ethPerAPEth(msg.value);
+        uint256 cap = apEthStorage.getUint(keccak256(abi.encodePacked("cap.Amount")));
+        if (totalSupply() + amount > cap) revert APETH__CAP_REACHED();
         uint256 fee = amount * apEthStorage.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
         address feeRecipient = apEthStorage.getAddress(keccak256(abi.encodePacked("fee.recipient.address")));
         amount = amount - fee;

@@ -10,21 +10,20 @@ import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 
 contract ScriptBase is Script {
+    string chainId = "17000";
+
     struct Salt {
         //bytes32 storageContract;
         //bytes32 implementation;
         bytes32 apEth;
     }
 
-    Salt public salt = Salt({
-        //storageContract: 0x0000000000000000000000000000000000000000000000000000000000007069,
-        //implementation: 0x0000000000000000000000000000000000000000000000000000000000001069,
-        apEth: 0x0000000000000000000000000000000000000000000000000000000000000969
-    });
+    Salt public salt = Salt({apEth: 0x0000000000000000000000000000000000000000000000000000000000000969});
 
     APETH _APEth;
     APETH _implementation;
@@ -33,17 +32,20 @@ contract ScriptBase is Script {
 
     address _ssvNetwork;
     address _eigenPodManager;
+    address storageContractAddress;
+    address implementationContractAddress;
+    address _owner;
 
     //these are the create2 pre-deploy address calcs
     address _apEthPreDeploy;
 
-    address _owner;
     address _factory = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     bool _isTest;
 
     function calcProxyAddress() public {
         if (address(_implementation) == address(0)) revert SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         _apEthPreDeploy = Create2.computeAddress(
             salt.apEth,
             keccak256(
@@ -78,6 +80,7 @@ contract ScriptBase is Script {
 
     function deployProxy() public {
         vm.startBroadcast();
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         //Set as apEth in storage
         _storageContract.setAPEth(address(_apEthPreDeploy));
         _proxy = new ERC1967Proxy{salt: salt.apEth}(
@@ -90,18 +93,33 @@ contract ScriptBase is Script {
         _APEth = APETH(payable(address(_proxy)));
     }
 
-    function computeProxyInitCodeHash() public view {
-        bytes32 hash = 
-            keccak256(
-                abi.encodePacked(
-                    type(ERC1967Proxy).creationCode,
-                    abi.encode(
-                        address(_implementation),
-                        abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
-                    )
+    function computeProxyInitCodeHash() public {
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                type(ERC1967Proxy).creationCode,
+                abi.encode(
+                    address(_implementation),
+                    abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
                 )
-            );
+            )
+        );
         console.log("init code hash");
         console.logBytes32(hash);
+    }
+
+    function getDeployedAddress() public view returns (address addr1, address addr2) {
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/broadcast/deployStorage.s.sol/", chainId, "/run-latest.json");
+        string memory json = vm.readFile(path);
+        addr1 = stdJson.readAddress(json, ".transactions[0].contractAddress");
+        addr2 = stdJson.readAddress(json, ".transactions[6].contractAddress");
+    }
+
+    function getProxyAddress() public view returns (address addr) {
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/broadcast/deployToken.s.sol/", chainId, "/run-latest.json");
+        string memory json = vm.readFile(path);
+        addr = stdJson.readAddress(json, ".transactions[1].contractAddress");
     }
 }
