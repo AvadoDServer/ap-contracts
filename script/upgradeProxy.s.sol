@@ -8,6 +8,7 @@ error DEPLOY_PROXY__MUST_CALC_ADDRESS_FIRST(string);
 
 contract UpgradeProxy is ScriptBase {
     address _proxyAddress;
+
     function run(address owner_, address proxyAddress_) public {
         _owner = owner_;
         _proxyAddress = proxyAddress_;

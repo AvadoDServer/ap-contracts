@@ -15,7 +15,6 @@ import {stdJson} from "forge-std/StdJson.sol";
 error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 
 contract ScriptBase is Script {
-
     string chainId = "17000";
 
     struct Salt {

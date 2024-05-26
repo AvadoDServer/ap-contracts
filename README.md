@@ -21,11 +21,6 @@ $ cast wallet address --account defaultKey
 
 populate values in .env.expample save as .env 
 
-### Build
-
-```shell
-$ forge build
-```
 
 ### Test
 locally
@@ -35,24 +30,6 @@ $ forge clean && forge test --ffi
 on Holesky
 ```shell
 $ forge clean && forge test --ffi --fork-url holesky
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
 ```
 
 ### Deploy
@@ -67,7 +44,7 @@ add --legacy
 ```shell
 $ forge clean && forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
 ```
-for vanity address (deployer address here is the Create2 contract):
+for vanity address (deployer address here is the Create2 contract, modify --starts-with and --case-sensitive as required):
 ```shell
 $ cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C --init-code-hash <get this from previous deployment logs>
 ```
@@ -90,16 +67,9 @@ NOTE: this transfers both the storage guardian and the token contract owner to t
 $ forge clean && forge script script/transferOwnership.s.sol:transferOwnership --rpc-url holesky --account defaultKey --broadcast
 ```
 
-### Cast
+### Format
 
 ```shell
-$ cast <subcommand>
+$ forge fmt
 ```
 
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
