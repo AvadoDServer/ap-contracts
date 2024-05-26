@@ -20,9 +20,12 @@ contract DeployProxy is ScriptBase {
         if(!_isTest){
             salt.apEth = saltForVanityAddress;
             console.logBytes32(salt.apEth);
+            (storageContractAddress, implementationContractAddress) = getDeployedAddress();
+            //storage
             _storageContract = APEthStorage(storageContractAddress);
             console.log("storage", address(_storageContract));
-            _implementation = APETH(implementationContractAddress);
+            //implementation
+            _implementation = APETH(payable(implementationContractAddress));
             console.log("implementation", address(_implementation));
         }
         calcProxyAddress(); 

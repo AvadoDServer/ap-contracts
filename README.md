@@ -67,7 +67,7 @@ $ anvil
 ```
 
 ### Deploy
-Deploy in 2 parts (3 if you want a vanity address), following the steps below. set the _owner address in scriptBase.s.sol before starting deploy.
+Deploy in 2 parts (3 if you want a vanity address), following the steps below. 
 
 (Note: if you encounter 
 Error: 
@@ -83,7 +83,7 @@ for vanity address (deployer address here is the Create2 contract):
 $ cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C --init-code-hash <get this from previous deployment logs>
 ```
 
-UPDATE scriptBase.s.sol WITH CONTRACT VALUES FROM THE PREVIOUSLY DEPLOYED CONTRACTS (AND SALT FOR VANITY ADDRESS)
+UPDATE scriptBase.s.sol WITH  SALT FOR VANITY ADDRESS
 ```shell
 $ forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url holesky --account defaultKey --broadcast
 ```
@@ -93,6 +93,12 @@ NOTE: check the implementation and the proxy address in script/upGradeProxy
 
 ```shell
 $ forge clean && forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify --ffi
+```
+
+### Transfer Ownership
+
+```shell
+$ forge clean && forge script script/transferOwnership.s.sol:transferOwnership --rpc-url holesky --account defaultKey --broadcast
 ```
 
 ### Cast
