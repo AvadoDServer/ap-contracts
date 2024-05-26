@@ -7,8 +7,7 @@ error DEPLOY_PROXY__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 error DEPLOY_PROXY__MUST_CALC_ADDRESS_FIRST(string);
 
 contract UpgradeProxy is ScriptBase {
-    address _proxyAddress = 0xAAAAA1c6Eb5b133Ca76Da4d0409f330764239418; //insure that this uses the correct proxy address!!!
-
+    address _proxyAddress;
     function run(address owner_, address proxyAddress_) public {
         _owner = owner_;
         _proxyAddress = proxyAddress_;
@@ -17,9 +16,10 @@ contract UpgradeProxy is ScriptBase {
     }
 
     function run() public {
+        if (_proxyAddress == address(0)) _proxyAddress = getProxyAddress();
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         console.log("***Upgrading Proxy***");
         if (!_isTest) vm.startBroadcast();
-        if (_owner == address(0)) _owner = msg.sender;
         Upgrades.upgradeProxy(_proxyAddress, "APETHV2.sol:APETHV2", "", _owner);
         if (!_isTest) vm.stopBroadcast();
         console.log("upgraded");

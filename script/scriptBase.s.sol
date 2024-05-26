@@ -16,15 +16,7 @@ error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 
 contract ScriptBase is Script {
 
-    /*******************************************
-    FILL THESE FROM TERMINAL LOGS
-    ********************************************/
-    bytes32 saltForVanityAddress = 0xfdd0c6cf81c69062e2a78215a37d8ac93cac41614a0d2468c6fc282087522ac2; // calculate with vanity address generator manually enter
-    address _owner = 0xa53A6fE2d8Ad977aD926C485343Ba39f32D3A3F6; //0x51336769321dE54925E2da6881D7BDCb02258D5e; //set to the address that will own the token. 0xe250fbBc81Af47663a6E9a38eE77e96B1a93bf6B
     string chainId = "17000";
-    /*******************************************
-    ********************************************/
-
 
     struct Salt {
         //bytes32 storageContract;
@@ -32,9 +24,7 @@ contract ScriptBase is Script {
         bytes32 apEth;
     }
 
-    Salt public salt = Salt({
-        apEth: 0x0000000000000000000000000000000000000000000000000000000000000969
-    });
+    Salt public salt = Salt({apEth: 0x0000000000000000000000000000000000000000000000000000000000000969});
 
     APETH _APEth;
     APETH _implementation;
@@ -45,6 +35,7 @@ contract ScriptBase is Script {
     address _eigenPodManager;
     address storageContractAddress;
     address implementationContractAddress;
+    address _owner;
 
     //these are the create2 pre-deploy address calcs
     address _apEthPreDeploy;
@@ -55,6 +46,7 @@ contract ScriptBase is Script {
 
     function calcProxyAddress() public {
         if (address(_implementation) == address(0)) revert SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         _apEthPreDeploy = Create2.computeAddress(
             salt.apEth,
             keccak256(
@@ -89,7 +81,7 @@ contract ScriptBase is Script {
 
     function deployProxy() public {
         vm.startBroadcast();
-        if (_owner == address(0)) _owner = msg.sender;
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         //Set as apEth in storage
         _storageContract.setAPEth(address(_apEthPreDeploy));
         _proxy = new ERC1967Proxy{salt: salt.apEth}(
@@ -102,37 +94,33 @@ contract ScriptBase is Script {
         _APEth = APETH(payable(address(_proxy)));
     }
 
-    function computeProxyInitCodeHash() public view {
-        bytes32 hash = 
-            keccak256(
-                abi.encodePacked(
-                    type(ERC1967Proxy).creationCode,
-                    abi.encode(
-                        address(_implementation),
-                        abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
-                    )
+    function computeProxyInitCodeHash() public {
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                type(ERC1967Proxy).creationCode,
+                abi.encode(
+                    address(_implementation),
+                    abi.encodeCall(_implementation.initialize, (_owner, address(_storageContract)))
                 )
-            );
+            )
+        );
         console.log("init code hash");
         console.logBytes32(hash);
     }
 
-    function getDeployedAddress() public view returns(address addr1, address addr2){
+    function getDeployedAddress() public view returns (address addr1, address addr2) {
         string memory root = vm.projectRoot();
-        string memory path = string.concat(
-            root,
-            "/broadcast/deployStorage.s.sol/",
-            chainId,
-            "/run-latest.json"
-        );
+        string memory path = string.concat(root, "/broadcast/deployStorage.s.sol/", chainId, "/run-latest.json");
         string memory json = vm.readFile(path);
-        addr1 = stdJson.readAddress(
-            json,
-            ".transactions[0].contractAddress"
-        );
-        addr2 = stdJson.readAddress(
-            json,
-            ".transactions[6].contractAddress"
-        );
+        addr1 = stdJson.readAddress(json, ".transactions[0].contractAddress");
+        addr2 = stdJson.readAddress(json, ".transactions[6].contractAddress");
+    }
+
+    function getProxyAddress() public view returns (address addr) {
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/broadcast/deployToken.s.sol/", chainId, "/run-latest.json");
+        string memory json = vm.readFile(path);
+        addr = stdJson.readAddress(json, ".transactions[1].contractAddress");
     }
 }

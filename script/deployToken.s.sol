@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {ScriptBase, APEthStorage, APETH, console, Create2, ERC1967Proxy, Upgrades, stdJson} from "./scriptBase.s.sol";
 
 contract DeployProxy is ScriptBase {
-
     function run(address owner_, address storage_, address implementation_) public returns (APETH) {
         _owner = owner_;
         _isTest = true;
@@ -17,8 +16,8 @@ contract DeployProxy is ScriptBase {
     function run() public {
         console.log("***Deploying Proxy***");
 
-        if(!_isTest){
-            salt.apEth = saltForVanityAddress;
+        if (!_isTest) {
+            salt.apEth = vm.envBytes32("SALT");
             console.logBytes32(salt.apEth);
             (storageContractAddress, implementationContractAddress) = getDeployedAddress();
             //storage
@@ -28,9 +27,10 @@ contract DeployProxy is ScriptBase {
             _implementation = APETH(payable(implementationContractAddress));
             console.log("implementation", address(_implementation));
         }
-        calcProxyAddress(); 
+        calcProxyAddress();
         deployProxy();
-        address podAddress = _storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")));
+        address podAddress =
+            _storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")));
         console.log("Eigen Pod Address: ", podAddress);
         _APEth = APETH(payable(_apEthPreDeploy));
     }

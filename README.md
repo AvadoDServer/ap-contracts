@@ -30,7 +30,7 @@ $ cast wallet address --account defaultKey
 
 ### Set Etherscan API Key and RPC keys
 
-populate values in .env.expample save as .env
+populate values in .env.expample save as .env 
 
 ### Build
 
@@ -83,19 +83,19 @@ for vanity address (deployer address here is the Create2 contract):
 $ cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C --init-code-hash <get this from previous deployment logs>
 ```
 
-UPDATE scriptBase.s.sol WITH  SALT FOR VANITY ADDRESS
+UPDATE .env WITH SALT FOR VANITY ADDRESS (Leave 0x0...0 if not using)
 ```shell
 $ forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url holesky --account defaultKey --broadcast
 ```
 
 ### Upgrade
-NOTE: check the implementation and the proxy address in script/upGradeProxy
 
 ```shell
 $ forge clean && forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify --ffi
 ```
 
 ### Transfer Ownership
+NOTE: this transfers both the storage guardian and the token contract owner to the CONTRACT_OWNER from the .env file. The guardianship must be accepted in another transaction by the address recieveing it.
 
 ```shell
 $ forge clean && forge script script/transferOwnership.s.sol:transferOwnership --rpc-url holesky --account defaultKey --broadcast
