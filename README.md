@@ -19,7 +19,7 @@ $ cast wallet address --account defaultKey
 
 ### Set Etherscan API Key and RPC keys
 
-populate values in .env.expample save as .env 
+populate values in .env.example save as .env 
 
 
 ### Test

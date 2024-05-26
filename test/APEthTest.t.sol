@@ -340,6 +340,17 @@ contract APETHTest is Test {
         APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
 
+    function testFeeChange() public {
+        vm.prank(storageContract.getGuardian());
+        storageContract.setUint(keccak256(abi.encodePacked("fee.Amount")), 10000);
+        assertEq(storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))), 10000);
+        hoax(alice);
+        APEth.mint{value: 10 ether}();
+        uint256 aliceBalance = calculateAmountLessFee(10 ether);
+        assertEq(APEth.balanceOf(alice), aliceBalance);
+        assertEq(address(APEth).balance, 10 ether);
+    }
+
     //internal functions
     function calculateFee(uint256 amount) internal view returns (uint256) {
         uint256 fee = amount * storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
