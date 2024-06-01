@@ -5,38 +5,40 @@ import {ScriptBase, APEthStorage, APETH, console, Create2, ERC1967Proxy, Upgrade
 
 contract transferOwnership is ScriptBase {
     function run() public {
-        // _APEth = APETH(payable(getProxyAddress()));
-        // (address storCont,) = getDeployedAddress();
-        // _storageContract = APEthStorage(storCont);
-        // address newOwner = vm.envAddress("CONTRACT_OWNER");
-        
-        // address currentOwner = _APEth.getRoleAdmin(0x00);
-        // address currentGuardian = _storageContract.getGuardian();
-        // if (newOwner != currentOwner) {
-        //     console.log("***Transfering ownership***");
-        //     vm.startBroadcast();
-        //     _APEth.grantRole(0x00, newOwner);
-        //     _APEth.renounceRole(0x00, currentOwner);
-        //     vm.stopBroadcast();
-        // console.log("APETH Address:");
-        // console.logAddress(address(_APEth));
-        // console.log("newOwner:");
-        // } else {
-        //     console.log("owner is set already");
-        // }
-        // console.logAddress(newOwner);
-        // if (newOwner != currentGuardian) {
-        //     console.log("***Transfering guardianship***");
-        //     vm.startBroadcast();
-        //     _storageContract.setGuardian(newOwner);
-        //     vm.stopBroadcast();
-        // console.log("Storage Contract Address:");
-        // console.logAddress(address(_storageContract));
-        // console.log("newGuardian");
-        // console.log('\x1b[31m%s\x1b[0m', "(must be confirmed by newGuardian address)");
-        // } else {
-        //     console.log("guardian is already");
-        // }
-        // console.logAddress(newOwner);
+        _APEth = APETH(payable(getProxyAddress()));
+        (address storCont,) = getDeployedAddress();
+        _storageContract = APEthStorage(storCont);
+        address newOwner = vm.envAddress("CONTRACT_OWNER");
+        address sender;
+        vm.startBroadcast();
+        sender = msg.sender;
+        vm.stopBroadcast();
+        address currentGuardian = _storageContract.getGuardian();
+        if (newOwner != sender) {
+            console.log("***Transfering ownership***");
+            vm.startBroadcast();
+            _APEth.grantRole(0x00, newOwner);
+            _APEth.renounceRole(0x00, sender);
+            vm.stopBroadcast();
+        console.log("APETH Address:");
+        console.logAddress(address(_APEth));
+        console.log("newOwner:");
+        } else {
+            console.log("owner is set already");
+        }
+        console.logAddress(newOwner);
+        if (newOwner != currentGuardian) {
+            console.log("***Transfering guardianship***");
+            vm.startBroadcast();
+            _storageContract.setGuardian(newOwner);
+            vm.stopBroadcast();
+        console.log("Storage Contract Address:");
+        console.logAddress(address(_storageContract));
+        console.log("newGuardian");
+        console.log('\x1b[31m%s\x1b[0m', "(must be confirmed by newGuardian address)");
+        } else {
+            console.log("guardian is already");
+        }
+        console.logAddress(newOwner);
     }
 }
