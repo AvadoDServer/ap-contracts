@@ -29,9 +29,14 @@ contract APETHTest is Test {
     address alice;
     address bob;
 
+    address staker;
+    address upgrader;
+    address admin;
+
     bytes32 public constant UPGRADER = keccak256("UPGRADER");
-    bytes32 public constant STAKER = keccak256("MY_ROLE");
+    bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
     bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
+    bytes32 public constant ADMIN = keccak256("ADMIN");
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool workingKeys = true;
@@ -62,6 +67,9 @@ contract APETHTest is Test {
         console.log("owner", owner);
         alice = vm.addr(2);
         bob = vm.addr(3);
+        staker = vm.addr(4);
+        upgrader = vm.addr(5);
+        admin = vm.addr(6);
         // Define a new owner address for upgrade tests
         newOwner = address(1);
 
@@ -84,7 +92,7 @@ contract APETHTest is Test {
         // Mint 10 eth of tokens and assert the balance
         vm.prank(alice);
         APEth.mint{value: 10 ether}();
-        uint256 aliceBalance = calculateAmountLessFee(10 ether);
+        uint256 aliceBalance = _calculateAmountLessFee(10 ether);
         assertEq(APEth.balanceOf(alice), aliceBalance);
         assertEq(address(APEth).balance, 10 ether);
     }
@@ -93,7 +101,7 @@ contract APETHTest is Test {
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, alice);
         uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
-        uint256 aliceBalance = calculateAmountLessFee(amount);
+        uint256 aliceBalance = _calculateAmountLessFee(amount);
         if (amount > cap) {
             aliceBalance = 0;
             vm.expectRevert(); //APETH__CAP_REACHED()
@@ -118,7 +126,7 @@ contract APETHTest is Test {
 
     // Test the basic ERC20 functionality of the APETH contract
     function testERC20Functionality() public mintAlice(10 ether) {
-        uint256 aliceBalance = calculateAmountLessFee(10 ether);
+        uint256 aliceBalance = _calculateAmountLessFee(10 ether);
         //transfer to bob
         vm.prank(alice);
         APEth.transfer(bob, 5 ether);
@@ -131,8 +139,10 @@ contract APETHTest is Test {
     function testUpgradeability() public {
         //deploy upgrade script
         UpgradeProxy upgradeProxy = new UpgradeProxy();
+        vm.prank(owner);
+        APEth.grantRole(UPGRADER, upgrader);
         // Upgrade the proxy to a new version; APETHV2
-        upgradeProxy.run(owner, address(APEth));
+        upgradeProxy.run(upgrader, address(APEth));
         assertEq(address(APEth.apEthStorage()), address(storageContract), "storage contract address did not migrate");
         uint256 two = APETHV2(address(APEth)).version();
         assertEq(2, two, "APEth did not upgrade");
@@ -149,12 +159,14 @@ contract APETHTest is Test {
         hoax(alice);
         // Mint 33 eth of tokens and assert the balance
         APEth.mint{value: 33 ether}();
-        // Impersonate owner to call stake()
+        vm.prank(owner);
+        APEth.grantRole(ETH_STAKER, staker);
+        // Impersonate staker to call stake()
         if (!workingKeys && block.chainid != 31337) {
             vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
         }
         assertEq(address(APEth).balance, 33 ether);
-        vm.prank(owner);
+        vm.prank(staker);
         APEth.stake(_pubKey, _signature, _deposit_data_root);
 
         if (workingKeys) assertEq(address(APEth).balance, 1 ether);
@@ -172,7 +184,7 @@ contract APETHTest is Test {
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
-        uint256 expected = calculateAmountLessFee(10 ether * 1 ether / ethPerAPEth);
+        uint256 expected = _calculateAmountLessFee(10 ether * 1 ether / ethPerAPEth);
         assertEq(APEth.balanceOf(bob), expected);
         assertEq(address(APEth).balance, 21 ether);
     }
@@ -185,6 +197,8 @@ contract APETHTest is Test {
         uint256 ethPerAPEth = 51 ether / 50;
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         vm.prank(owner);
+        APEth.grantRole(ETH_STAKER, staker);
+        vm.prank(staker);
         if (!workingKeys && block.chainid != 31337) {
             vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
         }
@@ -196,7 +210,7 @@ contract APETHTest is Test {
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
-        uint256 expected = calculateAmountLessFee(10 ether * 1 ether / ethPerAPEth);
+        uint256 expected = _calculateAmountLessFee(10 ether * 1 ether / ethPerAPEth);
         assertEq(APEth.balanceOf(bob), expected);
         if (workingKeys) assertEq(address(APEth).balance, 29 ether);
     }
@@ -222,6 +236,8 @@ contract APETHTest is Test {
         uint256 ethInValidators;
         if (balance >= 32 ether) {
             vm.prank(owner);
+            APEth.grantRole(ETH_STAKER, staker);
+            vm.prank(staker);
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
@@ -229,7 +245,7 @@ contract APETHTest is Test {
             ethInValidators += 32 ether;
         }
         if (balance >= 64 ether) {
-            vm.prank(owner);
+            vm.prank(staker);
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
@@ -237,7 +253,7 @@ contract APETHTest is Test {
             ethInValidators += 32 ether;
         }
         if (balance >= 96 ether) {
-            vm.prank(owner);
+            vm.prank(staker);
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
@@ -256,7 +272,7 @@ contract APETHTest is Test {
         hoax(bob);
         // Mint z eth of tokens and assert the balance
         APEth.mint{value: z}();
-        uint256 expected = calculateAmountLessFee(uint256(z) * 1 ether / ethPerAPEth);
+        uint256 expected = _calculateAmountLessFee(uint256(z) * 1 ether / ethPerAPEth);
         if (amount <= cap) {
             assertEq(APEth.balanceOf(bob), expected);
             assertEq(address(APEth).balance, newBalance + z);
@@ -265,6 +281,8 @@ contract APETHTest is Test {
 
     function testStakeFailNotEnoughEth() public mintAlice(5) {
         vm.prank(owner);
+        APEth.grantRole(ETH_STAKER, staker);
+        vm.prank(staker);
         vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
         APEth.stake(_pubKey, _signature, _deposit_data_root);
     }
@@ -280,6 +298,8 @@ contract APETHTest is Test {
         mockCoin.mint(address(APEth), 1 ether);
         assertEq(mockCoin.balanceOf(address(APEth)), 1 ether);
         vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
         APEth.transferToken(address(mockCoin), alice, 1 ether);
         assertEq(mockCoin.balanceOf(alice), 1 ether);
         assertEq(mockCoin.balanceOf(address(APEth)), 0);
@@ -295,6 +315,8 @@ contract APETHTest is Test {
 
     function testSSVCall() public {
         vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
         APEth.callSSVNetwork(
             abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
         );
@@ -317,6 +339,8 @@ contract APETHTest is Test {
 
     function testSSVCallFailBadCall() public {
         vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
         vm.expectRevert("Call failed");
         APEth.callSSVNetwork(
             abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
@@ -325,6 +349,8 @@ contract APETHTest is Test {
 
     function testEigenPodManagerCall() public {
         vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
         APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
     }
 
@@ -336,6 +362,8 @@ contract APETHTest is Test {
 
     function testEigenPodManagerCallFailBadCall() public {
         vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
         vm.expectRevert("Call failed");
         APEth.callEigenPodManager(
             abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
@@ -344,6 +372,8 @@ contract APETHTest is Test {
 
     function testEigenPodCall() public {
         vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
         APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 
@@ -355,6 +385,8 @@ contract APETHTest is Test {
 
     function testEigenPodCallFailBadCall() public {
         vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
         vm.expectRevert("Call failed");
         APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
@@ -367,18 +399,18 @@ contract APETHTest is Test {
         APEth.grantRole(EARLY_ACCESS, alice);
         hoax(alice);
         APEth.mint{value: 10 ether}();
-        uint256 aliceBalance = calculateAmountLessFee(10 ether);
+        uint256 aliceBalance = _calculateAmountLessFee(10 ether);
         assertEq(APEth.balanceOf(alice), aliceBalance);
         assertEq(address(APEth).balance, 10 ether);
     }
 
     //internal functions
-    function calculateFee(uint256 amount) internal view returns (uint256) {
+    function _calculateFee(uint256 amount) internal view returns (uint256) {
         uint256 fee = amount * storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
         return fee;
     }
 
-    function calculateAmountLessFee(uint256 amount) internal view returns (uint256) {
-        return (amount - calculateFee(amount));
+    function _calculateAmountLessFee(uint256 amount) internal view returns (uint256) {
+        return (amount - _calculateFee(amount));
     }
 }
