@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -10,12 +10,15 @@ import "./interfaces/IDepositContract.sol";
 import "./interfaces/IAPEthStorage.sol";
 
 /// @custom:oz-upgrades-from APETH
-contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+contract APETHV2 is Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
     /**
      *
      * STORAGE
      *
      */
+    bytes32 public constant UPGRADER = keccak256("UPGRADER");
+    bytes32 public constant STAKER = keccak256("MY_ROLE");
+    bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
     IAPEthStorage public apEthStorage;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -25,12 +28,13 @@ contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Pe
 
     function initialize(address initialOwner) public initializer {
         __ERC20_init("AP-Restaked-Eth-V2", "APETHV2");
-        __Ownable_init(initialOwner);
+        __AccessControl_init();
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _mint(to, amount);
     }
 
@@ -38,5 +42,5 @@ contract APETHV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20Pe
         return 2;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }

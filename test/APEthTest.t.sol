@@ -29,6 +29,10 @@ contract APETHTest is Test {
     address alice;
     address bob;
 
+    bytes32 public constant UPGRADER = keccak256("UPGRADER");
+    bytes32 public constant STAKER = keccak256("MY_ROLE");
+    bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
+
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool workingKeys = true;
 
@@ -70,8 +74,15 @@ contract APETHTest is Test {
 
     //test minting the coin
     function testMint() public {
-        // Mint 10 eth of tokens and assert the balance
+        //Alice should not be able to mint w/o Early Access
+        vm.expectRevert();
         hoax(alice);
+        APEth.mint{value: 10 ether}();
+        //grant Alice early access
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, alice);
+        // Mint 10 eth of tokens and assert the balance
+        vm.prank(alice);
         APEth.mint{value: 10 ether}();
         uint256 aliceBalance = calculateAmountLessFee(10 ether);
         assertEq(APEth.balanceOf(alice), aliceBalance);
@@ -79,6 +90,8 @@ contract APETHTest is Test {
     }
 
     modifier mintAlice(uint256 amount) {
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, alice);
         uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
         uint256 aliceBalance = calculateAmountLessFee(amount);
         if (amount > cap) {
@@ -129,6 +142,9 @@ contract APETHTest is Test {
     function testStake() public {
         //branch test for case where totalsupply is 0
         assertEq(APEth.ethPerAPEth(), 1 ether);
+        //Grant Alice Early Access
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, alice);
         // Impersonate the alice to call mint function
         hoax(alice);
         // Mint 33 eth of tokens and assert the balance
@@ -146,12 +162,13 @@ contract APETHTest is Test {
 
     // test the accounting. the price should change predictibly when the contract recieves rewards
     function testBasicAccounting() public mintAlice(10 ether) {
-        hoax(owner);
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 11 ether);
         //check eth per apeth
         uint256 ethPerAPEth = 11 ether / 10;
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, bob);
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
@@ -162,7 +179,6 @@ contract APETHTest is Test {
 
     function testBasicAccountingWithStaking() public mintAlice(50 ether) {
         // Send eth to contract to increase balance
-        hoax(owner);
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 51 ether);
         //check eth per apeth
@@ -175,6 +191,8 @@ contract APETHTest is Test {
         APEth.stake(_pubKey, _signature, _deposit_data_root);
         if (workingKeys) assertEq(address(APEth).balance, 19 ether);
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, bob);
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
@@ -185,8 +203,7 @@ contract APETHTest is Test {
 
     function testBasicAccountingWithStakingAndFuzzing(uint128 x, uint128 y, uint128 z) public mintAlice(x) {
         // Send eth to contract to increase balance
-        vm.deal(owner, y);
-        vm.prank(owner);
+        vm.deal(address(this), y);
         payable(address(APEth)).transfer(y);
         uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
         uint256 balance = uint256(x) + uint256(y);
@@ -233,6 +250,8 @@ contract APETHTest is Test {
         assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethperAPEth not correct after staking");
         uint256 amount = uint256(x) + (uint256(z) * 1 ether / ethPerAPEth);
         assertEq(APEth.totalSupply(), uint256(x));
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, bob);
         if (amount > cap) vm.expectRevert(); //APETH__CAP_REACHED()
         hoax(bob);
         // Mint z eth of tokens and assert the balance
@@ -344,6 +363,8 @@ contract APETHTest is Test {
         vm.prank(storageContract.getGuardian());
         storageContract.setUint(keccak256(abi.encodePacked("fee.Amount")), 10000);
         assertEq(storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))), 10000);
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, alice);
         hoax(alice);
         APEth.mint{value: 10 ether}();
         uint256 aliceBalance = calculateAmountLessFee(10 ether);
