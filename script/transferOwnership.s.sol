@@ -9,12 +9,10 @@ contract transferOwnership is ScriptBase {
         (address storCont,) = getDeployedAddress();
         _storageContract = APEthStorage(storCont);
         address newOwner = vm.envAddress("CONTRACT_OWNER");
-        address sender;
-        vm.startBroadcast();
-        sender = msg.sender;
-        vm.stopBroadcast();
+        address sender = vm.envAddress("SENDER_PUBLIC_KEY");
         address currentGuardian = _storageContract.getGuardian();
-        if (newOwner != sender) {
+        bool isAdmin = _APEth.hasRole(0x00, newOwner);
+        if (!isAdmin) {
             console.log("***Transfering ownership***");
             vm.startBroadcast();
             _APEth.grantRole(0x00, newOwner);
