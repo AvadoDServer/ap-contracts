@@ -17,14 +17,15 @@ pragma solidity 0.8.20;
  * IMPORTS
  *
  */
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {ERC20Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import {AccessControlUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import {ERC20PermitUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
+import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
 
 /**
  *
@@ -42,7 +43,7 @@ error APETH__CAP_REACHED();
  * CONTRACT
  *
  */
-contract APETH is Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
     /**
      *
      * STORAGE
@@ -54,17 +55,6 @@ contract APETH is Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC
     bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
     bytes32 public constant ADMIN = keccak256("ADMIN");
     IAPEthStorage public apEthStorage;
-
-    /**
-     *
-     * EVENTS
-     *
-     */
-    /// @notice occurs when a new validator is staked to the beacon chain
-    event Stake(bytes pubkey, address caller);
-
-    /// @notice occurs when new APEth coins are minted
-    event Mint(address minter, uint256 amount);
 
     /**
      *
@@ -99,7 +89,7 @@ contract APETH is Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC
      * @notice there is an early access list which only allows approved minters
      * @dev A deposit fee in APEth is taken and sent to a fee recipient - this is the only fee charged by this protocol
      */
-    function mint() public payable onlyRole(EARLY_ACCESS) {
+    function mint() external payable onlyRole(EARLY_ACCESS) returns (uint256){
         uint256 amount = msg.value * 1 ether / _ethPerAPEth(msg.value);
         uint256 cap = apEthStorage.getUint(keccak256(abi.encodePacked("cap.Amount")));
         if (totalSupply() + amount > cap) revert APETH__CAP_REACHED();
@@ -108,6 +98,8 @@ contract APETH is Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC
         amount = amount - fee;
         _mint(msg.sender, amount);
         _mint(feeRecipient, fee);
+        emit Mint(msg.sender, amount);
+        return(amount);
     }
 
     /**

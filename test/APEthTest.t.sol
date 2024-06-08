@@ -6,6 +6,7 @@ import {console} from "forge-std/console.sol";
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
+import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
 import {DeployStorageContract} from "../script/deployStorage.s.sol";
 import {DeployProxy} from "../script/deployToken.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
@@ -23,6 +24,7 @@ contract APETHTest is Test {
     APETH APEth;
     APETH implementation;
     APEthStorage storageContract;
+    APEthEarlyDeposits earlyDeposits;
     address owner;
     address newOwner;
 
@@ -77,7 +79,7 @@ contract APETHTest is Test {
         DeployProxy deployProxy = new DeployProxy();
 
         (storageContract, implementation) = deployStorage.run(owner);
-        APEth = deployProxy.run(owner, address(storageContract), address(implementation));
+        (APEth,earlyDeposits) = deployProxy.run(owner, address(storageContract), address(implementation));
     }
 
     //test minting the coin
@@ -161,14 +163,13 @@ contract APETHTest is Test {
         APEth.mint{value: 33 ether}();
         vm.prank(owner);
         APEth.grantRole(ETH_STAKER, staker);
-        // Impersonate staker to call stake()
+        assertEq(address(APEth).balance, 33 ether);
         if (!workingKeys && block.chainid != 31337) {
             vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
         }
-        assertEq(address(APEth).balance, 33 ether);
+        // Impersonate staker to call stake()
         vm.prank(staker);
         APEth.stake(_pubKey, _signature, _deposit_data_root);
-
         if (workingKeys) assertEq(address(APEth).balance, 1 ether);
     }
 

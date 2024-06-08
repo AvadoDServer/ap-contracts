@@ -4,8 +4,9 @@ pragma solidity ^0.8.19;
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
+import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
@@ -29,6 +30,7 @@ contract ScriptBase is Script {
     APETH _implementation;
     APEthStorage _storageContract;
     ERC1967Proxy _proxy;
+    APEthEarlyDeposits _earlyDeposit;
 
     address _ssvNetwork;
     address _eigenPodManager;
@@ -42,6 +44,11 @@ contract ScriptBase is Script {
     address _factory = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     bool _isTest;
+
+    bytes32 public constant UPGRADER = keccak256("UPGRADER");
+    bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
+    bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
+    bytes32 public constant ADMIN = keccak256("ADMIN");
 
     function calcProxyAddress() public {
         if (address(_implementation) == address(0)) revert SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
@@ -91,6 +98,14 @@ contract ScriptBase is Script {
         require(_apEthPreDeploy == address(_proxy), "proxy address mismatch");
         // Attach the APETH interface to the deployed proxy
         _APEth = APETH(payable(address(_proxy)));
+    }
+
+    function deployEarlyDeposit() public {
+        vm.startBroadcast(_owner);
+        _earlyDeposit = new APEthEarlyDeposits(_owner, address(_proxy));
+        _APEth.grantRole(EARLY_ACCESS, address(_earlyDeposit));
+        vm.stopBroadcast();
+        console.log("early deposit contract:", address(_earlyDeposit));
     }
 
     function computeProxyInitCodeHash() public {
