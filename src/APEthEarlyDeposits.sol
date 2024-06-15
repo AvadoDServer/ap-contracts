@@ -71,11 +71,11 @@ contract APEthEarlyDeposits is Ownable{
 
     function mintAPEthBulk(address[] calldata recipients) external onlyOwner{
         for(uint256 i = 0; i < recipients.length; i++) {
-            mintAPEth(recipients[i]);
+            _mintAPEth(recipients[i]);
         }
     }
 
-    function mintAPEth(address recipient) public onlyOwner {
+    function _mintAPEth(address recipient) internal {
         uint256 amount = deposits[recipient];
         deposits[recipient] = 0;
         uint256 newCoins =_APETH.mint{value: amount}();
