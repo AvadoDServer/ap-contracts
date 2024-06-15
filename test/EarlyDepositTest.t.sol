@@ -34,6 +34,7 @@ contract EarlyDepositTest is Test{
     address staker;
     address upgrader;
     address admin;
+    address[] recipients;
 
     // Set up the test environment before running tests
     function setUp() public {
@@ -129,6 +130,60 @@ contract EarlyDepositTest is Test{
         earlyDeposits.mintAPEth(vm.addr(70));
         earlyDeposits.mintAPEth(vm.addr(71));
         earlyDeposits.mintAPEth(vm.addr(72));
+        vm.stopPrank();
+        // check the deposits are zeroed
+        assertEq(earlyDeposits.deposits(alice), 0);
+        assertEq(earlyDeposits.deposits(bob), 0);
+        assertEq(earlyDeposits.deposits(vm.addr(69)), 0);
+        assertEq(earlyDeposits.deposits(vm.addr(70)), 0);
+        assertEq(earlyDeposits.deposits(vm.addr(71)), 0);
+        assertEq(earlyDeposits.deposits(vm.addr(72)), 0);
+        // check that they recieved their tokens
+        uint256 aliceBalance = _calculateAmountLessFee(uint256(a) + uint256(aa));
+        assertEq(APEth.balanceOf(alice), aliceBalance);
+        uint256 bobBalance = _calculateAmountLessFee(uint256(b));
+        assertEq(APEth.balanceOf(bob), bobBalance);
+        uint256 sixNineBalance = _calculateAmountLessFee(uint256(c));
+        assertEq(APEth.balanceOf(vm.addr(69)), sixNineBalance);
+        uint256 sevenZeroBalance = _calculateAmountLessFee(uint256(d));
+        assertEq(APEth.balanceOf(vm.addr(70)), sevenZeroBalance);
+        uint256 sevenOneBalance = _calculateAmountLessFee(uint256(e));
+        assertEq(APEth.balanceOf(vm.addr(71)), sevenOneBalance);
+        uint256 sevenTwoBalance = _calculateAmountLessFee(uint256(f));
+        assertEq(APEth.balanceOf(vm.addr(72)), sevenTwoBalance);
+    }
+
+    function testBulkDeposit(uint64 a, uint64 b, uint64 c, uint64 d, uint64 e, uint64 f, uint64 aa) public depositAlice(uint256(a)) {
+        // deposit to early deposit contract
+        hoax(bob);
+        earlyDeposits.deposit{value: uint256(b)}(bob);
+        hoax(vm.addr(69));
+        earlyDeposits.deposit{value: uint256(c)}(vm.addr(69));
+        hoax(vm.addr(70));
+        earlyDeposits.deposit{value: uint256(d)}(vm.addr(70));
+        hoax(vm.addr(71));
+        earlyDeposits.deposit{value: uint256(e)}(vm.addr(71));
+        hoax(vm.addr(72));
+        earlyDeposits.deposit{value: uint256(f)}(vm.addr(72));
+        hoax(vm.addr(73));
+        earlyDeposits.deposit{value: uint256(aa)}(alice); // alice's friend sheldon gave her some extra
+        // check the depositvalues
+        assertEq(earlyDeposits.deposits(alice), uint256(a) + uint256(aa));
+        assertEq(earlyDeposits.deposits(bob), uint256(b));
+        assertEq(earlyDeposits.deposits(vm.addr(69)), uint256(c));
+        assertEq(earlyDeposits.deposits(vm.addr(70)), uint256(d));
+        assertEq(earlyDeposits.deposits(vm.addr(71)), uint256(e));
+        assertEq(earlyDeposits.deposits(vm.addr(72)), uint256(f));
+        // push addresses
+        recipients.push(alice);
+        recipients.push(bob);
+        recipients.push(vm.addr(69));
+        recipients.push(vm.addr(70));
+        recipients.push(vm.addr(71));
+        recipients.push(vm.addr(72));
+        // mint the APEth
+        vm.startPrank(owner);
+        earlyDeposits.mintAPEthBulk(recipients);
         vm.stopPrank();
         // check the deposits are zeroed
         assertEq(earlyDeposits.deposits(alice), 0);
