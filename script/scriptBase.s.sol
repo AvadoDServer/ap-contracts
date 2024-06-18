@@ -100,14 +100,14 @@ contract ScriptBase is Script {
         _APEth = APETH(payable(address(_proxy)));
     }
 
-    function deployEarlyDeposit() public {
-        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
-        vm.startBroadcast(_owner);
-        _earlyDeposit = new APEthEarlyDeposits(_owner, address(_proxy));
-        _APEth.grantRole(EARLY_ACCESS, address(_earlyDeposit));
-        vm.stopBroadcast();
-        console.log("early deposit contract:", address(_earlyDeposit));
-    }
+    // function deployEarlyDeposit() public {
+    //     if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
+    //     vm.startBroadcast(_owner);
+    //     _earlyDeposit = new APEthEarlyDeposits(_owner, address(_proxy));
+    //     _APEth.grantRole(EARLY_ACCESS, address(_earlyDeposit));
+    //     vm.stopBroadcast();
+    //     console.log("early deposit contract:", address(_earlyDeposit));
+    // }
 
     function computeProxyInitCodeHash() public {
         if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");

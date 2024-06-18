@@ -17,7 +17,8 @@ contract UpgradeProxy is ScriptBase {
     }
 
     function run() public {
-        if (_proxyAddress == address(0)) _proxyAddress = getProxyAddress();
+        // if (_proxyAddress == address(0)) _proxyAddress = getProxyAddress();
+        _proxyAddress = 0x409fD1B18D8eA7bf3f1A04ef137Fb201d2D398A7;
         if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         console.log("***Upgrading Proxy***");
         if (!_isTest) vm.startBroadcast();
