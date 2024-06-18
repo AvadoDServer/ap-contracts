@@ -86,8 +86,8 @@ contract ScriptBase is Script {
     }
 
     function deployProxy() public {
-        vm.startBroadcast();
         if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
+        vm.startBroadcast();
         //Set as apEth in storage
         _storageContract.setAPEth(address(_apEthPreDeploy));
         _proxy = new ERC1967Proxy{salt: salt.apEth}(
@@ -101,6 +101,7 @@ contract ScriptBase is Script {
     }
 
     function deployEarlyDeposit() public {
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         vm.startBroadcast(_owner);
         _earlyDeposit = new APEthEarlyDeposits(_owner, address(_proxy));
         _APEth.grantRole(EARLY_ACCESS, address(_earlyDeposit));
