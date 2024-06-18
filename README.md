@@ -51,13 +51,13 @@ cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b3795
 
 UPDATE .env WITH SALT FOR VANITY ADDRESS (Leave 0x0...0 if not using)
 ```shell
-forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url holesky --account defaultKey --broadcast
+forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
 ```
 
 ### Upgrade
 
 ```shell
-forge clean && forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify --ffi
+forge clean && forge script script/upgradeProxy.s.sol:UpgradeProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
 ```
 
 ### Transfer Ownership

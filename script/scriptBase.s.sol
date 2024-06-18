@@ -138,4 +138,11 @@ contract ScriptBase is Script {
         string memory json = vm.readFile(path);
         addr = stdJson.readAddress(json, ".transactions[1].contractAddress");
     }
+
+    function getEarlyDepositAddress() public view returns(address) {
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/broadcast/deployEarlyDepositOnly.s.sol/", chainId, "/run-latest.json");
+        string memory json = vm.readFile(path);
+        return stdJson.readAddress(json, ".transactions[0].contractAddress");
+    }
 }

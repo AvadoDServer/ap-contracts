@@ -21,7 +21,7 @@ contract UpgradeProxy is ScriptBase {
         if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         console.log("***Upgrading Proxy***");
         if (!_isTest) vm.startBroadcast();
-        Upgrades.upgradeProxy(_proxyAddress, "APETHV2.sol:APETHV2", "", _owner);
+        Upgrades.upgradeProxy(_proxyAddress, "APETHV2.sol:APETHV2",abi.encodeCall(_implementation.initialize, (_owner)), _owner); //this is not right! "", _owner); ????
         if (!_isTest) vm.stopBroadcast();
         console.log("upgraded");
     }
