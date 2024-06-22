@@ -33,6 +33,6 @@ contract DeployProxy is ScriptBase {
             _storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")));
         console.log("Eigen Pod Address: ", podAddress);
         _APEth = APETH(payable(_apEthPreDeploy));
-        deployEarlyDeposit();
+        // deployEarlyDeposit();
     }
 }

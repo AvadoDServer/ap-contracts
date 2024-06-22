@@ -11,19 +11,19 @@ contract transferOwnership is ScriptBase {
         address newOwner = vm.envAddress("CONTRACT_OWNER");
         address sender = vm.envAddress("SENDER_PUBLIC_KEY");
         address currentGuardian = _storageContract.getGuardian();
-        bool isAdmin = _APEth.hasRole(0x00, newOwner);
-        if (!isAdmin) {
-            console.log("***Transfering ownership***");
-            vm.startBroadcast();
-            _APEth.grantRole(0x00, newOwner);
-            _APEth.renounceRole(0x00, sender);
-            vm.stopBroadcast();
-        console.log("APETH Address:");
-        console.logAddress(address(_APEth));
-        console.log("newOwner:");
-        } else {
-            console.log("owner is set already");
-        }
+        // bool isAdmin = _APEth.hasRole(0x00, newOwner);
+        // if (!isAdmin) {
+        //     console.log("***Transfering ownership***");
+        //     vm.startBroadcast();
+        //     _APEth.grantRole(0x00, newOwner);
+        //     _APEth.renounceRole(0x00, sender);
+        //     vm.stopBroadcast();
+        // console.log("APETH Address:");
+        // console.logAddress(address(_APEth));
+        // console.log("newOwner:");
+        // } else {
+        //     console.log("owner is set already");
+        // }
         console.logAddress(newOwner);
         if (newOwner != currentGuardian) {
             console.log("***Transfering guardianship***");

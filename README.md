@@ -25,11 +25,11 @@ populate values in .env.example save as .env
 ### Test
 locally
 ```shell
-forge clean && forge test --ffi
+forge clean && forge test
 ```
 on Holesky
 ```shell
-forge clean && forge test --ffi --fork-url holesky
+forge clean && forge test --fork-url holesky
 ```
 
 ### Deploy

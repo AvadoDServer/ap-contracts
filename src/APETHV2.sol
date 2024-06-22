@@ -68,7 +68,7 @@ contract APETHV2 is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgrad
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) public initializer {
+    function initialize(address initialOwner) public reinitializer(2) {
         __ERC20_init("AP-Restaked-Eth", "APETH");
         __AccessControl_init();
         __ERC20Permit_init("AP-Restaked-Eth");
@@ -204,6 +204,10 @@ contract APETHV2 is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgrad
     function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(ADMIN) {
         IERC20 token = IERC20(tokenAddress);
         token.transfer(to, amount);
+    }
+
+    function version() public pure returns (uint256) {
+        return 2;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
