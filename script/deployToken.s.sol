@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {ScriptBase, APEthStorage, APEthEarlyDeposits, APETH, console, Create2, ERC1967Proxy, Upgrades, stdJson} from "./scriptBase.s.sol";
 
 contract DeployProxy is ScriptBase {
-    function run(address owner_, address storage_, address implementation_) public returns (APETH) {
+    function run(address owner_, address storage_, address implementation_) public returns(APETH) {
         _owner = owner_;
         _isTest = true;
         _storageContract = APEthStorage(storage_);

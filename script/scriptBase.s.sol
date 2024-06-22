@@ -104,6 +104,7 @@ contract ScriptBase is Script {
         if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         vm.startBroadcast(_owner);
         _earlyDeposit = new APEthEarlyDeposits(_owner, address(_proxy));
+        console.log(address(_APEth));
         _APEth.grantRole(EARLY_ACCESS, address(_earlyDeposit));
         vm.stopBroadcast();
         console.log("early deposit contract:", address(_earlyDeposit));
@@ -124,12 +125,12 @@ contract ScriptBase is Script {
         console.logBytes32(hash);
     }
 
-    function getDeployedAddress() public view returns (address addr1, address addr2) {
+    function getDeployedAddress() public view returns (address storageCont, address implement) {
         string memory root = vm.projectRoot();
         string memory path = string.concat(root, "/broadcast/deployStorage.s.sol/", chainId, "/run-latest.json");
         string memory json = vm.readFile(path);
-        addr1 = stdJson.readAddress(json, ".transactions[0].contractAddress");
-        addr2 = stdJson.readAddress(json, ".transactions[6].contractAddress");
+        storageCont = stdJson.readAddress(json, ".transactions[0].contractAddress");
+        implement = stdJson.readAddress(json, ".transactions[6].contractAddress");
     }
 
     function getProxyAddress() public view returns (address addr) {

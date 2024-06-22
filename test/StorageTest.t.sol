@@ -43,7 +43,7 @@ contract StorageTest is Test {
         DeployProxy deployProxy = new DeployProxy();
 
         (storageContract, implementation) = deployStorage.run(owner);
-        (APEth,) = deployProxy.run(owner, address(storageContract), address(implementation));
+        (APEth) = deployProxy.run(owner, address(storageContract), address(implementation));
     }
 
     //this is mainly to get the coverage for the contract o 100%

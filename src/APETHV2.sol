@@ -26,7 +26,7 @@ contract APETHV2 is Initializable, ERC20Upgradeable, AccessControlUpgradeable, E
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) public initializer {
+    function initialize(address initialOwner) public reinitializer(2) {
         __ERC20_init("AP-Restaked-Eth-V2", "APETHV2");
         __AccessControl_init();
         __ERC20Permit_init("AP-Restaked-Eth");

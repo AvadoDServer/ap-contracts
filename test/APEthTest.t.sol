@@ -79,7 +79,7 @@ contract APETHTest is Test {
         DeployProxy deployProxy = new DeployProxy();
 
         (storageContract, implementation) = deployStorage.run(owner);
-        (APEth,earlyDeposits) = deployProxy.run(owner, address(storageContract), address(implementation));
+        (APEth) = deployProxy.run(owner, address(storageContract), address(implementation));
     }
 
     //test minting the coin
