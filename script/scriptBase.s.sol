@@ -5,6 +5,7 @@ import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthStorage} from "../src/APEthStorage.sol";
 import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
+import {APEthPodWrapper} from "../src/APEthPodWrapper.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Script} from "forge-std/Script.sol";
@@ -31,6 +32,7 @@ contract ScriptBase is Script {
     APEthStorage _storageContract;
     ERC1967Proxy _proxy;
     APEthEarlyDeposits _earlyDeposit;
+    APEthPodWrapper _apEthPodWrapper;
 
     address _ssvNetwork;
     address _eigenPodManager;
@@ -123,6 +125,14 @@ contract ScriptBase is Script {
         );
         console.log("init code hash");
         console.logBytes32(hash);
+    }
+
+    function deployAPEthPodWrapper() public {
+        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
+        vm.startBroadcast(_owner);
+        _apEthPodWrapper = new APEthPodWrapper();
+        vm.stopBroadcast();
+        console.log("APEthPodWrapperImplementation", address(_apEthPodWrapper));
     }
 
     function getDeployedAddress() public view returns (address storageCont, address implement) {

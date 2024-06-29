@@ -27,6 +27,8 @@ contract DeployStorageContract is ScriptBase {
 
         //Deploy storage contract
         deployStorage();
+        //Deploy pod wrapper implementation
+        deployAPEthPodWrapper();
         //initialize values
         if (_isTest) {
             vm.startBroadcast(_storageContract.getGuardian());
@@ -45,6 +47,9 @@ contract DeployStorageContract is ScriptBase {
         _storageContract.setUint(keccak256(abi.encodePacked("fee.Amount")), _initialFee);
         //set initial mint cap amount
         _storageContract.setUint(keccak256(abi.encodePacked("cap.Amount")), _initialCap);
+        //set wrapper implementation in storage
+
+        _storageContract.setAddress(keccak256(abi.encodePacked("contract.address", "APEthPodWrapper.implementation")), address(_apEthPodWrapper));
         console.log("storage initialised");
         vm.stopBroadcast();
 
