@@ -23,9 +23,11 @@ import {ERC20PermitUpgradeable} from "openzeppelin-contracts-upgradeable/contrac
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
+import {Clones} from "@openzeppelin-contracts/proxy/Clones.sol";
 import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
+import {IAPEthPodWrapper} from "./interfaces/IAPEthPodWrapper.sol";
 
 /**
  *
@@ -37,6 +39,9 @@ error APETH__NOT_ENOUGH_ETH();
 
 /// @notice thrown when attempting to mint over cap
 error APETH__CAP_REACHED();
+
+/// @notice thrown when inquiring about a pod index higher than the number of pods
+error APETH__NO_POD_AT_THIS_INDEX(uint256 podIndex);
 
 /**
  *
@@ -104,18 +109,18 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
 
     /**
      * @notice This function calculates the ratio of ETH per APEth token - this will increase as the stakng rewards accrue
-     * @return uint256 assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
+     * @return valueInEth assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
      */
-    function ethPerAPEth() external view returns (uint256) {
+    function ethPerAPEth() external view returns (uint256 valueInEth) {
         return _ethPerAPEth(0);
     }
 
     /**
      * @notice This function calculates the ratio of ETH per APEth token - adjusting for what a user just sent into the contract
      * @param _value is the amount in wei deposited to the APEth contract, used to calculate the return value of APEth
-     * @return uint256 assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
+     * @return valueInEth assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
      */
-    function _ethPerAPEth(uint256 _value) internal view returns (uint256) {
+    function _ethPerAPEth(uint256 _value) internal view returns (uint256 valueInEth) {
         // don't divide by 0
         if (totalSupply() == 0) {
             return 1 ether;
@@ -154,6 +159,60 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
 
     /**
      *
+     * @notice deploys an additional eigenpod and adds address to list of eigen pod addresses.
+     * @dev the pod.index key stores the number of additional pods deployed (the orignal pod is 0)
+     *
+     */
+    function deployPod() external onlyRole(ETH_STAKER) {
+        apEthStorage.addUint(keccak256(abi.encodePacked("pod.index")), 1);
+        uint256 podIndex = getPodIndex();
+        //TODO: set implementation address in deploy script
+        // get implementation address from storage
+        address apEthPodWrapperImplementation = apEthStorage.getAddress(keccak256(abi.encodePacked("contract.address", "APEthPodWrapper.implementation")));
+        // deploy clone
+        address wrapperInstance = Clones.clone(apEthPodWrapperImplementation);
+        // store clone address
+        apEthStorage.setAddress(keccak256(abi.encodePacked("contract.address", "APEthPodWrapper", podIndex)), wrapperInstance);
+        // apply interface to clone
+        IAPEthPodWrapper apEthPodWrapper = IAPEthPodWrapper(wrapperInstance);
+        // initialize clone
+        apEthPodWrapper.initialize(address(apEthStorage));
+        // get pod address
+        address podAddress = apEthPodWrapper.eigenPod();
+        // store address of pod
+        apEthStorage.setAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod", podIndex)), podAddress);
+    }
+
+    /**
+     *
+     * @notice returns the number of (additional) pods deployed (the original pod is 0)
+     * @dev the pod.index key stores the number of additional pods deployed (the orignal pod is 0)
+     *
+     */
+    function getPodIndex() public view returns(uint256 podIndex){
+        return apEthStorage.getUint(keccak256(abi.encodePacked("pod.index")));
+    }
+
+    /**
+     *
+     * @notice returns the address of a pod and the address of its apEth wrapper
+     * @param podIndex is the index of the pod (the orignal pod is 0)
+     * @return podAddress is the address of the pod at the index requested
+     * @return podWrapper is the address of the ERC1167 clone that owns the pod
+     *
+     */
+    function getPodAddress(uint256 podIndex) public view returns(address podAddress, address podWrapper) {
+        if(podIndex > getPodIndex()) revert APETH__NO_POD_AT_THIS_INDEX(podIndex);
+        if(podIndex == 0) {
+            return (apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod"))), address(this));
+        } else {
+            podAddress = apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod", podIndex)));
+            podWrapper = apEthStorage.getAddress(keccak256(abi.encodePacked("contract.address", "APEthPodWrapper", podIndex)));
+        }
+    }
+
+    /**
+     *
      * @notice allows contract owner to call functions on the ssvNetwork
      * @dev the likley functions called would include "registerValidator" and "setFeeRecipientAddress"
      * @param data the calldata for the ssvNetwork
@@ -174,11 +233,19 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
      * @param data the calldata for the eigenPod
      *
      */
-    function callEigenPod(bytes memory data) external onlyRole(ADMIN) {
-        // get address from storage
-        address eigenPod = apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")));
-        (bool success,) = eigenPod.call(data);
-        require(success, "Call failed");
+     //TODO: add index
+    function callEigenPod(uint256 podIndex, bytes memory data) external onlyRole(ADMIN) {
+        // TODO: index 0 can call direct, others need to call the wrapper....
+        // get address
+        (address eigenPodAddress, address podWrapperAddress) = getPodAddress(podIndex);
+        if(podIndex == 0) {
+            (bool success,) = eigenPodAddress.call(data);
+            require(success, "Call failed");
+        } else {
+                IAPEthPodWrapper podWrapper = IAPEthPodWrapper(podWrapperAddress);
+                bool success = podWrapper.callEigenPod(data);
+                require(success, "Call failed");
+        }
     }
 
     /**

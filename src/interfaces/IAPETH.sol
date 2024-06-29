@@ -48,9 +48,15 @@ interface IAPETH{
 
     function stake(bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root) external;
 
+    function deployPod() external;
+
+    function getPodIndex() external returns(uint256 podIndex);
+
+    function getPodAddress(uint256 podIndex) external returns(address podAddress, address podWrapper);
+
     function callSSVNetwork(bytes memory data) external;
 
-    function callEigenPod(bytes memory data) external;
+    function callEigenPod(uint podIndex, bytes memory data) external;
 
     function callEigenPodManager(bytes memory data) external;
 

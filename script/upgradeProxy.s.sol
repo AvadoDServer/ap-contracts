@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {ScriptBase, APEthStorage, APETH, APETHV2, console, Create2, ERC1967Proxy, Upgrades} from "./scriptBase.s.sol";
 

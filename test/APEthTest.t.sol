@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
@@ -41,7 +41,7 @@ contract APETHTest is Test {
     bytes32 public constant ADMIN = keccak256("ADMIN");
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
-    bool workingKeys = true;
+    bool workingKeys = false;
 
     bytes _pubKey =
         hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
@@ -375,13 +375,13 @@ contract APETHTest is Test {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
-        APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+        APEth.callEigenPod(0, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 
     function testEigenPodCallFailNotOwner() public {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+        APEth.callEigenPod(0, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 
     function testEigenPodCallFailBadCall() public {
@@ -389,7 +389,7 @@ contract APETHTest is Test {
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
         vm.expectRevert("Call failed");
-        APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
+        APEth.callEigenPod(0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
 
     function testFeeChange() public {
