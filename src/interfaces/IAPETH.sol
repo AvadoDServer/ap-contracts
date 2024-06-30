@@ -58,7 +58,7 @@ interface IAPETH {
 
     function callEigenPod(uint256 podIndex, bytes memory data) external;
 
-    function callEigenPodManager(uint podIndex, bytes memory data) external;
+    function callEigenPodManager(uint256 podIndex, bytes memory data) external;
 
     function transferToken(uint256 podIndex, address tokenAddress, address to, uint256 amount) external;
 }

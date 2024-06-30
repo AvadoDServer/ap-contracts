@@ -367,8 +367,8 @@ contract APETHTest is Test {
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
         vm.expectRevert("Call failed");
-        APEth.callEigenPodManager(0, 
-            abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+        APEth.callEigenPodManager(
+            0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
         );
     }
 
@@ -406,18 +406,18 @@ contract APETHTest is Test {
         assertEq(address(APEth).balance, 10 ether);
     }
 
-    function test_DeployPod() public {
+    function test_fuzz_DeployPod(uint8 x) public {
+        x = x / 8; //all 256 takes way too long!
         assertEq(APEth.getPodIndex(), 0);
         vm.expectRevert();
         APEth.getPodAddress(1);
         vm.prank(owner);
         APEth.grantRole(ETH_STAKER, staker);
-        vm.prank(staker);
-        APEth.deployPod();
-        (address pod, address wrapper) = APEth.getPodAddress(1);
-        assertEq(APEth.getPodIndex(), 1);
-        console.log("pod address: ", pod);
-        console.log("wrapper address: ", wrapper);
+        vm.startPrank(staker);
+        for (uint256 i; i < x; i++) {
+            APEth.deployPod();
+        }
+        assertEq(APEth.getPodIndex(), x);
     }
 
     function test_BasicAccountingWithStakingAndFuzzingMultiplePods(uint128 x, uint128 y, uint128 z)
@@ -497,6 +497,121 @@ contract APETHTest is Test {
         vm.expectRevert();
         APEth.deployPod();
     }
+
+    function test_Revert_Stake_NotEnoughEth_MultiPod() public mintAlice(5) {
+        vm.prank(owner);
+        APEth.grantRole(ETH_STAKER, staker);
+        vm.startPrank(staker);
+        APEth.deployPod();
+        vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
+        APEth.stake(1, _pubKey, _signature, _deposit_data_root);
+    }
+
+    function test_ERC20Call_MultiPod() public {
+        ERC20Mock mockCoin = new ERC20Mock();
+        vm.startPrank(owner);
+        APEth.grantRole(ADMIN, admin);
+        APEth.grantRole(ETH_STAKER, staker);
+        vm.stopPrank();
+        vm.prank(staker);
+        APEth.deployPod();
+        (,address podWrapper) = APEth.getPodAddress(1);
+        mockCoin.mint(podWrapper, 1 ether);
+        assertEq(mockCoin.balanceOf(podWrapper), 1 ether);
+        vm.prank(admin);
+        APEth.transferToken(1, address(mockCoin), alice, 1 ether);
+        assertEq(mockCoin.balanceOf(alice), 1 ether);
+        assertEq(mockCoin.balanceOf(podWrapper), 0);
+    }
+
+    /*
+    function test_Revert_ERC20Call_NotOwner() public {
+        ERC20Mock mockCoin = new ERC20Mock();
+        mockCoin.mint(address(APEth), 1 ether);
+        vm.prank(vm.addr(69));
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.transferToken(0, address(mockCoin), alice, 1 ether);
+    }
+
+    function test_SSVCall() public {
+        vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
+        APEth.callSSVNetwork(
+            0, abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+        );
+        if (block.chainid == 31337) {
+            address ssvNetworkAddress =
+                storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
+            MockSsvNetwork ssvNetwork = MockSsvNetwork(ssvNetworkAddress);
+            address feeRecip = ssvNetwork.feeRecipient(address(APEth));
+            assertEq(feeRecip, address(APEth), "feeRecip not set in ssv contract");
+        }
+    }
+
+    function test_Revert_SSVCall_NotOwner() public {
+        vm.prank(vm.addr(69));
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.callSSVNetwork(
+            0, abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+        );
+    }
+
+    function test_Revert_SSVCall_BadCall() public {
+        vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
+        vm.expectRevert("Call failed");
+        APEth.callSSVNetwork(
+            0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+        );
+    }
+
+    function test_EigenPodManagerCall() public {
+        vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
+        APEth.callEigenPodManager(0, abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+    }
+
+    function test_Revert_EigenPodManagerCall_NotOwner() public {
+        vm.prank(vm.addr(69));
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.callEigenPodManager(0, abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+    }
+
+    function test_Revert_EigenPodManagerCall_BadCall() public {
+        vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
+        vm.expectRevert("Call failed");
+        APEth.callEigenPodManager(
+            0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+        );
+    }
+
+    function test_EigenPodCall() public {
+        vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
+        APEth.callEigenPod(0, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+    }
+
+    function test_Revert_EigenPodCall_NotOwner() public {
+        vm.prank(vm.addr(69));
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.callEigenPod(0, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+    }
+
+    function test_Revert_EigenPodCall_BadCall() public {
+        vm.prank(owner);
+        APEth.grantRole(ADMIN, admin);
+        vm.prank(admin);
+        vm.expectRevert("Call failed");
+        APEth.callEigenPod(0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
+    }
+
+    */
 
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
