@@ -93,4 +93,18 @@ contract APEthPodWrapper is IAPEthPodWrapper, Initializable {
     function callEigenPod(bytes memory data) external onlyAPEth returns (bool success) {
         (success,) = eigenPod.call(data);
     }
+
+    function transferToken(address tokenAddress, address to, uint256 amount) external onlyAPEth {
+        IERC20 token = IERC20(tokenAddress);
+        bool success = token.transfer(to, amount);
+        require(success, "Call failed");
+    }
+
+    function callSSVNetwork(bytes memory data) external onlyAPEth {
+        // get address from storage
+        address ssvNetwork =
+            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
+        (bool success,) = ssvNetwork.call(data);
+        require(success, "Call failed");
+    }
 }

@@ -243,12 +243,19 @@ contract APETH is
      * @param data the calldata for the ssvNetwork
      *
      */
-    function callSSVNetwork(bytes memory data) external onlyRole(ADMIN) {
-        // get address from storage
-        address ssvNetwork =
-            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
-        (bool success,) = ssvNetwork.call(data);
-        require(success, "Call failed");
+    function callSSVNetwork(uint podIndex, bytes memory data) external onlyRole(ADMIN) {
+        if(podIndex == 0) {
+            // get address from storage
+            address ssvNetwork =
+                apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
+            (bool success,) = ssvNetwork.call(data);
+            require(success, "Call failed");
+        } else {
+            // get address
+            (, address podWrapperAddress) = getPodAddress(podIndex);
+            //call function on pod wrapper
+            IAPEthPodWrapper(podWrapperAddress).callSSVNetwork(data);
+        }
     }
 
     /**
@@ -258,9 +265,7 @@ contract APETH is
      * @param data the calldata for the eigenPod
      *
      */
-    //TODO: add index
     function callEigenPod(uint256 podIndex, bytes memory data) external onlyRole(ADMIN) {
-        // TODO: index 0 can call direct, others need to call the wrapper....
         // get address
         (address eigenPodAddress, address podWrapperAddress) = getPodAddress(podIndex);
         if (podIndex == 0) {
@@ -281,6 +286,7 @@ contract APETH is
      * @param data the calldata for the eigenPodManager
      *
      */
+    // TODO: add index
     function callEigenPodManager(bytes memory data) external onlyRole(ADMIN) {
         // get address from storage
         address eigenPodManager =
@@ -297,9 +303,17 @@ contract APETH is
      * @param amount the amount to transfer
      *
      */
-    function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(ADMIN) {
-        IERC20 token = IERC20(tokenAddress);
-        token.transfer(to, amount);
+    function transferToken(uint256 podIndex, address tokenAddress, address to, uint256 amount) external onlyRole(ADMIN) {
+        if(podIndex == 0) {
+            IERC20 token = IERC20(tokenAddress);
+            bool success = token.transfer(to, amount);
+            require(success, "Call failed");
+        } else {
+            // get address
+            (, address podWrapperAddress) = getPodAddress(podIndex);
+            //call function on pod wrapper
+            IAPEthPodWrapper(podWrapperAddress).transferToken(tokenAddress, to, amount);
+        }
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}

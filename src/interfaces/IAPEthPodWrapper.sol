@@ -14,4 +14,6 @@ interface IAPEthPodWrapper {
     function callEigenPod(bytes memory data) external returns (bool success);
     function eigenPod() external returns (address);
     function stake(bytes calldata pubKey, bytes calldata signature, bytes32 depositDataRoot) external payable;
+    function transferToken(address tokenAddress, address to, uint256 amount) external;
+    function callSSVNetwork(bytes memory data) external;
 }

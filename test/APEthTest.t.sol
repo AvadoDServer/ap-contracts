@@ -302,7 +302,7 @@ contract APETHTest is Test {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
-        APEth.transferToken(address(mockCoin), alice, 1 ether);
+        APEth.transferToken(0, address(mockCoin), alice, 1 ether);
         assertEq(mockCoin.balanceOf(alice), 1 ether);
         assertEq(mockCoin.balanceOf(address(APEth)), 0);
     }
@@ -312,14 +312,14 @@ contract APETHTest is Test {
         mockCoin.mint(address(APEth), 1 ether);
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.transferToken(address(mockCoin), alice, 1 ether);
+        APEth.transferToken(0, address(mockCoin), alice, 1 ether);
     }
 
     function test_SSVCall() public {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
-        APEth.callSSVNetwork(
+        APEth.callSSVNetwork(0, 
             abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
         );
         if (block.chainid == 31337) {
@@ -334,7 +334,7 @@ contract APETHTest is Test {
     function test_Revert_SSVCall_NotOwner() public {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.callSSVNetwork(
+        APEth.callSSVNetwork(0, 
             abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
         );
     }
@@ -344,7 +344,7 @@ contract APETHTest is Test {
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
         vm.expectRevert("Call failed");
-        APEth.callSSVNetwork(
+        APEth.callSSVNetwork(0, 
             abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
         );
     }
