@@ -49,7 +49,9 @@ contract DeployStorageContract is ScriptBase {
         _storageContract.setUint(keccak256(abi.encodePacked("cap.Amount")), _initialCap);
         //set wrapper implementation in storage
 
-        _storageContract.setAddress(keccak256(abi.encodePacked("contract.address", "APEthPodWrapper.implementation")), address(_apEthPodWrapper));
+        _storageContract.setAddress(
+            keccak256(abi.encodePacked("contract.address", "APEthPodWrapper.implementation")), address(_apEthPodWrapper)
+        );
         console.log("storage initialised");
         vm.stopBroadcast();
 

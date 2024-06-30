@@ -22,7 +22,7 @@ contract UpgradeProxy is ScriptBase {
         APETHV2 APEth2;
         console.log("***Upgrading Proxy***");
         if (!_isTest) vm.startBroadcast();
-        Upgrades.upgradeProxy(_proxyAddress, "APETHV2.sol:APETHV2",abi.encodeCall(APEth2.initialize, (_owner)), _owner);
+        Upgrades.upgradeProxy(_proxyAddress, "APETHV2.sol:APETHV2", abi.encodeCall(APEth2.initialize, (_owner)), _owner);
         if (!_isTest) vm.stopBroadcast();
         console.log("upgraded");
     }

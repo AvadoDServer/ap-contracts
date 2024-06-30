@@ -21,7 +21,7 @@ import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 
-contract EarlyDepositTest is Test{
+contract EarlyDepositTest is Test {
     APETH APEth;
     APETH implementation;
     APEthStorage storageContract;
@@ -69,7 +69,7 @@ contract EarlyDepositTest is Test{
         assertEq(address(earlyDeposits).balance, uint256(x));
     }
 
-    modifier depositAlice(uint256 amount){
+    modifier depositAlice(uint256 amount) {
         assertEq(earlyDeposits.deposits(alice), 0);
         hoax(alice);
         earlyDeposits.deposit{value: uint256(amount)}(alice);
@@ -106,7 +106,10 @@ contract EarlyDepositTest is Test{
         assertEq(earlyDeposits.deposits(alice), 0);
     }
 
-    function testBulkMint(uint64 a, uint64 b, uint64 c, uint64 d, uint64 e, uint64 f, uint64 aa) public depositAlice(uint256(a)) {
+    function testBulkMint(uint64 a, uint64 b, uint64 c, uint64 d, uint64 e, uint64 f, uint64 aa)
+        public
+        depositAlice(uint256(a))
+    {
         // deposit to early deposit contract
         hoax(bob);
         earlyDeposits.deposit{value: uint256(b)}(bob);

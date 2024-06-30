@@ -24,8 +24,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
  * INTERFACE
  *
  */
-
-interface IAPETH{
+interface IAPETH {
     /**
      *
      * EVENTS
@@ -42,21 +41,22 @@ interface IAPETH{
      * FUNCTIONS
      *
      */
-    function mint() external payable returns(uint256);
+    function mint() external payable returns (uint256);
 
     function ethPerAPEth() external view returns (uint256);
 
-    function stake(uint podIndex, bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root) external;
+    function stake(uint256 podIndex, bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root)
+        external;
 
     function deployPod() external;
 
-    function getPodIndex() external returns(uint256 podIndex);
+    function getPodIndex() external returns (uint256 podIndex);
 
-    function getPodAddress(uint256 podIndex) external returns(address podAddress, address podWrapper);
+    function getPodAddress(uint256 podIndex) external returns (address podAddress, address podWrapper);
 
     function callSSVNetwork(bytes memory data) external;
 
-    function callEigenPod(uint podIndex, bytes memory data) external;
+    function callEigenPod(uint256 podIndex, bytes memory data) external;
 
     function callEigenPodManager(bytes memory data) external;
 

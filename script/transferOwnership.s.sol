@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {ScriptBase, APEthStorage, APETH, console, Create2, ERC1967Proxy, Upgrades, APEthEarlyDeposits} from "./scriptBase.s.sol";
+import {
+    ScriptBase,
+    APEthStorage,
+    APETH,
+    console,
+    Create2,
+    ERC1967Proxy,
+    Upgrades,
+    APEthEarlyDeposits
+} from "./scriptBase.s.sol";
 
 contract transferOwnership is ScriptBase {
     function run() public {
@@ -20,9 +29,9 @@ contract transferOwnership is ScriptBase {
             _APEth.grantRole(0x00, newOwner);
             _APEth.renounceRole(0x00, sender);
             vm.stopBroadcast();
-        console.log("APETH Address:");
-        console.logAddress(address(_APEth));
-        console.log("APEth newOwner:");
+            console.log("APETH Address:");
+            console.logAddress(address(_APEth));
+            console.log("APEth newOwner:");
         } else {
             console.log("APEth owner is set already");
         }
@@ -32,15 +41,15 @@ contract transferOwnership is ScriptBase {
             vm.startBroadcast();
             _storageContract.setGuardian(newOwner);
             vm.stopBroadcast();
-        console.log("Storage Contract Address:");
-        console.logAddress(address(_storageContract));
-        console.log("newGuardian:");
-        console.log('\x1b[31m%s\x1b[0m', "(must be confirmed by newGuardian address)");
+            console.log("Storage Contract Address:");
+            console.logAddress(address(_storageContract));
+            console.log("newGuardian:");
+            console.log("\x1b[31m%s\x1b[0m", "(must be confirmed by newGuardian address)");
         } else {
             console.log("guardian is already");
         }
         console.logAddress(newOwner);
-        if(earlyDepositOwner != newOwner){
+        if (earlyDepositOwner != newOwner) {
             console.log("***Transfering EarlyDepositOwner***");
             vm.startBroadcast();
             _earlyDeposit.transferOwnership(newOwner);

@@ -10,7 +10,13 @@ import "./interfaces/IDepositContract.sol";
 import "./interfaces/IAPEthStorage.sol";
 
 /// @custom:oz-upgrades-from APETH
-contract APETHV2 is Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+contract APETHV2 is
+    Initializable,
+    ERC20Upgradeable,
+    AccessControlUpgradeable,
+    ERC20PermitUpgradeable,
+    UUPSUpgradeable
+{
     /**
      *
      * STORAGE
