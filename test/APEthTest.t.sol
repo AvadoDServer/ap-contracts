@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+/* solhint-disable func-name-mixedcase */
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
@@ -83,7 +84,7 @@ contract APETHTest is Test {
     }
 
     //test minting the coin
-    function testMint() public {
+    function test_Mint() public {
         //Alice should not be able to mint w/o Early Access
         vm.expectRevert();
         hoax(alice);
@@ -118,7 +119,7 @@ contract APETHTest is Test {
         _;
     }
 
-    function testCap() public mintAlice(100000 ether) {
+    function test_Cap() public mintAlice(100000 ether) {
         uint256 aliceBalance = APEth.balanceOf(alice);
         vm.expectRevert(); //APETH__CAP_REACHED()
         hoax(alice);
@@ -127,7 +128,7 @@ contract APETHTest is Test {
     }
 
     // Test the basic ERC20 functionality of the APETH contract
-    function testERC20Functionality() public mintAlice(10 ether) {
+    function test_ERC20Functionality() public mintAlice(10 ether) {
         uint256 aliceBalance = _calculateAmountLessFee(10 ether);
         //transfer to bob
         vm.prank(alice);
@@ -138,7 +139,7 @@ contract APETHTest is Test {
     }
 
     // Test the upgradeability of the APETH contract
-    function testUpgradeability() public {
+    function test_Upgradeability() public {
         //deploy upgrade script
         UpgradeProxy upgradeProxy = new UpgradeProxy();
         vm.prank(owner);
@@ -151,7 +152,7 @@ contract APETHTest is Test {
     }
 
     // Test staking (requires using a forked chain with a deposit contract to test.)
-    function testStake() public {
+    function test_Stake() public {
         //branch test for case where totalsupply is 0
         assertEq(APEth.ethPerAPEth(), 1 ether);
         //Grant Alice Early Access
@@ -169,12 +170,12 @@ contract APETHTest is Test {
         }
         // Impersonate staker to call stake()
         vm.prank(staker);
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
+        APEth.stake(0, _pubKey, _signature, _deposit_data_root);
         if (workingKeys) assertEq(address(APEth).balance, 1 ether);
     }
 
     // test the accounting. the price should change predictibly when the contract recieves rewards
-    function testBasicAccounting() public mintAlice(10 ether) {
+    function test_BasicAccounting() public mintAlice(10 ether) {
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 11 ether);
         //check eth per apeth
@@ -190,7 +191,7 @@ contract APETHTest is Test {
         assertEq(address(APEth).balance, 21 ether);
     }
 
-    function testBasicAccountingWithStaking() public mintAlice(50 ether) {
+    function test_BasicAccountingWithStaking() public mintAlice(50 ether) {
         // Send eth to contract to increase balance
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 51 ether);
@@ -203,7 +204,7 @@ contract APETHTest is Test {
         if (!workingKeys && block.chainid != 31337) {
             vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
         }
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
+        APEth.stake(0, _pubKey, _signature, _deposit_data_root);
         if (workingKeys) assertEq(address(APEth).balance, 19 ether);
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         vm.prank(owner);
@@ -216,7 +217,7 @@ contract APETHTest is Test {
         if (workingKeys) assertEq(address(APEth).balance, 29 ether);
     }
 
-    function testBasicAccountingWithStakingAndFuzzing(uint128 x, uint128 y, uint128 z) public mintAlice(x) {
+    function test_BasicAccountingWithStakingAndFuzzing(uint128 x, uint128 y, uint128 z) public mintAlice(x) {
         // Send eth to contract to increase balance
         vm.deal(address(this), y);
         payable(address(APEth)).transfer(y);
@@ -242,7 +243,7 @@ contract APETHTest is Test {
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
-            APEth.stake(_pubKey, _signature, _deposit_data_root);
+            APEth.stake(0, _pubKey, _signature, _deposit_data_root);
             ethInValidators += 32 ether;
         }
         if (balance >= 64 ether) {
@@ -250,7 +251,7 @@ contract APETHTest is Test {
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
-            APEth.stake(_pubKey2, _signature2, _deposit_data_root2);
+            APEth.stake(0, _pubKey2, _signature2, _deposit_data_root2);
             ethInValidators += 32 ether;
         }
         if (balance >= 96 ether) {
@@ -258,7 +259,7 @@ contract APETHTest is Test {
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
-            APEth.stake(_pubKey3, _signature3, _deposit_data_root3);
+            APEth.stake(0, _pubKey3, _signature3, _deposit_data_root3);
             ethInValidators += 32 ether;
         }
         uint256 newBalance = balance;
@@ -280,21 +281,21 @@ contract APETHTest is Test {
         }
     }
 
-    function testStakeFailNotEnoughEth() public mintAlice(5) {
+    function test_Revert_Stake_NotEnoughEth() public mintAlice(5) {
         vm.prank(owner);
         APEth.grantRole(ETH_STAKER, staker);
         vm.prank(staker);
         vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
+        APEth.stake(0, _pubKey, _signature, _deposit_data_root);
     }
 
-    function testStakeFailNotOwner() public mintAlice(32 ether) {
+    function test_Revert_Stake_NotOwner() public mintAlice(32 ether) {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
+        APEth.stake(0, _pubKey, _signature, _deposit_data_root);
     }
 
-    function testERC20Call() public {
+    function test_ERC20Call() public {
         ERC20Mock mockCoin = new ERC20Mock();
         mockCoin.mint(address(APEth), 1 ether);
         assertEq(mockCoin.balanceOf(address(APEth)), 1 ether);
@@ -306,7 +307,7 @@ contract APETHTest is Test {
         assertEq(mockCoin.balanceOf(address(APEth)), 0);
     }
 
-    function testERC20CallFailNotOwner() public {
+    function test_Revert_ERC20Call_NotOwner() public {
         ERC20Mock mockCoin = new ERC20Mock();
         mockCoin.mint(address(APEth), 1 ether);
         vm.prank(vm.addr(69));
@@ -314,7 +315,7 @@ contract APETHTest is Test {
         APEth.transferToken(address(mockCoin), alice, 1 ether);
     }
 
-    function testSSVCall() public {
+    function test_SSVCall() public {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
@@ -330,7 +331,7 @@ contract APETHTest is Test {
         }
     }
 
-    function testSSVCallFailNotOwner() public {
+    function test_Revert_SSVCall_NotOwner() public {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         APEth.callSSVNetwork(
@@ -338,7 +339,7 @@ contract APETHTest is Test {
         );
     }
 
-    function testSSVCallFailBadCall() public {
+    function test_Revert_SSVCall_BadCall() public {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
@@ -348,20 +349,20 @@ contract APETHTest is Test {
         );
     }
 
-    function testEigenPodManagerCall() public {
+    function test_EigenPodManagerCall() public {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
         APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
     }
 
-    function testEigenPodManagerCallFailNotOwner() public {
+    function test_Revert_EigenPodManagerCall_NotOwner() public {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
     }
 
-    function testEigenPodManagerCallFailBadCall() public {
+    function test_Revert_EigenPodManagerCall_BadCall() public {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
@@ -371,20 +372,20 @@ contract APETHTest is Test {
         );
     }
 
-    function testEigenPodCall() public {
+    function test_EigenPodCall() public {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
         APEth.callEigenPod(0, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 
-    function testEigenPodCallFailNotOwner() public {
+    function test_Revert_EigenPodCall_NotOwner() public {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         APEth.callEigenPod(0, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 
-    function testEigenPodCallFailBadCall() public {
+    function test_Revert_EigenPodCall_BadCall() public {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
@@ -392,7 +393,7 @@ contract APETHTest is Test {
         APEth.callEigenPod(0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
 
-    function testFeeChange() public {
+    function test_FeeChange() public {
         vm.prank(storageContract.getGuardian());
         storageContract.setUint(keccak256(abi.encodePacked("fee.Amount")), 10000);
         assertEq(storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))), 10000);
@@ -405,8 +406,21 @@ contract APETHTest is Test {
         assertEq(address(APEth).balance, 10 ether);
     }
 
-    function testDeployPod() public {
-        //
+    function test_DeployPod() public {
+        vm.expectRevert();
+        APEth.getPodAddress(1);
+        vm.prank(owner);
+        APEth.grantRole(ETH_STAKER, staker);
+        vm.prank(staker);
+        APEth.deployPod();
+        (address pod, address wrapper) = APEth.getPodAddress(1);
+        console.log("pod address: ", pod);
+        console.log("wrapper address: ", wrapper);
+    }
+
+    function test_Revert_DeployPod_notStaker() public {
+        vm.expectRevert();
+        APEth.deployPod();
     }
 
     //internal functions

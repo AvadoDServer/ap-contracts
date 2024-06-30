@@ -32,7 +32,7 @@ interface IAPETH{
      *
      */
     /// @notice occurs when a new validator is staked to the beacon chain
-    event Stake(bytes pubkey, address caller);
+    event Stake(uint256 podIndex, bytes pubkey, address caller);
 
     /// @notice occurs when new APEth coins are minted
     event Mint(address minter, uint256 amount);
@@ -46,7 +46,7 @@ interface IAPETH{
 
     function ethPerAPEth() external view returns (uint256);
 
-    function stake(bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root) external;
+    function stake(uint podIndex, bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root) external;
 
     function deployPod() external;
 

@@ -14,4 +14,5 @@ interface IAPEthPodWrapper {
     function initialize(address _APEthStorage) external;
     function callEigenPod(bytes memory data) external returns(bool success);
     function eigenPod() external returns(address);
+    function stake(bytes calldata pubKey, bytes calldata signature, bytes32 depositDataRoot) payable external;
 }
