@@ -11,9 +11,10 @@ pragma solidity 0.8.20;
  */
 interface IAPEthPodWrapper {
     function initialize(address _APEthStorage) external;
-    function callEigenPod(bytes memory data) external returns (bool success);
+    function callEigenPod(bytes memory data) external;
     function eigenPod() external returns (address);
     function stake(bytes calldata pubKey, bytes calldata signature, bytes32 depositDataRoot) external payable;
     function transferToken(address tokenAddress, address to, uint256 amount) external;
     function callSSVNetwork(bytes memory data) external;
+    function callEigenPodManager(bytes memory data) external;
 }

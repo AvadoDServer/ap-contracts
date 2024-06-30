@@ -54,11 +54,11 @@ interface IAPETH {
 
     function getPodAddress(uint256 podIndex) external returns (address podAddress, address podWrapper);
 
-    function callSSVNetwork(uint podIndex, bytes memory data) external;
+    function callSSVNetwork(uint256 podIndex, bytes memory data) external;
 
     function callEigenPod(uint256 podIndex, bytes memory data) external;
 
-    function callEigenPodManager(bytes memory data) external;
+    function callEigenPodManager(uint podIndex, bytes memory data) external;
 
-    function transferToken(uint podIndex, address tokenAddress, address to, uint256 amount) external;
+    function transferToken(uint256 podIndex, address tokenAddress, address to, uint256 amount) external;
 }

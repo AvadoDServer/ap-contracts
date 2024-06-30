@@ -240,11 +240,12 @@ contract APETH is
      *
      * @notice allows contract owner to call functions on the ssvNetwork
      * @dev the likley functions called would include "registerValidator" and "setFeeRecipientAddress"
+     * @param podIndex is the index of the pod (the orignal pod is 0)
      * @param data the calldata for the ssvNetwork
      *
      */
-    function callSSVNetwork(uint podIndex, bytes memory data) external onlyRole(ADMIN) {
-        if(podIndex == 0) {
+    function callSSVNetwork(uint256 podIndex, bytes memory data) external onlyRole(ADMIN) {
+        if (podIndex == 0) {
             // get address from storage
             address ssvNetwork =
                 apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
@@ -262,6 +263,7 @@ contract APETH is
      *
      * @notice allows contract owner to call functions on the eigenPod
      * @dev the likley functions called would include "recoverTokens" and "withdrawNonBeaconChainETHBalanceWei"
+     * @param podIndex is the index of the pod (the orignal pod is 0)
      * @param data the calldata for the eigenPod
      *
      */
@@ -273,8 +275,7 @@ contract APETH is
             require(success, "Call failed");
         } else {
             IAPEthPodWrapper podWrapper = IAPEthPodWrapper(podWrapperAddress);
-            bool success = podWrapper.callEigenPod(data);
-            require(success, "Call failed");
+            podWrapper.callEigenPod(data);
         }
     }
 
@@ -283,28 +284,38 @@ contract APETH is
      * @notice allows contract owner to call functions on the eigenPodManager
      * @dev the only functions that the contract owner can currently call are "createPod" and "stake"
      * @dev these functions are handled elsewhere in this contract, so this method may be redundant
+     * @param podIndex is the index of the pod (the orignal pod is 0)
      * @param data the calldata for the eigenPodManager
      *
      */
-    // TODO: add index
-    function callEigenPodManager(bytes memory data) external onlyRole(ADMIN) {
-        // get address from storage
-        address eigenPodManager =
-            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")));
-        (bool success,) = eigenPodManager.call(data);
-        require(success, "Call failed");
+    function callEigenPodManager(uint podIndex, bytes memory data) external onlyRole(ADMIN) {
+        if (podIndex == 0) {
+            // get address from storage
+            address eigenPodManager =
+                apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")));
+            (bool success,) = eigenPodManager.call(data);
+            require(success, "Call failed");
+        } else {
+            // get address
+            (, address podWrapperAddress) = getPodAddress(podIndex);
+            IAPEthPodWrapper(podWrapperAddress).callEigenPodManager(data);
+        }
     }
 
     /**
      *
      * @notice allows contract owner to call transfer out ERC20's incase of an airdrop (for distribution to users)
+     * @param podIndex is the index of the pod (the orignal pod is 0)
      * @param tokenAddress the ERC20 being transfered
      * @param to the token recipient
      * @param amount the amount to transfer
      *
      */
-    function transferToken(uint256 podIndex, address tokenAddress, address to, uint256 amount) external onlyRole(ADMIN) {
-        if(podIndex == 0) {
+    function transferToken(uint256 podIndex, address tokenAddress, address to, uint256 amount)
+        external
+        onlyRole(ADMIN)
+    {
+        if (podIndex == 0) {
             IERC20 token = IERC20(tokenAddress);
             bool success = token.transfer(to, amount);
             require(success, "Call failed");

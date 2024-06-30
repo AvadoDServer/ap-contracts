@@ -319,8 +319,8 @@ contract APETHTest is Test {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
-        APEth.callSSVNetwork(0, 
-            abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+        APEth.callSSVNetwork(
+            0, abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
         );
         if (block.chainid == 31337) {
             address ssvNetworkAddress =
@@ -334,8 +334,8 @@ contract APETHTest is Test {
     function test_Revert_SSVCall_NotOwner() public {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.callSSVNetwork(0, 
-            abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+        APEth.callSSVNetwork(
+            0, abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
         );
     }
 
@@ -344,8 +344,8 @@ contract APETHTest is Test {
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
         vm.expectRevert("Call failed");
-        APEth.callSSVNetwork(0, 
-            abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+        APEth.callSSVNetwork(
+            0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
         );
     }
 
@@ -353,13 +353,13 @@ contract APETHTest is Test {
         vm.prank(owner);
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
-        APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+        APEth.callEigenPodManager(0, abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
     }
 
     function test_Revert_EigenPodManagerCall_NotOwner() public {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+        APEth.callEigenPodManager(0, abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
     }
 
     function test_Revert_EigenPodManagerCall_BadCall() public {
@@ -367,7 +367,7 @@ contract APETHTest is Test {
         APEth.grantRole(ADMIN, admin);
         vm.prank(admin);
         vm.expectRevert("Call failed");
-        APEth.callEigenPodManager(
+        APEth.callEigenPodManager(0, 
             abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
         );
     }

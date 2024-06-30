@@ -90,21 +90,61 @@ contract APEthPodWrapper is IAPEthPodWrapper, Initializable {
         eigenPodManager.stake{value: 32 ether}(pubKey, signature, depositDataRoot);
     }
 
-    function callEigenPod(bytes memory data) external onlyAPEth returns (bool success) {
-        (success,) = eigenPod.call(data);
+    /**
+     *
+     * @notice allows contract owner to call functions on the eigenPod
+     * @dev the likley functions called would include "recoverTokens" and "withdrawNonBeaconChainETHBalanceWei"
+     * @param data the calldata for the eigenPod
+     *
+     */
+    function callEigenPod(bytes memory data) external onlyAPEth {
+        (bool success,) = eigenPod.call(data);
+        require(success, "Call failed");
     }
 
+    /**
+     *
+     * @notice allows contract owner to call transfer out ERC20's incase of an airdrop (for distribution to users)
+     * @param tokenAddress the ERC20 being transfered
+     * @param to the token recipient
+     * @param amount the amount to transfer
+     *
+     */
     function transferToken(address tokenAddress, address to, uint256 amount) external onlyAPEth {
         IERC20 token = IERC20(tokenAddress);
         bool success = token.transfer(to, amount);
         require(success, "Call failed");
     }
 
+    /**
+     *
+     * @notice allows contract owner to call functions on the ssvNetwork
+     * @dev the likley functions called would include "registerValidator" and "setFeeRecipientAddress"
+     * @param data the calldata for the ssvNetwork
+     *
+     */
     function callSSVNetwork(bytes memory data) external onlyAPEth {
         // get address from storage
         address ssvNetwork =
             apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
         (bool success,) = ssvNetwork.call(data);
+        require(success, "Call failed");
+    }
+
+
+    /**
+     *
+     * @notice allows contract owner to call functions on the eigenPodManager
+     * @dev the only functions that the contract owner can currently call are "createPod" and "stake"
+     * @dev these functions are handled elsewhere in this contract, so this method may be redundant
+     * @param data the calldata for the eigenPodManager
+     *
+     */
+    function callEigenPodManager(bytes memory data) external onlyAPEth {
+        // get address from storage
+        address eigenPodManager =
+            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")));
+        (bool success,) = eigenPodManager.call(data);
         require(success, "Call failed");
     }
 }
