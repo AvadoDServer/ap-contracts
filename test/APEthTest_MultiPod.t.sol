@@ -14,21 +14,15 @@ import {
 } from "./APEthTestSetup.t.sol";
 
 contract APETHTestMultiPod is APEthTestSetup {
-    function test_fuzz_DeployPod(uint8 x) public {
-        x = x / 8; //all 256 takes way too long!
-        assertEq(APEth.getPodIndex(), 0);
-        vm.expectRevert();
-        APEth.getPodAddress(1);
-        vm.startPrank(staker);
-        for (uint256 i; i < x; i++) {
-            APEth.deployPod();
-        }
-        assertEq(APEth.getPodIndex(), x);
+    function test_fuzz_DeployPod(uint8 x) public deployPods(x / 8) {
+        // x / 8 bc all 256 takes way too long!
+        assertEq(APEth.getPodIndex(), x / 8);
     }
 
     function test_BasicAccountingWithStakingAndFuzzingMultiplePods(uint128 x, uint128 y, uint128 z)
         public
         mintAlice(x)
+        deployPods(3)
     {
         // Send eth to contract to increase balance
         vm.deal(address(this), y);
@@ -49,31 +43,28 @@ contract APETHTestMultiPod is APEthTestSetup {
         assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethPerAPEth not correct");
         uint256 ethInValidators;
         if (balance >= 32 ether) {
-            vm.startPrank(staker);
-            APEth.deployPod();
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
+            vm.prank(staker);
             APEth.stake(1, _pubKey, _signature, _deposit_data_root);
             vm.stopPrank();
             ethInValidators += 32 ether;
         }
         if (balance >= 64 ether) {
-            vm.startPrank(staker);
-            APEth.deployPod();
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
+            vm.prank(staker);
             APEth.stake(2, _pubKey2, _signature2, _deposit_data_root2);
             vm.stopPrank();
             ethInValidators += 32 ether;
         }
         if (balance >= 96 ether) {
-            vm.startPrank(staker);
-            APEth.deployPod();
             if (!workingKeys && block.chainid != 31337) {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
+            vm.prank(staker);
             APEth.stake(3, _pubKey3, _signature3, _deposit_data_root3);
             vm.stopPrank();
             ethInValidators += 32 ether;
@@ -97,11 +88,8 @@ contract APETHTestMultiPod is APEthTestSetup {
         }
     }
 
-    function test_ERC20Call_MultiPod() public {
+    function test_ERC20Call_MultiPod() public deployPods(1) {
         ERC20Mock mockCoin = new ERC20Mock();
-        vm.prank(staker);
-        APEth.deployPod();
-        (, address podWrapper) = APEth.getPodAddress(1);
         mockCoin.mint(podWrapper, 1 ether);
         assertEq(mockCoin.balanceOf(podWrapper), 1 ether);
         vm.prank(admin);
@@ -110,7 +98,7 @@ contract APETHTestMultiPod is APEthTestSetup {
         assertEq(mockCoin.balanceOf(podWrapper), 0);
     }
 
-    /*
+    /* TODO: make these multiPod Tests
     
     function test_SSVCall() public {
         vm.prank(owner);

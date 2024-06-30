@@ -19,25 +19,19 @@ contract APETHTestRevertMultiPod is APEthTestSetup {
         APEth.deployPod();
     }
 
-    function test_Revert_Stake_NotEnoughEth_MultiPod() public mintAlice(5) {
-        vm.startPrank(staker);
-        APEth.deployPod();
+    function test_Revert_Stake_NotEnoughEth_MultiPod() public mintAlice(5) deployPods(1) {
         vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
+        vm.prank(staker);
         APEth.stake(1, _pubKey, _signature, _deposit_data_root);
     }
 
-    function test_Revert_Stake_NotOwner_MultiPod() public mintAlice(32 ether) {
-        vm.prank(staker);
-        APEth.deployPod();
-        (, address podWrapper) = APEth.getPodAddress(1);
-        IAPEthPodWrapper wrapper = IAPEthPodWrapper(podWrapper);
+    function test_Revert_Stake_NotOwner_MultiPod() public mintAlice(32 ether) deployPods(1) {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         wrapper.stake(_pubKey, _signature, _deposit_data_root);
     }
 
-    /*
-    function test_Revert_ERC20Call_NotOwner() public {
+    function test_Revert_ERC20Call_NotOwner_MultiPod() public deployPods(1) {
         ERC20Mock mockCoin = new ERC20Mock();
         mockCoin.mint(address(APEth), 1 ether);
         vm.prank(vm.addr(69));
@@ -45,6 +39,7 @@ contract APETHTestRevertMultiPod is APEthTestSetup {
         APEth.transferToken(0, address(mockCoin), alice, 1 ether);
     }
 
+    /* TODO: make these multiPod Tests
     function test_Revert_SSVCall_NotOwner() public {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"

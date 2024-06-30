@@ -23,19 +23,23 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 
 contract APEthTestSetup is Test {
-    APETH APEth;
-    APETH implementation;
-    APEthStorage storageContract;
-    APEthEarlyDeposits earlyDeposits;
-    address owner;
-    address newOwner;
+    APETH public APEth;
+    APETH public implementation;
+    APEthStorage public storageContract;
+    APEthEarlyDeposits public earlyDeposits;
+    IAPEthPodWrapper public wrapper;
 
-    address alice;
-    address bob;
+    address public owner;
+    address public newOwner;
 
-    address staker;
-    address upgrader;
-    address admin;
+    address public alice;
+    address public bob;
+
+    address public staker;
+    address public upgrader;
+    address public admin;
+
+    address public podWrapper;
 
     bytes32 public constant UPGRADER = keccak256("UPGRADER");
     bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
@@ -43,7 +47,7 @@ contract APEthTestSetup is Test {
     bytes32 public constant ADMIN = keccak256("ADMIN");
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
-    bool workingKeys = false;
+    bool public workingKeys = false;
 
     bytes _pubKey =
         hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
@@ -105,6 +109,17 @@ contract APEthTestSetup is Test {
             vm.expectRevert(); //APETH__CAP_REACHED()
         }
         assertEq(address(APEth).balance, amount);
+        _;
+    }
+
+    modifier deployPods(uint256 numberOfPods) {
+        vm.startPrank(staker);
+        for(uint256 i; i < numberOfPods; i++) {
+            APEth.deployPod();
+        }
+        vm.stopPrank();
+        (, podWrapper) = APEth.getPodAddress(numberOfPods);
+        wrapper = IAPEthPodWrapper(podWrapper);
         _;
     }
 
