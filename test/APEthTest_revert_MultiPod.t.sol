@@ -39,54 +39,45 @@ contract APETHTestRevertMultiPod is APEthTestSetup {
         APEth.transferToken(0, address(mockCoin), alice, 1 ether);
     }
 
-    /* TODO: make these multiPod Tests
-    function test_Revert_SSVCall_NotOwner() public {
+    function test_Revert_SSVCall_NotOwner_MultiPod() public deployPods(1) {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
         APEth.callSSVNetwork(
-            0, abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+            1, abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
         );
     }
 
-    function test_Revert_SSVCall_BadCall() public {
-        vm.prank(owner);
-        APEth.grantRole(ADMIN, admin);
+    function test_Revert_SSVCall_BadCall_MultiPod() public deployPods(1) {
         vm.prank(admin);
         vm.expectRevert("Call failed");
         APEth.callSSVNetwork(
-            0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+            1, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
         );
     }
 
-    function test_Revert_EigenPodManagerCall_NotOwner() public {
+    function test_Revert_EigenPodManagerCall_NotOwner_MultiPod() public deployPods(1) {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.callEigenPodManager(0, abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+        APEth.callEigenPodManager(1, abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
     }
 
-    function test_Revert_EigenPodManagerCall_BadCall() public {
-        vm.prank(owner);
-        APEth.grantRole(ADMIN, admin);
+    function test_Revert_EigenPodManagerCall_BadCall_MultiPod() public deployPods(1) {
         vm.prank(admin);
         vm.expectRevert("Call failed");
         APEth.callEigenPodManager(
-            0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+            1, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
         );
     }
 
-    function test_Revert_EigenPodCall_NotOwner() public {
+    function test_Revert_EigenPodCall_NotOwner_MultiPod() public deployPods(1) {
         vm.prank(vm.addr(69));
         vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.callEigenPod(0, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+        APEth.callEigenPod(1, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 
-    function test_Revert_EigenPodCall_BadCall() public {
-        vm.prank(owner);
-        APEth.grantRole(ADMIN, admin);
+    function test_Revert_EigenPodCall_BadCall_MultiPod() public deployPods(1) {
         vm.prank(admin);
         vm.expectRevert("Call failed");
-        APEth.callEigenPod(0, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
+        APEth.callEigenPod(1, abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
-
-    */
 }
