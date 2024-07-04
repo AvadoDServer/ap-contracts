@@ -52,33 +52,33 @@ contract APEthTestSetup is Test {
     bytes _pubKey =
         hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
     bytes _signature =
-        hex"b2268f33589dc5de5288c0f641ad0779ea2496d4f51eb35ee32987f5d06c02dcc6b3d71c1716fe58b42ae84f25ddfe9b13e5c4d61901d83990578064f0bc2b90a6cd797bb8e61bab5cd72b1931a5d4a7316562fd21f0c9f44c21f9823338557f";
-    bytes32 _deposit_data_root = 0x88f65a4327907948ae8aa737bbdb7525a331592738462b347b8a859f79c7e765;
+        hex"b45314f927f2344883a59b2a4c50af9260cb0c716e11b8954d1e00225bdd71a9dfc2bb6ad3d2e71159fa994ab1c3f49f0f78754ed94bd959457072bf4efbf4ff6b36456037d922c6173fb3ed24d21970ed61160b1605ecc7d6e35685cdd1aeaa";
+    bytes32 _deposit_data_root = 0x7a71bc4430915cd6308a2b0e8bd18c91b8f8b9db13fd6d70101e1b53a4018dd0;
 
     bytes _pubKey2 =
         hex"91bebd77cd834b056ff242331dfcd3baecf3b89fcba6d866860a7ace128fb204af9b892cc84dd2d4eb933f6f8d0499b1";
     bytes _signature2 =
-        hex"a64eddbbe678042bd68c0785718298a7aac21702446ec34dba7809d10586d5119c849f6932467828eff1a7734d83eacf03fef186215392d8ef3aa936717b138e2e02b36f7faf7ebb91e7e3f26e50fbc9f923a9daaa5e856423fc3f2d3ea88b46";
-    bytes32 _deposit_data_root2 = 0x3bee4479fb00b4376f05148a85a2a1a38f1c4d104e51e35d9e1b95e7ecb5d3a9;
+        hex"8c0422c68f58930b12082da0bf2b72372a2092e4be42c461cb7a686d7969093240929c6313846409d2a8c481fd3513ec042da0ed7ffeedb98d0ee611aff2bd304214c5edb2d5f064ef7d3b282612eb1a083ecee5054f7d209ad86773aeab140a";
+    bytes32 _deposit_data_root2 = 0x79c26a0095560c824e3ba2674f788ef32f3deaf4dab89ee8040eab31855a25f9;
 
     bytes _pubKey3 =
         hex"b6ee6088e5b1dca8a7013f702140ab1f4825d349b20f8c4ba8436af36814dfb3309c13d7423898f60c5e332655a54f17";
     bytes _signature3 =
-        hex"8f138d8c32323105736215da1f22387e666efd0f06d52abc06aee2fddab1294d7babb7ebd25a0411ba627d367faeb754060c6d6efe13ca2ff7901becaba277902f5351421b8b22d16558424ba0764ce2c239f56ce8f1f3cc81ca5e937521a19c";
-    bytes32 _deposit_data_root3 = 0xa430705a6267c0349b80e65ae2fa6aeb7c9a195e4e7a68c08f0258c536a5e14f;
+        hex"a96e640ffdc0173ce037297440449d261621d2fe247e863d0cac73af879b99ed52944ddda74282326f5579ff6cdf6cb8041e0c0c1d1f722b6021a227958171b4168924f1efa955f12ae4072359b45406c3a1867424179b8e8812e5a9f478dfd5";
+    bytes32 _deposit_data_root3 = 0xa1b2ae2fcef94c75295b822eafadd7a38ebeaf30cfd9fc048f52ab281c4401b8;
 
     // for multi pods
     bytes _signature_M =
-        hex"a5fa0a709aa6608e8fe1c49e1e178469cb24917dbd22883bb53f8d3a5165c8d8fc7177b20300a97c3044412b4f5783d10bab81aa6ae31893300282f8c37a47fb8f1cd7071847e999efc9ffcdbf15ebaf08ac104aabe22333e1dfb7cfc4ae170d";
-    bytes32 _deposit_data_root_M = 0x532a5a41046a0e94b60e99acb6bf01f16083d1e88b9c0c9a280c30a07b9257eb;
+        hex"b52516870e1885a3601dd55af8dca27acd38524e504fab886ea9f95130fc9192e8280caf29176e64618ad880025f24ff1533899ef872e812beeb7f53206a35e46cff846b0af42516c0461a8390cdecd1410cb4518addce68f059e951943852a1";
+    bytes32 _deposit_data_root_M = 0x47e8c33776fa9aff7ea0df006918cf9447052bebd6bcabe458ae62dd45fc7b1c;
 
     bytes _signature2_M =
-        hex"a5263ec8a183a0e27e8dcdd97fdc9993dde376289cc8b7ce6eef2d8fb66bf9ef27287ddcb0fb6bb57ed256755036b80f0b07a53afba56fdce4c9c9f70e95a14d1c41e65f44af1263305e70aafe0459c1ee05343588af6229da6c3d622d50cb92";
-    bytes32 _deposit_data_root2_M = 0x8d8c04ce2bdfbc54f7d7d1b902af5429b52756521704dc4fd1edb2acceba2be6;
+        hex"b77c47461ff4d461213ccaaffdb0c89f478ff0e3c282fccbd048fc8ff01b16d1dc6b8860f1804780a686efcd09ab29d60a127cd371fc755a0245d4769b3de68c624c9f0676954aa348dbae89e7d585b20a88deeb347f8f8a23208595cbed8c1b";
+    bytes32 _deposit_data_root2_M = 0xc9d6958d532b2f485239dcc1f4136a108fe216aa7b5d7b0d1a383bc816865877;
 
     bytes _signature3_M =
-        hex"b6cb0629967dd138deb2b7bb5d52672284e52f3c6108eaf491f1985263e92c6fcf0b71bda31234a70f7bb0e0bcf8f9e31725069f14c1671935909f55dbe3e8c33dfe61428b02fb42c6675a10a3df704146e0a14e427ab28b54bfd79807afecd0";
-    bytes32 _deposit_data_root3_M = 0x89f8bd52168c950246bbe20828feaf222b6a16eb2fa64cc1980e567919dda5e3;
+        hex"b6a2fb523cb9f95de16b50ceff622b09e67a26475a30ec660094f43b6b12fbd7a364d72e2507344ec39c4152d5bff8080b6cbaf1c9bbd71d5d0e8b4608658866ff2f51ea5ef2413a8c76e8da73544a2a8c505f4aaa15c7ef9e10c72ac5cf84d7";
+    bytes32 _deposit_data_root3_M = 0xf866ff75b93b664479a458297e95c9834c75c26275d46dd0953932a9fb4e5d32;
 
     // Set up the test environment before running tests
     function setUp() public {
@@ -129,9 +129,9 @@ contract APEthTestSetup is Test {
         vm.startPrank(staker);
         for(uint256 i; i < numberOfPods; i++) {
             APEth.deployPod();
-            // (address podAddy,) = APEth.getPodAddress(i + 1);
-            // console.log("pod number: ", i + 1);
-            // console.log("pod address: ", podAddy);
+            (address podAddy,) = APEth.getPodAddress(i + 1);
+            console.log("pod number: ", i + 1);
+            console.log("pod address: ", podAddy);
         }
         vm.stopPrank();
         (, podWrapper) = APEth.getPodAddress(numberOfPods);
