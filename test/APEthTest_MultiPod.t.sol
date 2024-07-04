@@ -19,7 +19,7 @@ contract APETHTestMultiPod is APEthTestSetup {
         assertEq(APEth.getPodIndex(), x / 8);
     }
 
-    function test_BasicAccountingWithStakingAndFuzzingMultiplePods(uint128 x, uint128 y, uint128 z)
+    function test_BasicAccountingWithStakingAndFuzzing_MultiplePods(uint128 x, uint128 y, uint128 z)
         public
         mintAlice(x)
         deployPods(3)
@@ -47,7 +47,7 @@ contract APETHTestMultiPod is APEthTestSetup {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
             vm.prank(staker);
-            APEth.stake(1, _pubKey, _signature, _deposit_data_root);
+            APEth.stake(1, _pubKey, _signature_M, _deposit_data_root_M);
             vm.stopPrank();
             ethInValidators += 32 ether;
         }
@@ -56,7 +56,7 @@ contract APETHTestMultiPod is APEthTestSetup {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
             vm.prank(staker);
-            APEth.stake(2, _pubKey2, _signature2, _deposit_data_root2);
+            APEth.stake(2, _pubKey2, _signature2_M, _deposit_data_root2_M);
             vm.stopPrank();
             ethInValidators += 32 ether;
         }
@@ -65,7 +65,7 @@ contract APETHTestMultiPod is APEthTestSetup {
                 vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
             }
             vm.prank(staker);
-            APEth.stake(3, _pubKey3, _signature3, _deposit_data_root3);
+            APEth.stake(3, _pubKey3, _signature3_M, _deposit_data_root3_M);
             vm.stopPrank();
             ethInValidators += 32 ether;
         }
