@@ -98,36 +98,27 @@ contract APETHTestMultiPod is APEthTestSetup {
         assertEq(mockCoin.balanceOf(podWrapper), 0);
     }
 
-    /* TODO: make these multiPod Tests
-    
-    function test_SSVCall() public {
-        vm.prank(owner);
-        APEth.grantRole(ADMIN, admin);
+    function test_SSVCall_MultiPod() public deployPods(1) {
         vm.prank(admin);
         APEth.callSSVNetwork(
-            0, abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+            1, abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(wrapper))
         );
         if (block.chainid == 31337) {
             address ssvNetworkAddress =
                 storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
             MockSsvNetwork ssvNetwork = MockSsvNetwork(ssvNetworkAddress);
-            address feeRecip = ssvNetwork.feeRecipient(address(APEth));
-            assertEq(feeRecip, address(APEth), "feeRecip not set in ssv contract");
+            address feeRecip = ssvNetwork.feeRecipient(address(wrapper));
+            assertEq(feeRecip, address(wrapper), "feeRecip not set in ssv contract");
         }
     }
 
-    function test_EigenPodManagerCall() public {
-        vm.prank(owner);
-        APEth.grantRole(ADMIN, admin);
+    function test_EigenPodManagerCall_multipod() public deployPods(1) {
         vm.prank(admin);
-        APEth.callEigenPodManager(0, abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
-
-    function test_EigenPodCall() public {
-        vm.prank(owner);
-        APEth.grantRole(ADMIN, admin);
-        vm.prank(admin);
-        APEth.callEigenPod(0, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+        APEth.callEigenPodManager(1, abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
     }
 
-    */
+    function test_EigenPodCall_multipod() public deployPods(1) {
+        vm.prank(admin);
+        APEth.callEigenPod(1, abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+    }
 }
