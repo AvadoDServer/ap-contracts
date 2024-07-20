@@ -18,9 +18,10 @@ contract DeployStorageContract is ScriptBase {
 
     function run() public {
         HelperConfig helperConfig = new HelperConfig();
-        (_ssvNetwork, _eigenPodManager) = helperConfig.activeNetworkConfig();
+        (_ssvNetwork, _eigenPodManager, _delegationManager) = helperConfig.activeNetworkConfig();
         console.log("ssvNetwork", _ssvNetwork);
         console.log("eigenPodManager", _eigenPodManager);
+        console.log("delegationManager", _delegationManager);
 
         if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         console.log("***Deploying Storage***");
@@ -38,6 +39,10 @@ contract DeployStorageContract is ScriptBase {
         //Set eigen pod manager address in storage
         _storageContract.setAddress(
             keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")), _eigenPodManager
+        );
+        //Set delegation manager address in storage
+        _storageContract.setAddress(
+            keccak256(abi.encodePacked("external.contract.address", "DelegationManager")), _delegationManager
         );
         //set fee recipient in storage
         _storageContract.setAddress(keccak256(abi.encodePacked("fee.recipient.address")), _owner);

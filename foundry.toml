@@ -6,7 +6,7 @@ ffi = true
 ast = true
 build_info = true
 extra_output = ["storageLayout"]
-
+evm_version = "shanghai"
 fs_permissions = [{ access = "read", path = "./" }]
 
 [rpc_endpoints]

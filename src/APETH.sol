@@ -24,6 +24,7 @@ import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
+import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
 
@@ -195,6 +196,26 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
             apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")));
         (bool success,) = eigenPodManager.call(data);
         require(success, "Call failed");
+    }
+
+    /**
+     *
+     * @notice allows contract owner to call functions on the delegationManager
+     * @dev this is how the pod will delegate and undelegate its stake to an operator,
+     * @dev this is also how ETH is removed from the eigen pod.
+     * @param data the calldata for the delegationManager
+     * @param validatorsExited this is the number of validators-worth-of-eth which will be returned in this transaction
+     * @dev it is important that the amount of eth returned to this contract in this call corresponds to the number of validators exited
+     * @dev if there is not some multiple of 32 ETH being recieved from this txn, validatorsExited should be zero.
+     *
+     */
+    function callDelegationManager(bytes memory data, uint validatorsExited) external onlyRole(ADMIN) {
+        // get address from storage
+        address delegationManager =
+            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "DelegationManager")));
+        (bool success,) = delegationManager.call(data);
+        require(success, "Call failed");
+        apEthStorage.subUint(keccak256(abi.encodePacked("active.validators")), validatorsExited);
     }
 
     /**

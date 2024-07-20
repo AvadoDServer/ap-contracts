@@ -34,6 +34,7 @@ contract ScriptBase is Script {
 
     address _ssvNetwork;
     address _eigenPodManager;
+    address _delegationManager;
     address storageContractAddress;
     address implementationContractAddress;
     address _owner;
