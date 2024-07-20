@@ -7,7 +7,7 @@ pragma solidity 0.8.20;
  * @notice Terms of Service: https://ava.do/terms-and-conditions/
  * @notice Each address can only deploy one EigenPod, APEth requires multiple
  * EigenPods. This contract is a a pod deployer implementation, which will
- * have ERC-1167 minimal clone instances.
+ * have ERC-1976I minimal proxy instances.
  */
 
 /**
@@ -16,6 +16,7 @@ pragma solidity 0.8.20;
  *
  */
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
@@ -61,6 +62,7 @@ contract APEthPodWrapper is IAPEthPodWrapper, Initializable {
     }
 
     function initialize(address _apEthStorage) external initializer {
+        __UUPSUpgradeable_init();
         apEthStorage = IAPEthStorage(_apEthStorage);
         IEigenPodManager eigenPodManager = IEigenPodManager(
             apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")))
@@ -146,4 +148,6 @@ contract APEthPodWrapper is IAPEthPodWrapper, Initializable {
         (bool success,) = eigenPodManager.call(data);
         require(success, "Call failed");
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
 }
