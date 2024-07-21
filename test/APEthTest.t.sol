@@ -124,6 +124,29 @@ contract APETHTest is APEthTestSetup {
         if (workingKeys) assertEq(address(APEth).balance, 29 ether);
     }
 
+    function test_BasicAccountingWithStakingAndWithdrawal() public mintAlice(50 ether) {
+        // Send eth to contract to increase balance
+        payable(address(APEth)).transfer(1 ether);
+        assertEq(address(APEth).balance, 51 ether);
+        //check eth per apeth
+        uint256 ethPerAPEth = 51 ether / 50;
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        vm.prank(staker);
+        if (!workingKeys && block.chainid != 31337) {
+            vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+        }
+        APEth.stake( _pubKey, _signature, _deposit_data_root);
+        if (workingKeys) {
+            assertEq(address(APEth).balance, 19 ether);
+        }
+        if (block.chainid == 31337) {
+            assertEq(storageContract.getUint(keccak256(abi.encodePacked("active.validators"))), 1);
+            vm.prank(admin);
+            APEth.callDelegationManager(abi.encodeWithSelector(IMockDelegationManager.undelegate.selector, address(APEth)), 1);
+            assertEq(storageContract.getUint(keccak256(abi.encodePacked("active.validators"))), 0);
+        }
+    }
+
     function test_BasicAccountingWithStakingAndFuzzing(uint128 x, uint128 y, uint128 z) public mintAlice(x) {
         // Send eth to contract to increase balance
         vm.deal(address(this), y);
