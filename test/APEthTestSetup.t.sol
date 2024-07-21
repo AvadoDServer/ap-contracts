@@ -15,6 +15,7 @@ import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
 import {IMockEigenPodManager} from "./mocks/MockEigenPodManager.sol";
 import {IMockEigenPod} from "./mocks/MockEigenPod.sol";
+import {IMockDelegationManager} from "./mocks/MockDelegationManager.sol";
 // import {IAPEthPodWrapper} from "../src/interfaces/IAPEthPodWrapper.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";

@@ -9,7 +9,8 @@ import {
     ERC20Mock,
     MockSsvNetwork,
     IMockEigenPodManager,
-    IMockEigenPod
+    IMockEigenPod,
+    IMockDelegationManager
 } from "./APEthTestSetup.t.sol";
 
 contract APETHTestRevert is APEthTestSetup {
@@ -60,6 +61,20 @@ contract APETHTestRevert is APEthTestSetup {
         vm.expectRevert("Call failed");
         APEth.callEigenPodManager(
             abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth))
+        );
+    }
+
+    function test_Revert_DelegationManagerCall_NotOwner() public {
+        vm.prank(vm.addr(69));
+        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+        APEth.callDelegationManager(abi.encodeWithSelector(IMockDelegationManager.undelegate.selector, address(APEth)),0);
+    }
+
+    function test_Revert_DelegationManagerCall_BadCall() public {
+        vm.prank(admin);
+        vm.expectRevert("Call failed");
+        APEth.callDelegationManager(
+            abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist(address)")), address(APEth)),0
         );
     }
 

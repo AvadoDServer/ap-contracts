@@ -5,6 +5,7 @@ import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {MockSsvNetwork} from "../test/mocks/MockSsvNetwork.sol";
 import {MockEigenPodManager} from "../test/mocks/MockEigenPodManager.sol";
+import {MockDelegationManager} from "../test/mocks/MockDelegationManager.sol";
 
 contract HelperConfig is Script {
     struct NetworkConfig {
@@ -45,9 +46,10 @@ contract HelperConfig is Script {
         vm.startBroadcast();
         MockSsvNetwork _ssvNetwork = new MockSsvNetwork();
         MockEigenPodManager _eigenpodManager = new MockEigenPodManager();
+        MockDelegationManager _delegationManager = new MockDelegationManager();
         vm.stopBroadcast();
         NetworkConfig memory localConfig =
-            NetworkConfig({ssvNetwork: address(_ssvNetwork), eigenpodManager: address(_eigenpodManager), delegationManager: address(0)});
+            NetworkConfig({ssvNetwork: address(_ssvNetwork), eigenpodManager: address(_eigenpodManager), delegationManager: address(_delegationManager)});
         return localConfig;
     }
 }

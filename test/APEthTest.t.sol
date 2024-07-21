@@ -9,7 +9,8 @@ import {
     ERC20Mock,
     MockSsvNetwork,
     IMockEigenPodManager,
-    IMockEigenPod
+    IMockEigenPod,
+    IMockDelegationManager
 } from "./APEthTestSetup.t.sol";
 
 contract APETHTest is APEthTestSetup {
@@ -211,12 +212,18 @@ contract APETHTest is APEthTestSetup {
 
     function test_EigenPodManagerCall() public {
         vm.prank(admin);
-        APEth.callEigenPodManager(  abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+        APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+    }
+
+    function test_DelegationManagerCall() public {
+        if (block.chainid != 31337) vm.expectRevert("Call failed");
+        vm.prank(admin);
+        APEth.callDelegationManager(abi.encodeWithSelector(IMockDelegationManager.undelegate.selector, address(APEth)), 0);
     }
 
     function test_EigenPodCall() public {
         vm.prank(admin);
-        APEth.callEigenPod(  abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+        APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 
     function test_FeeChange() public {
