@@ -167,6 +167,13 @@ contract EarlyDepositTest is Test{
         assertEq(APEth.balanceOf(vm.addr(72)), sevenTwoBalance);
     }
 
+    function test_revert_MintWithNoAPEthSet() public depositAlice(10 ether) {
+        recipients.push(alice);
+        vm.prank(owner);
+        vm.expectRevert("APEth contract address not set");
+        earlyDeposits.mintAPEthBulk(recipients);
+    }
+
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
         uint256 fee = amount * storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
