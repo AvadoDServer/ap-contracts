@@ -10,6 +10,7 @@ import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
 import {DeployStorageContract} from "../script/deployStorage.s.sol";
 import {DeployProxy} from "../script/deployToken.s.sol";
 import {DeployEarlyDeposits} from "../script/deployEarlyDepositOnly.s.sol";
+import {UpdateEarlyDeposit} from "../script/updateEarlyDeposit.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
@@ -26,6 +27,7 @@ contract EarlyDepositTest is Test{
     APETH implementation;
     APEthStorage storageContract;
     APEthEarlyDeposits earlyDeposits;
+    UpdateEarlyDeposit updateEarlyDeposit;
     address owner;
     address newOwner;
 
@@ -54,14 +56,19 @@ contract EarlyDepositTest is Test{
         DeployStorageContract deployStorage = new DeployStorageContract();
         DeployProxy deployProxy = new DeployProxy();
         DeployEarlyDeposits deployEarlyDeposits = new DeployEarlyDeposits();
+        updateEarlyDeposit = new UpdateEarlyDeposit();
 
         (storageContract, implementation) = deployStorage.run(owner);
         (APEth) = deployProxy.run(owner, address(storageContract), address(implementation));
         //deploy early deposit contract sepatately
-        earlyDeposits = deployEarlyDeposits.run(owner, ERC1967Proxy(payable(address(APEth))));
+        earlyDeposits = deployEarlyDeposits.run(owner);
     }
+    
+    modifier updateEarlyDepositAddr() {
+        updateEarlyDeposit.run(earlyDeposits, ERC1967Proxy(payable(APEth)), owner);
+        _;}
 
-    function testDeposit(uint128 x) public {
+    function testDeposit(uint128 x) public updateEarlyDepositAddr {
         assertEq(earlyDeposits.deposits(alice), 0);
         hoax(alice);
         earlyDeposits.deposit{value: uint256(x)}(alice);
@@ -69,7 +76,7 @@ contract EarlyDepositTest is Test{
         assertEq(address(earlyDeposits).balance, uint256(x));
     }
 
-    modifier depositAlice(uint256 amount){
+    modifier depositAlice(uint256 amount) {
         assertEq(earlyDeposits.deposits(alice), 0);
         hoax(alice);
         earlyDeposits.deposit{value: uint256(amount)}(alice);
@@ -78,7 +85,7 @@ contract EarlyDepositTest is Test{
         _;
     }
 
-    function testWithdrawal(uint128 x) public depositAlice(uint256(x)) {
+    function testWithdrawal(uint128 x) public depositAlice(uint256(x)) updateEarlyDepositAddr {
         uint256 aliceBalance = alice.balance;
         vm.prank(alice);
         earlyDeposits.withdraw();
@@ -97,7 +104,7 @@ contract EarlyDepositTest is Test{
         assertEq(address(earlyDeposits).balance, uint256(x));
     }
 
-    function testMint(uint72 x) public depositAlice(uint256(x)) {
+    function testMint(uint72 x) public depositAlice(uint256(x)) updateEarlyDepositAddr {
         recipients.push(alice);
         vm.prank(owner);
         earlyDeposits.mintAPEthBulk(recipients);
@@ -106,7 +113,7 @@ contract EarlyDepositTest is Test{
         assertEq(earlyDeposits.deposits(alice), 0);
     }
 
-    function testBulkMint(uint64 a, uint64 b, uint64 c, uint64 d, uint64 e, uint64 f, uint64 aa) public depositAlice(uint256(a)) {
+    function testBulkMint(uint64 a, uint64 b, uint64 c, uint64 d, uint64 e, uint64 f, uint64 aa) public depositAlice(uint256(a)) updateEarlyDepositAddr {
         // deposit to early deposit contract
         hoax(bob);
         earlyDeposits.deposit{value: uint256(b)}(bob);

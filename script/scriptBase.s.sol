@@ -104,9 +104,7 @@ contract ScriptBase is Script {
     function deployEarlyDeposit() public {
         if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
         vm.startBroadcast(_owner);
-        _earlyDeposit = new APEthEarlyDeposits(_owner, address(_proxy));
-        console.log(address(_APEth));
-        _APEth.grantRole(EARLY_ACCESS, address(_earlyDeposit));
+        _earlyDeposit = new APEthEarlyDeposits(_owner);
         vm.stopBroadcast();
         console.log("early deposit contract:", address(_earlyDeposit));
     }

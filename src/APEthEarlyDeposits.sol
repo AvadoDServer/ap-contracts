@@ -52,7 +52,7 @@ contract APEthEarlyDeposits is Ownable{
      * FUNCTIONS
      *
      */
-    constructor(address _owner, address _APEth)Ownable(_owner){
+    constructor(address _owner)Ownable(_owner){
         //
     }
 
