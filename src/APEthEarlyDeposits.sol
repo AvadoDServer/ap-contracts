@@ -30,7 +30,7 @@ contract APEthEarlyDeposits is Ownable{
      * STORAGE
      *
      */
-    IAPETH immutable _APETH;
+    IAPETH public _APETH;
     mapping(address depositor => uint256 amount) public deposits;
 
     /**
@@ -53,6 +53,10 @@ contract APEthEarlyDeposits is Ownable{
      *
      */
     constructor(address _owner, address _APEth)Ownable(_owner){
+        //
+    }
+
+    function updateAPEth(address _APEth) external onlyOwner {
         _APETH = IAPETH(payable(_APEth));
     }
 
@@ -71,6 +75,7 @@ contract APEthEarlyDeposits is Ownable{
 
     function mintAPEthBulk(address[] calldata recipients) external onlyOwner{
         for(uint256 i = 0; i < recipients.length; i++) {
+            require(address(_APETH) != address(0), "APEth contract address not set");
             _mintAPEth(recipients[i]);
         }
     }
