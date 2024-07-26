@@ -269,7 +269,7 @@ contract APETHTest is APEthTestSetup {
         APEth.grantRole(EARLY_ACCESS, alice);
 
         // Impersonate the alice to call mint function
-        start(alice);
+        hoax(alice);
 
         // Mint 64 eth of tokens and assert the balance
         APEth.mint{value: 64 ether}();
