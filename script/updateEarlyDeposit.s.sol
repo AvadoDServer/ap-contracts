@@ -1,25 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ScriptBase, ERC1967Proxy, APETH, APEthEarlyDeposits} from "./scriptBase.s.sol";
+import {ScriptBase, APETH, APEthEarlyDeposits, EARLY_ACCESS} from "./scriptBase.s.sol";
+
+library UpdateEarlyDepositLibrary {
+    function run(APETH apEth, APEthEarlyDeposits earlyDeposit) internal {
+        apEth.grantRole(EARLY_ACCESS, address(earlyDeposit));
+        earlyDeposit.updateAPEth(address(apEth));
+    }
+}
 
 contract UpdateEarlyDeposit is ScriptBase {
-
-    function run(APEthEarlyDeposits earlyDeposit_, ERC1967Proxy proxy_, address owner_) public{
-        _earlyDeposit = earlyDeposit_;
-        _proxy = proxy_;
-        _owner = owner_;
-        _isTest = true;
-        run();
+    function run(address apEth, address earlyDeposit) public {
+        UpdateEarlyDepositLibrary.run(
+            getAPETH(apEth),
+            getAPEthEarlyDeposits(earlyDeposit)
+        );
     }
 
     function run() public {
-        if (address(_proxy) == address(0)) _proxy = ERC1967Proxy(payable(address(getProxyAddress())));
-        if (_owner == address(0)) _owner = vm.envAddress("CONTRACT_OWNER");
-        _APEth = APETH(payable(address(_proxy)));
-        vm.startBroadcast(_owner);
-        _APEth.grantRole(EARLY_ACCESS, address(_earlyDeposit));
-        _earlyDeposit.updateAPEth(address(_APEth));
-        vm.stopBroadcast();
+        address apEth = vm.envAddress("APETH_PROXY");
+        address earlyDeposits = vm.envAddress("APETH_EARLY_DEPOSITS");
+
+        if (apEth == address(0)) {
+            apEth = getProxyAddress();
+        }
+
+        if (earlyDeposits == address(0)) {
+            earlyDeposits = getEarlyDepositAddress();
+        }
+
+        vm.broadcast();
+        run(apEth, earlyDeposits);
     }
 }

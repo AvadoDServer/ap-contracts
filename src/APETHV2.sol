@@ -7,10 +7,15 @@ import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC2
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IDepositContract.sol";
-import "./interfaces/IAPEthStorage.sol";
 
 /// @custom:oz-upgrades-from APETH
-contract APETHV2 is Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+contract APETHV2 is
+    Initializable,
+    ERC20Upgradeable,
+    AccessControlUpgradeable,
+    ERC20PermitUpgradeable,
+    UUPSUpgradeable
+{
     /**
      *
      * STORAGE
@@ -19,7 +24,15 @@ contract APETHV2 is Initializable, ERC20Upgradeable, AccessControlUpgradeable, E
     bytes32 public constant UPGRADER = keccak256("UPGRADER");
     bytes32 public constant STAKER = keccak256("MY_ROLE");
     bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
-    IAPEthStorage public apEthStorage;
+
+    // Storage slots
+    address private eigenPodManager;
+    address private eigenPod;
+    address private delegationManager;
+    address private ssvNetwork;
+    uint256 private activeValidators;
+    uint256 private feeAmount;
+    address private feeRecipient;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -34,7 +47,10 @@ contract APETHV2 is Initializable, ERC20Upgradeable, AccessControlUpgradeable, E
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
     }
 
-    function mint(address to, uint256 amount) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function mint(
+        address to,
+        uint256 amount
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _mint(to, amount);
     }
 
@@ -42,5 +58,7 @@ contract APETHV2 is Initializable, ERC20Upgradeable, AccessControlUpgradeable, E
         return 2;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }
