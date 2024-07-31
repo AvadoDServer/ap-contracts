@@ -1,4 +1,4 @@
-pragma solidity 0.8.20;
+pragma solidity 0.8.24;
 
 // SPDX-License-Identifier: GPL-3.0-only
 //modified from IRocketStorage on 03/12/2022 by 0xWildhare
