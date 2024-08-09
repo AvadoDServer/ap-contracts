@@ -12,6 +12,7 @@ import {
     IMockEigenPod,
     IMockDelegationManager
 } from "./APEthTestSetup.t.sol";
+import {APETH__PUBKEY_ALREADY_USED} from "../src/APETH.sol";
 
 contract APETHTest is APEthTestSetup {
     function test_Mint() public {
@@ -260,5 +261,27 @@ contract APETHTest is APEthTestSetup {
         uint256 aliceBalance = _calculateAmountLessFee(10 ether);
         assertEq(APEth.balanceOf(alice), aliceBalance);
         assertEq(address(APEth).balance, 10 ether);
+    }
+
+    function test_DoubleStake() public {
+        // Grant Alice Early Access
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, alice);
+
+        // Impersonate the alice to call mint function
+        hoax(alice);
+
+        // Mint 64 eth of tokens and assert the balance
+        APEth.mint{value: 64 ether}();
+        
+        // Impersonate staker to call stake()
+        vm.prank(staker);
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
+        assertEq(address(APEth).balance, 32 ether);
+
+        // Do a second stake
+        vm.prank(staker);
+        vm.expectRevert(abi.encodeWithSelector(APETH__PUBKEY_ALREADY_USED.selector, _pubKey));
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
     }
 }

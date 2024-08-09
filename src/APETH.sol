@@ -39,6 +39,9 @@ error APETH__NOT_ENOUGH_ETH();
 /// @notice thrown when attempting to mint over cap
 error APETH__CAP_REACHED();
 
+/// @notice thrown when the public key used in `stake` was already used
+error APETH__PUBKEY_ALREADY_USED(bytes pubKey);
+
 /**
  *
  * CONTRACT
@@ -142,6 +145,13 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
     function stake(bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root) external onlyRole(ETH_STAKER) {
         // requires 32 ETH
         if (address(this).balance < 32 ether) revert APETH__NOT_ENOUGH_ETH();
+
+        // Check if that pubkey was already used
+        bytes32 key = keccak256(abi.encodePacked("pubkey.deposited", _pubKey));
+        if (apEthStorage.getBool(key)) {
+            revert APETH__PUBKEY_ALREADY_USED(_pubKey);
+        }
+        
         // get EigenPodManager from storage
         IEigenPodManager eigenPodManager = IEigenPodManager(
             apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")))
@@ -149,6 +159,7 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
         // Stake into eigenPod using the eigenPodManager
         eigenPodManager.stake{value: 32 ether}(_pubKey, _signature, _deposit_data_root);
         // increase the number of active validators for accounting
+        apEthStorage.setBool(key, true);
         apEthStorage.addUint(keccak256(abi.encodePacked("active.validators")), 1);
         emit Stake(_pubKey, msg.sender);
     }
