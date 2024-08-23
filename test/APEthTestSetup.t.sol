@@ -20,7 +20,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
-import {ProxyConfig} from "../script/scriptBase.s.sol";
+import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
 
 contract APEthTestSetup is Test {
     APETH public APEth;
@@ -36,14 +36,21 @@ contract APEthTestSetup is Test {
 
     address public staker;
     address public upgrader;
-    address public admin;
+
+    ProxyConfig public proxyConfig;
 
     // address public podWrapper;
 
-    bytes32 public constant UPGRADER = keccak256("UPGRADER");
     bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
     bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
-    bytes32 public constant ADMIN = keccak256("ADMIN");
+    bytes32 public constant UPGRADER = keccak256("UPGRADER");
+    bytes32 public constant MISCELLANEOUS = keccak256("MISCELLANEOUS");
+    bytes32 public constant SSV_NETWORK_ADMIN = keccak256("SSV_NETWORK_ADMIN");
+    bytes32 public constant DELEGATION_MANAGER_ADMIN =
+        keccak256("DELEGATION_MANAGER_ADMIN");
+    bytes32 public constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
+    bytes32 public constant EIGEN_POD_MANAGER_ADMIN =
+        keccak256("EIGEN_POD_MANAGER_ADMIN");
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool public workingKeys = true;
@@ -92,26 +99,24 @@ contract APEthTestSetup is Test {
         bob = vm.addr(3);
         staker = vm.addr(4);
         upgrader = vm.addr(5);
-        admin = vm.addr(6);
         // Define a new owner address for upgrade tests
         newOwner = address(1);
 
         DeployProxy deployProxy = new DeployProxy();
-        ProxyConfig memory proxyConfig;
         proxyConfig.admin = owner;
+        proxyConfig = new ScriptBase().getConfig(proxyConfig);
         APEth = deployProxy.run(proxyConfig);
 
         vm.startPrank(owner);
         APEth.grantRole(ETH_STAKER, staker);
         APEth.grantRole(UPGRADER, upgrader);
-        APEth.grantRole(ADMIN, admin);
         vm.stopPrank();
     }
 
     modifier mintAlice(uint256 amount) {
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, alice);
-        uint256 cap = APEth.INITIAL_CAP();
+        uint256 cap = proxyConfig.initialCap;
         uint256 aliceBalance = _calculateAmountLessFee(amount);
         if (amount > cap) {
             aliceBalance = 0;
@@ -143,7 +148,7 @@ contract APEthTestSetup is Test {
 
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
-        return (amount * APEth.feeAmount()) / 1e6;
+        return (amount * proxyConfig.feeAmount) / 1e6;
     }
 
     function _calculateAmountLessFee(

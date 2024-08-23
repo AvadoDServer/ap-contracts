@@ -21,18 +21,12 @@ contract APETHV2 is
      * STORAGE
      *
      */
-    bytes32 public constant UPGRADER = keccak256("UPGRADER");
-    bytes32 public constant STAKER = keccak256("MY_ROLE");
-    bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
+    bytes32 private constant UPGRADER = keccak256("UPGRADER");
+    bytes32 private constant STAKER = keccak256("MY_ROLE");
+    bytes32 private constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
 
     // Storage slots
-    address private eigenPodManager;
-    address private eigenPod;
-    address private delegationManager;
-    address private ssvNetwork;
     uint256 private activeValidators;
-    uint256 private feeAmount;
-    address private feeRecipient;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {

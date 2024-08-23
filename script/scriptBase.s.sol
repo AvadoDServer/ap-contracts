@@ -21,6 +21,7 @@ struct ProxyConfig {
     address admin;
     address feeRecipient;
     uint256 feeAmount;
+    uint256 initialCap;
     NetworkConfig network;
 }
 
@@ -48,7 +49,7 @@ contract ScriptBase is Script {
 
     function getConfig(
         ProxyConfig memory config
-    ) private returns (ProxyConfig memory) {
+    ) public returns (ProxyConfig memory) {
         if (config.admin == address(0)) {
             config.admin = vm.envAddress("CONTRACT_OWNER");
         }
@@ -56,6 +57,10 @@ contract ScriptBase is Script {
         if (config.feeRecipient == address(0)) {
             config.feeRecipient = config.admin;
             config.feeAmount = 500;
+        }
+
+        if (config.initialCap == 0) {
+            config.initialCap = 100000 ether;
         }
 
         config.salt = getSalt(config);
@@ -92,17 +97,21 @@ contract ScriptBase is Script {
         ProxyConfig memory partialConfig
     ) public returns (bytes memory) {
         ProxyConfig memory config = getConfig(partialConfig);
+        return abi.encodeCall(APETH.initialize, (config.admin));
+    }
+
+    function deployApEth(
+        ProxyConfig memory partialConfig
+    ) public returns (APETH) {
+        ProxyConfig memory config = getConfig(partialConfig);
         return
-            abi.encodeCall(
-                APETH.initialize,
-                (
-                    config.admin,
-                    IEigenPodManager(config.network.eigenPodManager),
-                    config.network.delegationManager,
-                    config.network.ssvNetwork,
-                    config.feeRecipient,
-                    config.feeAmount
-                )
+            new APETH(
+                config.initialCap,
+                IEigenPodManager(config.network.eigenPodManager),
+                config.network.delegationManager,
+                config.network.ssvNetwork,
+                config.feeRecipient,
+                config.feeAmount
             );
     }
 

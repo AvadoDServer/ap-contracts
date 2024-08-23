@@ -143,7 +143,9 @@ contract APETHTest is APEthTestSetup {
         }
         if (block.chainid == 31337) {
             assertEq(APEth.activeValidators(), 1);
-            vm.prank(admin);
+            vm.prank(owner);
+            APEth.grantRole(DELEGATION_MANAGER_ADMIN, alice);
+            vm.prank(alice);
             APEth.callDelegationManager(
                 abi.encodeWithSelector(
                     IMockDelegationManager.undelegate.selector,
@@ -163,7 +165,7 @@ contract APETHTest is APEthTestSetup {
         // Send eth to contract to increase balance
         vm.deal(address(this), y);
         payable(address(APEth)).transfer(y);
-        uint256 cap = APEth.INITIAL_CAP();
+        uint256 cap = proxyConfig.initialCap;
         uint256 balance = uint256(x) + uint256(y);
         if (uint256(x) > cap) {
             balance = uint256(y);
@@ -242,14 +244,18 @@ contract APETHTest is APEthTestSetup {
         ERC20Mock mockCoin = new ERC20Mock();
         mockCoin.mint(address(APEth), 1 ether);
         assertEq(mockCoin.balanceOf(address(APEth)), 1 ether);
-        vm.prank(admin);
+        vm.prank(owner);
+        APEth.grantRole(MISCELLANEOUS, alice);
+        vm.prank(alice);
         APEth.transferToken(address(mockCoin), alice, 1 ether);
         assertEq(mockCoin.balanceOf(alice), 1 ether);
         assertEq(mockCoin.balanceOf(address(APEth)), 0);
     }
 
     function test_SSVCall() public {
-        vm.prank(admin);
+        vm.prank(owner);
+        APEth.grantRole(SSV_NETWORK_ADMIN, alice);
+        vm.prank(alice);
         APEth.callSSVNetwork(
             abi.encodeWithSelector(
                 bytes4(keccak256("setFeeRecipientAddress(address)")),
@@ -257,7 +263,9 @@ contract APETHTest is APEthTestSetup {
             )
         );
         if (block.chainid == 31337) {
-            MockSsvNetwork ssvNetwork = MockSsvNetwork(APEth.ssvNetwork());
+            MockSsvNetwork ssvNetwork = MockSsvNetwork(
+                proxyConfig.network.ssvNetwork
+            );
             address feeRecip = ssvNetwork.feeRecipient(address(APEth));
             assertEq(
                 feeRecip,
@@ -268,7 +276,9 @@ contract APETHTest is APEthTestSetup {
     }
 
     function test_EigenPodManagerCall() public {
-        vm.prank(admin);
+        vm.prank(owner);
+        APEth.grantRole(EIGEN_POD_MANAGER_ADMIN, alice);
+        vm.prank(alice);
         APEth.callEigenPodManager(
             abi.encodeWithSelector(
                 IMockEigenPodManager.getPod.selector,
@@ -279,7 +289,9 @@ contract APETHTest is APEthTestSetup {
 
     function test_DelegationManagerCall() public {
         if (block.chainid != 31337) vm.expectRevert("Call failed");
-        vm.prank(admin);
+        vm.prank(owner);
+        APEth.grantRole(DELEGATION_MANAGER_ADMIN, alice);
+        vm.prank(alice);
         APEth.callDelegationManager(
             abi.encodeWithSelector(
                 IMockDelegationManager.undelegate.selector,
@@ -290,7 +302,9 @@ contract APETHTest is APEthTestSetup {
     }
 
     function test_EigenPodCall() public {
-        vm.prank(admin);
+        vm.prank(owner);
+        APEth.grantRole(EIGEN_POD_ADMIN, alice);
+        vm.prank(alice);
         APEth.callEigenPod(
             abi.encodeWithSelector(IMockEigenPod.podOwner.selector)
         );

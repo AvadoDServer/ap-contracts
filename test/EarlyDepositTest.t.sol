@@ -19,7 +19,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
-import {ProxyConfig} from "../script/scriptBase.s.sol";
+import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
 
 contract EarlyDepositTest is Test {
     APETH APEth;
@@ -36,6 +36,8 @@ contract EarlyDepositTest is Test {
     address admin;
     address[] recipients;
 
+    ProxyConfig public proxyConfig;
+
     // Set up the test environment before running tests
     function setUp() public {
         console.log("chain ID: ", block.chainid);
@@ -50,8 +52,8 @@ contract EarlyDepositTest is Test {
         // Define a new owner address for upgrade tests
         newOwner = address(1);
 
-        ProxyConfig memory proxyConfig;
         proxyConfig.admin = owner;
+        proxyConfig = new ScriptBase().getConfig(proxyConfig);
         APEth = new DeployProxy().run(proxyConfig);
 
         //deploy early deposit contract sepatately
@@ -189,7 +191,7 @@ contract EarlyDepositTest is Test {
 
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
-        return (amount * APEth.feeAmount()) / 1e6;
+        return (amount * proxyConfig.feeAmount) / 1e6;
     }
 
     function _calculateAmountLessFee(
