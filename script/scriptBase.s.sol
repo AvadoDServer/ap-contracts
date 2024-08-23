@@ -137,33 +137,6 @@ contract ScriptBase is Script {
         return new APEthEarlyDeposits(owner);
     }
 
-    function getDeployedAddress()
-        public
-        pure
-        returns (address storageCont, address implement)
-    {
-        /*
-        string memory root = vm.projectRoot();
-        string memory path = string.concat(
-            root,
-            "/broadcast/deployStorage.s.sol/",
-            chainId,
-            "/run-latest.json"
-        );
-        string memory json = vm.readFile(path);
-        storageCont = stdJson.readAddress(
-            json,
-            ".transactions[0].contractAddress"
-        );
-        implement = stdJson.readAddress(
-            json,
-            ".transactions[6].contractAddress"
-        );
-        */
-
-        return (address(0xdead), address(0xbee));
-    }
-
     function getProxyAddress() public view returns (address addr) {
         string memory root = vm.projectRoot();
         string memory path = string.concat(
