@@ -6,9 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
-import {APEthStorage} from "../src/APEthStorage.sol";
 import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
-import {DeployStorageContract} from "../script/deployStorage.s.sol";
 import {DeployProxy} from "../script/deployToken.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
@@ -22,11 +20,11 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
+import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
 
 contract APEthTestSetup is Test {
     APETH public APEth;
     APETH public implementation;
-    APEthStorage public storageContract;
     APEthEarlyDeposits public earlyDeposits;
     // IAPEthPodWrapper public wrapper;
 
@@ -38,14 +36,21 @@ contract APEthTestSetup is Test {
 
     address public staker;
     address public upgrader;
-    address public admin;
+
+    ProxyConfig public proxyConfig;
 
     // address public podWrapper;
 
-    bytes32 public constant UPGRADER = keccak256("UPGRADER");
     bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
     bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
-    bytes32 public constant ADMIN = keccak256("ADMIN");
+    bytes32 public constant UPGRADER = keccak256("UPGRADER");
+    bytes32 public constant MISCELLANEOUS = keccak256("MISCELLANEOUS");
+    bytes32 public constant SSV_NETWORK_ADMIN = keccak256("SSV_NETWORK_ADMIN");
+    bytes32 public constant DELEGATION_MANAGER_ADMIN =
+        keccak256("DELEGATION_MANAGER_ADMIN");
+    bytes32 public constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
+    bytes32 public constant EIGEN_POD_MANAGER_ADMIN =
+        keccak256("EIGEN_POD_MANAGER_ADMIN");
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool public workingKeys = true;
@@ -54,19 +59,22 @@ contract APEthTestSetup is Test {
         hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
     bytes _signature =
         hex"b45314f927f2344883a59b2a4c50af9260cb0c716e11b8954d1e00225bdd71a9dfc2bb6ad3d2e71159fa994ab1c3f49f0f78754ed94bd959457072bf4efbf4ff6b36456037d922c6173fb3ed24d21970ed61160b1605ecc7d6e35685cdd1aeaa";
-    bytes32 _deposit_data_root = 0x7a71bc4430915cd6308a2b0e8bd18c91b8f8b9db13fd6d70101e1b53a4018dd0;
+    bytes32 _deposit_data_root =
+        0x7a71bc4430915cd6308a2b0e8bd18c91b8f8b9db13fd6d70101e1b53a4018dd0;
 
     bytes _pubKey2 =
         hex"91bebd77cd834b056ff242331dfcd3baecf3b89fcba6d866860a7ace128fb204af9b892cc84dd2d4eb933f6f8d0499b1";
     bytes _signature2 =
         hex"8c0422c68f58930b12082da0bf2b72372a2092e4be42c461cb7a686d7969093240929c6313846409d2a8c481fd3513ec042da0ed7ffeedb98d0ee611aff2bd304214c5edb2d5f064ef7d3b282612eb1a083ecee5054f7d209ad86773aeab140a";
-    bytes32 _deposit_data_root2 = 0x79c26a0095560c824e3ba2674f788ef32f3deaf4dab89ee8040eab31855a25f9;
+    bytes32 _deposit_data_root2 =
+        0x79c26a0095560c824e3ba2674f788ef32f3deaf4dab89ee8040eab31855a25f9;
 
     bytes _pubKey3 =
         hex"b6ee6088e5b1dca8a7013f702140ab1f4825d349b20f8c4ba8436af36814dfb3309c13d7423898f60c5e332655a54f17";
     bytes _signature3 =
         hex"a96e640ffdc0173ce037297440449d261621d2fe247e863d0cac73af879b99ed52944ddda74282326f5579ff6cdf6cb8041e0c0c1d1f722b6021a227958171b4168924f1efa955f12ae4072359b45406c3a1867424179b8e8812e5a9f478dfd5";
-    bytes32 _deposit_data_root3 = 0xa1b2ae2fcef94c75295b822eafadd7a38ebeaf30cfd9fc048f52ab281c4401b8;
+    bytes32 _deposit_data_root3 =
+        0xa1b2ae2fcef94c75295b822eafadd7a38ebeaf30cfd9fc048f52ab281c4401b8;
 
     // // for multi pods
     // bytes _signature_M =
@@ -91,26 +99,24 @@ contract APEthTestSetup is Test {
         bob = vm.addr(3);
         staker = vm.addr(4);
         upgrader = vm.addr(5);
-        admin = vm.addr(6);
         // Define a new owner address for upgrade tests
         newOwner = address(1);
 
-        DeployStorageContract deployStorage = new DeployStorageContract();
         DeployProxy deployProxy = new DeployProxy();
+        proxyConfig.admin = owner;
+        proxyConfig = new ScriptBase().getConfig(proxyConfig);
+        APEth = deployProxy.run(proxyConfig);
 
-        (storageContract, implementation) = deployStorage.run(owner);
-        (APEth) = deployProxy.run(owner, address(storageContract), address(implementation));
         vm.startPrank(owner);
         APEth.grantRole(ETH_STAKER, staker);
         APEth.grantRole(UPGRADER, upgrader);
-        APEth.grantRole(ADMIN, admin);
         vm.stopPrank();
     }
 
     modifier mintAlice(uint256 amount) {
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, alice);
-        uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
+        uint256 cap = proxyConfig.initialCap;
         uint256 aliceBalance = _calculateAmountLessFee(amount);
         if (amount > cap) {
             aliceBalance = 0;
@@ -142,11 +148,12 @@ contract APEthTestSetup is Test {
 
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
-        uint256 fee = amount * storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
-        return fee;
+        return (amount * proxyConfig.feeAmount) / 1e6;
     }
 
-    function _calculateAmountLessFee(uint256 amount) internal view returns (uint256) {
+    function _calculateAmountLessFee(
+        uint256 amount
+    ) internal view returns (uint256) {
         return (amount - _calculateFee(amount));
     }
 }

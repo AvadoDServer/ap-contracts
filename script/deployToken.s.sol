@@ -1,38 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ScriptBase, APEthStorage, APEthEarlyDeposits, APETH, console, Create2, ERC1967Proxy, Upgrades, stdJson} from "./scriptBase.s.sol";
+import {ScriptBase, APEthEarlyDeposits, APETH, console, Create2, ERC1967Proxy, Upgrades, stdJson, ProxyConfig} from "./scriptBase.s.sol";
+import {HelperConfig, NetworkConfig} from "./HelperConfig.s.sol";
 
 contract DeployProxy is ScriptBase {
-    function run(address owner_, address storage_, address implementation_) public returns(APETH) {
-        _owner = owner_;
-        _isTest = true;
-        _storageContract = APEthStorage(storage_);
-        _implementation = APETH(payable(implementation_));
-        run();
-        return (_APEth);
+    function run(
+        ProxyConfig memory config,
+        address implementation
+    ) public returns (APETH) {
+        return deployProxy(implementation, config);
     }
 
-    function run() public {
-        console.log("***Deploying Proxy***");
+    function run(ProxyConfig memory config) public returns (APETH) {
+        return run(config, address(deployApEth(config)));
+    }
 
-        if (!_isTest) {
-            salt.apEth = vm.envBytes32("SALT");
-            console.logBytes32(salt.apEth);
-            (storageContractAddress, implementationContractAddress) = getDeployedAddress();
-            //storage
-            _storageContract = APEthStorage(storageContractAddress);
-            console.log("storage", address(_storageContract));
-            //implementation
-            _implementation = APETH(payable(implementationContractAddress));
-            console.log("implementation", address(_implementation));
-        }
-        calcProxyAddress();
-        deployProxy();
-        address podAddress =
-            _storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")));
-        console.log("Eigen Pod Address: ", podAddress);
-        _APEth = APETH(payable(_apEthPreDeploy));
-        // deployEarlyDeposit(); deploy separately because of verification failure.
+    function run() public returns (APETH) {
+        ProxyConfig memory config;
+        config.network = new HelperConfig().getConfig();
+        config.salt = vm.envBytes32("SALT");
+
+        return run(config);
     }
 }

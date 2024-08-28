@@ -5,12 +5,10 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
-import {APEthStorage} from "../src/APEthStorage.sol";
 import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
-import {DeployStorageContract} from "../script/deployStorage.s.sol";
 import {DeployProxy} from "../script/deployToken.s.sol";
 import {DeployEarlyDeposits} from "../script/deployEarlyDepositOnly.s.sol";
-import {UpdateEarlyDeposit} from "../script/updateEarlyDeposit.s.sol";
+import {UpdateEarlyDeposit, UpdateEarlyDepositLibrary} from "../script/updateEarlyDeposit.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
@@ -21,13 +19,12 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
+import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
 
-contract EarlyDepositTest is Test{
+contract EarlyDepositTest is Test {
     APETH APEth;
     APETH implementation;
-    APEthStorage storageContract;
     APEthEarlyDeposits earlyDeposits;
-    UpdateEarlyDeposit updateEarlyDeposit;
     address owner;
     address newOwner;
 
@@ -38,6 +35,8 @@ contract EarlyDepositTest is Test{
     address upgrader;
     address admin;
     address[] recipients;
+
+    ProxyConfig public proxyConfig;
 
     // Set up the test environment before running tests
     function setUp() public {
@@ -53,20 +52,20 @@ contract EarlyDepositTest is Test{
         // Define a new owner address for upgrade tests
         newOwner = address(1);
 
-        DeployStorageContract deployStorage = new DeployStorageContract();
-        DeployProxy deployProxy = new DeployProxy();
-        DeployEarlyDeposits deployEarlyDeposits = new DeployEarlyDeposits();
-        updateEarlyDeposit = new UpdateEarlyDeposit();
+        proxyConfig.admin = owner;
+        proxyConfig = new ScriptBase().getConfig(proxyConfig);
+        APEth = new DeployProxy().run(proxyConfig);
 
-        (storageContract, implementation) = deployStorage.run(owner);
-        (APEth) = deployProxy.run(owner, address(storageContract), address(implementation));
         //deploy early deposit contract sepatately
-        earlyDeposits = deployEarlyDeposits.run(owner);
+        earlyDeposits = new DeployEarlyDeposits().run(owner);
     }
-    
+
     modifier updateEarlyDepositAddr() {
-        updateEarlyDeposit.run(earlyDeposits, ERC1967Proxy(payable(APEth)), owner);
-        _;}
+        vm.startPrank(owner);
+        UpdateEarlyDepositLibrary.run(APEth, earlyDeposits);
+        vm.stopPrank();
+        _;
+    }
 
     function testDeposit(uint128 x) public updateEarlyDepositAddr {
         assertEq(earlyDeposits.deposits(alice), 0);
@@ -85,7 +84,9 @@ contract EarlyDepositTest is Test{
         _;
     }
 
-    function testWithdrawal(uint128 x) public depositAlice(uint256(x)) updateEarlyDepositAddr {
+    function testWithdrawal(
+        uint128 x
+    ) public depositAlice(uint256(x)) updateEarlyDepositAddr {
         uint256 aliceBalance = alice.balance;
         vm.prank(alice);
         earlyDeposits.withdraw();
@@ -98,13 +99,17 @@ contract EarlyDepositTest is Test{
     function testFallback(uint128 x) public {
         assertEq(earlyDeposits.deposits(alice), 0);
         hoax(alice);
-        (bool success,) = payable(address(earlyDeposits)).call{value: uint256(x)}("");
+        (bool success, ) = payable(address(earlyDeposits)).call{
+            value: uint256(x)
+        }("");
         assert(success);
         assertEq(earlyDeposits.deposits(alice), uint256(x));
         assertEq(address(earlyDeposits).balance, uint256(x));
     }
 
-    function testMint(uint72 x) public depositAlice(uint256(x)) updateEarlyDepositAddr {
+    function testMint(
+        uint72 x
+    ) public depositAlice(uint256(x)) updateEarlyDepositAddr {
         recipients.push(alice);
         vm.prank(owner);
         earlyDeposits.mintAPEthBulk(recipients);
@@ -113,7 +118,15 @@ contract EarlyDepositTest is Test{
         assertEq(earlyDeposits.deposits(alice), 0);
     }
 
-    function testBulkMint(uint64 a, uint64 b, uint64 c, uint64 d, uint64 e, uint64 f, uint64 aa) public depositAlice(uint256(a)) updateEarlyDepositAddr {
+    function testBulkMint(
+        uint64 a,
+        uint64 b,
+        uint64 c,
+        uint64 d,
+        uint64 e,
+        uint64 f,
+        uint64 aa
+    ) public depositAlice(uint256(a)) updateEarlyDepositAddr {
         // deposit to early deposit contract
         hoax(bob);
         earlyDeposits.deposit{value: uint256(b)}(bob);
@@ -153,7 +166,9 @@ contract EarlyDepositTest is Test{
         assertEq(earlyDeposits.deposits(vm.addr(71)), 0);
         assertEq(earlyDeposits.deposits(vm.addr(72)), 0);
         // check that they recieved their tokens
-        uint256 aliceBalance = _calculateAmountLessFee(uint256(a) + uint256(aa));
+        uint256 aliceBalance = _calculateAmountLessFee(
+            uint256(a) + uint256(aa)
+        );
         assertEq(APEth.balanceOf(alice), aliceBalance);
         uint256 bobBalance = _calculateAmountLessFee(uint256(b));
         assertEq(APEth.balanceOf(bob), bobBalance);
@@ -176,11 +191,12 @@ contract EarlyDepositTest is Test{
 
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
-        uint256 fee = amount * storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
-        return fee;
+        return (amount * proxyConfig.feeAmount) / 1e6;
     }
 
-    function _calculateAmountLessFee(uint256 amount) internal view returns (uint256) {
+    function _calculateAmountLessFee(
+        uint256 amount
+    ) internal view returns (uint256) {
         return (amount - _calculateFee(amount));
     }
 }

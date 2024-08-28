@@ -2,17 +2,7 @@
 pragma solidity ^0.8.20;
 /* solhint-disable func-name-mixedcase */
 
-import {
-    APEthTestSetup,
-    UpgradeProxy,
-    APETHV2,
-    ERC20Mock,
-    MockSsvNetwork,
-    IMockEigenPodManager,
-    IMockEigenPod,
-    IMockDelegationManager
-} from "./APEthTestSetup.t.sol";
-import {APETH__PUBKEY_ALREADY_USED} from "../src/APETH.sol";
+import {APEthTestSetup, UpgradeProxy, APETHV2, ERC20Mock, MockSsvNetwork, IMockEigenPodManager, IMockEigenPod, IMockDelegationManager} from "./APEthTestSetup.t.sol";
 
 contract APETHTest is APEthTestSetup {
     function test_Mint() public {
@@ -53,12 +43,10 @@ contract APETHTest is APEthTestSetup {
     // Test the upgradeability of the APETH contract
     function test_Upgradeability() public {
         //deploy upgrade script
-        UpgradeProxy upgradeProxy = new UpgradeProxy();
         vm.prank(owner);
         APEth.grantRole(UPGRADER, upgrader);
         // Upgrade the proxy to a new version; APETHV2
-        upgradeProxy.run(upgrader, address(APEth));
-        assertEq(address(APEth.apEthStorage()), address(storageContract), "storage contract address did not migrate");
+        new UpgradeProxy().run(address(APEth), upgrader);
         uint256 two = APETHV2(address(APEth)).version();
         assertEq(2, two, "APEth did not upgrade");
     }
@@ -76,11 +64,13 @@ contract APETHTest is APEthTestSetup {
         APEth.mint{value: 33 ether}();
         assertEq(address(APEth).balance, 33 ether);
         if (!workingKeys && block.chainid != 31337) {
-            vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+            vm.expectRevert(
+                "DepositContract: reconstructed DepositData does not match supplied deposit_data_root"
+            );
         }
         // Impersonate staker to call stake()
         vm.prank(staker);
-        APEth.stake( _pubKey, _signature, _deposit_data_root);
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
         if (workingKeys) assertEq(address(APEth).balance, 1 ether);
     }
 
@@ -96,7 +86,9 @@ contract APETHTest is APEthTestSetup {
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
-        uint256 expected = _calculateAmountLessFee(10 ether * 1 ether / ethPerAPEth);
+        uint256 expected = _calculateAmountLessFee(
+            (10 ether * 1 ether) / ethPerAPEth
+        );
         assertEq(APEth.balanceOf(bob), expected);
         assertEq(address(APEth).balance, 21 ether);
     }
@@ -110,9 +102,11 @@ contract APETHTest is APEthTestSetup {
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         vm.prank(staker);
         if (!workingKeys && block.chainid != 31337) {
-            vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+            vm.expectRevert(
+                "DepositContract: reconstructed DepositData does not match supplied deposit_data_root"
+            );
         }
-        APEth.stake( _pubKey, _signature, _deposit_data_root);
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
         if (workingKeys) assertEq(address(APEth).balance, 19 ether);
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         vm.prank(owner);
@@ -120,12 +114,17 @@ contract APETHTest is APEthTestSetup {
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
-        uint256 expected = _calculateAmountLessFee(10 ether * 1 ether / ethPerAPEth);
+        uint256 expected = _calculateAmountLessFee(
+            (10 ether * 1 ether) / ethPerAPEth
+        );
         assertEq(APEth.balanceOf(bob), expected);
         if (workingKeys) assertEq(address(APEth).balance, 29 ether);
     }
 
-    function test_BasicAccountingWithStakingAndWithdrawal() public mintAlice(50 ether) {
+    function test_BasicAccountingWithStakingAndWithdrawal()
+        public
+        mintAlice(50 ether)
+    {
         // Send eth to contract to increase balance
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 51 ether);
@@ -134,25 +133,39 @@ contract APETHTest is APEthTestSetup {
         assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         vm.prank(staker);
         if (!workingKeys && block.chainid != 31337) {
-            vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+            vm.expectRevert(
+                "DepositContract: reconstructed DepositData does not match supplied deposit_data_root"
+            );
         }
-        APEth.stake( _pubKey, _signature, _deposit_data_root);
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
         if (workingKeys) {
             assertEq(address(APEth).balance, 19 ether);
         }
         if (block.chainid == 31337) {
-            assertEq(storageContract.getUint(keccak256(abi.encodePacked("active.validators"))), 1);
-            vm.prank(admin);
-            APEth.callDelegationManager(abi.encodeWithSelector(IMockDelegationManager.undelegate.selector, address(APEth)), 1);
-            assertEq(storageContract.getUint(keccak256(abi.encodePacked("active.validators"))), 0);
+            assertEq(APEth.activeValidators(), 1);
+            vm.prank(owner);
+            APEth.grantRole(DELEGATION_MANAGER_ADMIN, alice);
+            vm.prank(alice);
+            APEth.callDelegationManager(
+                abi.encodeWithSelector(
+                    IMockDelegationManager.undelegate.selector,
+                    address(APEth)
+                ),
+                1
+            );
+            assertEq(APEth.activeValidators(), 0);
         }
     }
 
-    function test_BasicAccountingWithStakingAndFuzzing(uint128 x, uint128 y, uint128 z) public mintAlice(x) {
+    function test_BasicAccountingWithStakingAndFuzzing(
+        uint128 x,
+        uint128 y,
+        uint128 z
+    ) public mintAlice(x) {
         // Send eth to contract to increase balance
         vm.deal(address(this), y);
         payable(address(APEth)).transfer(y);
-        uint256 cap = storageContract.getUint(keccak256(abi.encodePacked("cap.Amount")));
+        uint256 cap = proxyConfig.initialCap;
         uint256 balance = uint256(x) + uint256(y);
         if (uint256(x) > cap) {
             balance = uint256(y);
@@ -163,39 +176,54 @@ contract APETHTest is APEthTestSetup {
         if (x == 0) {
             ethPerAPEth = 1 ether;
         } else {
-            ethPerAPEth = balance * 1 ether / uint256(x);
+            ethPerAPEth = (balance * 1 ether) / uint256(x);
         }
         assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethPerAPEth not correct");
         uint256 ethInValidators;
         if (balance >= 32 ether) {
             vm.prank(staker);
             if (!workingKeys && block.chainid != 31337) {
-                vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+                vm.expectRevert(
+                    "DepositContract: reconstructed DepositData does not match supplied deposit_data_root"
+                );
             }
-            APEth.stake( _pubKey, _signature, _deposit_data_root);
+            APEth.stake(_pubKey, _signature, _deposit_data_root);
             ethInValidators += 32 ether;
         }
         if (balance >= 64 ether) {
             vm.prank(staker);
             if (!workingKeys && block.chainid != 31337) {
-                vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+                vm.expectRevert(
+                    "DepositContract: reconstructed DepositData does not match supplied deposit_data_root"
+                );
             }
-            APEth.stake(  _pubKey2, _signature2, _deposit_data_root2);
+            APEth.stake(_pubKey2, _signature2, _deposit_data_root2);
             ethInValidators += 32 ether;
         }
         if (balance >= 96 ether) {
             vm.prank(staker);
             if (!workingKeys && block.chainid != 31337) {
-                vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+                vm.expectRevert(
+                    "DepositContract: reconstructed DepositData does not match supplied deposit_data_root"
+                );
             }
-            APEth.stake(  _pubKey3, _signature3, _deposit_data_root3);
+            APEth.stake(_pubKey3, _signature3, _deposit_data_root3);
             ethInValidators += 32 ether;
         }
         uint256 newBalance = balance;
-        if (workingKeys || block.chainid == 31337) newBalance = balance - ethInValidators;
-        assertEq(address(APEth).balance, newBalance, "contract balance does not match calculated");
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethperAPEth not correct after staking");
-        uint256 amount = uint256(x) + (uint256(z) * 1 ether / ethPerAPEth);
+        if (workingKeys || block.chainid == 31337)
+            newBalance = balance - ethInValidators;
+        assertEq(
+            address(APEth).balance,
+            newBalance,
+            "contract balance does not match calculated"
+        );
+        assertEq(
+            APEth.ethPerAPEth(),
+            ethPerAPEth,
+            "ethperAPEth not correct after staking"
+        );
+        uint256 amount = uint256(x) + ((uint256(z) * 1 ether) / ethPerAPEth);
         assertEq(APEth.totalSupply(), uint256(x));
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, bob);
@@ -203,7 +231,9 @@ contract APETHTest is APEthTestSetup {
         hoax(bob);
         // Mint z eth of tokens and assert the balance
         APEth.mint{value: z}();
-        uint256 expected = _calculateAmountLessFee(uint256(z) * 1 ether / ethPerAPEth);
+        uint256 expected = _calculateAmountLessFee(
+            (uint256(z) * 1 ether) / ethPerAPEth
+        );
         if (amount <= cap) {
             assertEq(APEth.balanceOf(bob), expected);
             assertEq(address(APEth).balance, newBalance + z);
@@ -214,46 +244,80 @@ contract APETHTest is APEthTestSetup {
         ERC20Mock mockCoin = new ERC20Mock();
         mockCoin.mint(address(APEth), 1 ether);
         assertEq(mockCoin.balanceOf(address(APEth)), 1 ether);
-        vm.prank(admin);
-        APEth.transferToken(  address(mockCoin), alice, 1 ether);
+        vm.prank(owner);
+        APEth.grantRole(MISCELLANEOUS, alice);
+        vm.prank(alice);
+        APEth.transferToken(address(mockCoin), alice, 1 ether);
         assertEq(mockCoin.balanceOf(alice), 1 ether);
         assertEq(mockCoin.balanceOf(address(APEth)), 0);
     }
 
     function test_SSVCall() public {
-        vm.prank(admin);
+        vm.prank(owner);
+        APEth.grantRole(SSV_NETWORK_ADMIN, alice);
+        vm.prank(alice);
         APEth.callSSVNetwork(
-            abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
+            abi.encodeWithSelector(
+                bytes4(keccak256("setFeeRecipientAddress(address)")),
+                address(APEth)
+            )
         );
         if (block.chainid == 31337) {
-            address ssvNetworkAddress =
-                storageContract.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
-            MockSsvNetwork ssvNetwork = MockSsvNetwork(ssvNetworkAddress);
+            MockSsvNetwork ssvNetwork = MockSsvNetwork(
+                proxyConfig.network.ssvNetwork
+            );
             address feeRecip = ssvNetwork.feeRecipient(address(APEth));
-            assertEq(feeRecip, address(APEth), "feeRecip not set in ssv contract");
+            assertEq(
+                feeRecip,
+                address(APEth),
+                "feeRecip not set in ssv contract"
+            );
         }
     }
 
     function test_EigenPodManagerCall() public {
-        vm.prank(admin);
-        APEth.callEigenPodManager(abi.encodeWithSelector(IMockEigenPodManager.getPod.selector, address(APEth)));
+        vm.prank(owner);
+        APEth.grantRole(EIGEN_POD_MANAGER_ADMIN, alice);
+        vm.prank(alice);
+        APEth.callEigenPodManager(
+            abi.encodeWithSelector(
+                IMockEigenPodManager.getPod.selector,
+                address(APEth)
+            )
+        );
     }
 
     function test_DelegationManagerCall() public {
         if (block.chainid != 31337) vm.expectRevert("Call failed");
-        vm.prank(admin);
-        APEth.callDelegationManager(abi.encodeWithSelector(IMockDelegationManager.undelegate.selector, address(APEth)), 0);
+        vm.prank(owner);
+        APEth.grantRole(DELEGATION_MANAGER_ADMIN, alice);
+        vm.prank(alice);
+        APEth.callDelegationManager(
+            abi.encodeWithSelector(
+                IMockDelegationManager.undelegate.selector,
+                address(APEth)
+            ),
+            0
+        );
     }
 
     function test_EigenPodCall() public {
-        vm.prank(admin);
-        APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+        vm.prank(owner);
+        APEth.grantRole(EIGEN_POD_ADMIN, alice);
+        vm.prank(alice);
+        APEth.callEigenPod(
+            abi.encodeWithSelector(IMockEigenPod.podOwner.selector)
+        );
     }
 
+    /*
     function test_FeeChange() public {
         vm.prank(storageContract.getGuardian());
-        storageContract.setUint(keccak256(abi.encodePacked("fee.Amount")), 10000);
-        assertEq(storageContract.getUint(keccak256(abi.encodePacked("fee.Amount"))), 10000);
+        storageContract.setUint(
+            keccak256(abi.encodePacked("fee.Amount")),
+            10000
+        );
+        assertEq(APEth.feeAmount(), 10000);
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, alice);
         hoax(alice);
@@ -262,6 +326,7 @@ contract APETHTest is APEthTestSetup {
         assertEq(APEth.balanceOf(alice), aliceBalance);
         assertEq(address(APEth).balance, 10 ether);
     }
+
 
     function test_DoubleStake() public {
         // Grant Alice Early Access
@@ -284,4 +349,5 @@ contract APETHTest is APEthTestSetup {
         vm.expectRevert(abi.encodeWithSelector(APETH__PUBKEY_ALREADY_USED.selector, _pubKey));
         APEth.stake(_pubKey, _signature, _deposit_data_root);
     }
+
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.19;
 
 /**
  * @title Liquid Restaking Token by Avado
@@ -25,7 +25,6 @@ import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/prox
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
-import {IAPEthStorage} from "./interfaces/IAPEthStorage.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
 
 /**
@@ -47,18 +46,45 @@ error APETH__PUBKEY_ALREADY_USED(bytes pubKey);
  * CONTRACT
  *
  */
-contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
+contract APETH is
+    IAPETH,
+    Initializable,
+    ERC20Upgradeable,
+    AccessControlUpgradeable,
+    ERC20PermitUpgradeable,
+    UUPSUpgradeable
+{
     /**
      *
      * STORAGE
      *
      */
     /// @dev storage outside of upgradeable storage
-    bytes32 public constant UPGRADER = keccak256("UPGRADER");
-    bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
-    bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
-    bytes32 public constant ADMIN = keccak256("ADMIN");
-    IAPEthStorage public apEthStorage;
+    bytes32 private constant ETH_STAKER = keccak256("ETH_STAKER");
+    bytes32 private constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
+    bytes32 private constant UPGRADER = keccak256("UPGRADER");
+    bytes32 private constant MISCELLANEOUS = keccak256("MISCELLANEOUS");
+    bytes32 private constant SSV_NETWORK_ADMIN = keccak256("SSV_NETWORK_ADMIN");
+    bytes32 private constant DELEGATION_MANAGER_ADMIN =
+        keccak256("DELEGATION_MANAGER_ADMIN");
+    bytes32 private constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
+    bytes32 private constant EIGEN_POD_MANAGER_ADMIN =
+        keccak256("EIGEN_POD_MANAGER_ADMIN");
+
+    /// @dev Immutables because will disappear in the next upgrade
+    uint256 private immutable INITIAL_CAP;
+
+    /// @dev Immutables because these are not going to change
+    IEigenPodManager private immutable EIGEN_POD_MANAGER;
+    address private immutable DELEGATION_MANAGER;
+    address private immutable SSV_NETWORK;
+
+    /// @dev Immutables because these are not going to change without a contract upgrade
+    uint256 private immutable FEE_AMOUNT; // divided by 1e6
+    address private immutable FEE_RECIPIENT;
+
+    /// @dev uses storage slots (caution when upgrading)
+    uint256 public activeValidators;
 
     /**
      *
@@ -66,44 +92,61 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
      *
      */
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    /// @dev eigenPod value needs to
+    constructor(
+        uint256 initialCap,
+        IEigenPodManager eigenPodManager,
+        address delegationManager,
+        address ssvNetwork,
+        address feeRecipient,
+        uint256 feeAmount
+    ) {
         _disableInitializers();
+        INITIAL_CAP = initialCap;
+        EIGEN_POD_MANAGER = eigenPodManager;
+        DELEGATION_MANAGER = delegationManager;
+        SSV_NETWORK = ssvNetwork;
+        FEE_RECIPIENT = feeRecipient;
+        FEE_AMOUNT = feeAmount;
     }
 
-    function initialize(address initialOwner, address _APEthStorage) public initializer {
+    function initialize(address admin) public initializer {
         __ERC20_init("AP-Restaked-Eth", "APETH");
         __AccessControl_init();
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
-        apEthStorage = IAPEthStorage(_APEthStorage);
-        IEigenPodManager eigenPodManager = IEigenPodManager(
-            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")))
-        );
-        address eigenPod = eigenPodManager.createPod();
-        apEthStorage.setAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")), eigenPod);
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+
+        EIGEN_POD_MANAGER.createPod();
     }
 
+    /**
+     * @notice adding ETH without minting APEth is allowed. External rewards
+     * @notice such as restaking might be converted to ETH and sent here.
+     */
     receive() external payable {}
-
-    fallback() external payable {}
 
     /**
      * @notice This function mints new APEth tokens when ETH is deposited
      * @notice there is an early access list which only allows approved minters
      * @dev A deposit fee in APEth is taken and sent to a fee recipient - this is the only fee charged by this protocol
      */
-    function mint() external payable onlyRole(EARLY_ACCESS) returns (uint256){
-        uint256 amount = msg.value * 1 ether / _ethPerAPEth(msg.value);
-        uint256 cap = apEthStorage.getUint(keccak256(abi.encodePacked("cap.Amount")));
-        if (totalSupply() + amount > cap) revert APETH__CAP_REACHED();
-        uint256 fee = amount * apEthStorage.getUint(keccak256(abi.encodePacked("fee.Amount"))) / 100000;
-        address feeRecipient = apEthStorage.getAddress(keccak256(abi.encodePacked("fee.recipient.address")));
+    function mint() external payable onlyRole(EARLY_ACCESS) returns (uint256) {
+        uint256 amount = (msg.value * 1 ether) / _ethPerAPEth(msg.value);
+
+        if (totalSupply() + amount > INITIAL_CAP) {
+            revert APETH__CAP_REACHED();
+        }
+
+        uint256 fee = (amount * FEE_AMOUNT) / 1e6;
         amount = amount - fee;
+
         _mint(msg.sender, amount);
-        _mint(feeRecipient, fee);
+        _mint(FEE_RECIPIENT, fee);
+
         emit Mint(msg.sender, amount);
-        return(amount);
+
+        return amount;
     }
 
     /**
@@ -124,12 +167,12 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
         if (totalSupply() == 0) {
             return 1 ether;
         } else {
-            // get # of 32 eth validators
-            uint256 activeValidators = apEthStorage.getUint(keccak256(abi.encodePacked("active.validators")));
             // subtract the amount a user has deposited from contract balance
-            uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
+            uint256 totalEth = address(this).balance +
+                (32 ether * activeValidators) -
+                _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
-            return (totalEth * 1 ether / totalSupply());
+            return ((totalEth * 1 ether) / totalSupply());
         }
     }
 
@@ -142,28 +185,24 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
      * @param _deposit_data_root data root for this deposit  (generated by contract owner)
      *
      */
-    function stake(bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root) external onlyRole(ETH_STAKER) {
+    function stake(
+        bytes calldata _pubKey,
+        bytes calldata _signature,
+        bytes32 _deposit_data_root
+    ) external onlyRole(ETH_STAKER) {
         // requires 32 ETH
         if (address(this).balance < 32 ether) revert APETH__NOT_ENOUGH_ETH();
-
-        // Check if that pubkey was already used
-        bytes32 key = keccak256(abi.encodePacked("pubkey.deposited", _pubKey));
-        if (apEthStorage.getBool(key)) {
-            revert APETH__PUBKEY_ALREADY_USED(_pubKey);
-        }
-        
-        // get EigenPodManager from storage
-        IEigenPodManager eigenPodManager = IEigenPodManager(
-            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")))
-        );
         // Stake into eigenPod using the eigenPodManager
-        eigenPodManager.stake{value: 32 ether}(_pubKey, _signature, _deposit_data_root);
+        EIGEN_POD_MANAGER.stake{value: 32 ether}(
+            _pubKey,
+            _signature,
+            _deposit_data_root
+        );
         // increase the number of active validators for accounting
-        apEthStorage.setBool(key, true);
-        apEthStorage.addUint(keccak256(abi.encodePacked("active.validators")), 1);
+        activeValidators++;
         emit Stake(_pubKey, msg.sender);
     }
-
+    
     /**
      *
      * @notice allows contract owner to call functions on the ssvNetwork
@@ -171,11 +210,10 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
      * @param data the calldata for the ssvNetwork
      *
      */
-    function callSSVNetwork(bytes memory data) external onlyRole(ADMIN) {
-        // get address from storage
-        address ssvNetwork =
-            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
-        (bool success,) = ssvNetwork.call(data);
+    function callSSVNetwork(
+        bytes memory data
+    ) external onlyRole(SSV_NETWORK_ADMIN) {
+        (bool success, ) = SSV_NETWORK.call(data);
         require(success, "Call failed");
     }
 
@@ -186,10 +224,11 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
      * @param data the calldata for the eigenPod
      *
      */
-    function callEigenPod(bytes memory data) external onlyRole(ADMIN) {
-        // get address from storage
-        address eigenPod = apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPod")));
-        (bool success,) = eigenPod.call(data);
+    function callEigenPod(
+        bytes memory data
+    ) external onlyRole(EIGEN_POD_ADMIN) {
+        address eigenPod = address(EIGEN_POD_MANAGER.getPod(address(this)));
+        (bool success, ) = eigenPod.call(data);
         require(success, "Call failed");
     }
 
@@ -201,11 +240,10 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
      * @param data the calldata for the eigenPodManager
      *
      */
-    function callEigenPodManager(bytes memory data) external onlyRole(ADMIN) {
-        // get address from storage
-        address eigenPodManager =
-            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "EigenPodManager")));
-        (bool success,) = eigenPodManager.call(data);
+    function callEigenPodManager(
+        bytes memory data
+    ) external onlyRole(EIGEN_POD_MANAGER_ADMIN) {
+        (bool success, ) = address(EIGEN_POD_MANAGER).call(data);
         require(success, "Call failed");
     }
 
@@ -220,13 +258,13 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
      * @dev if there is not some multiple of 32 ETH being recieved from this txn, validatorsExited should be zero.
      *
      */
-    function callDelegationManager(bytes memory data, uint validatorsExited) external onlyRole(ADMIN) {
-        // get address from storage
-        address delegationManager =
-            apEthStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "DelegationManager")));
-        (bool success,) = delegationManager.call(data);
+    function callDelegationManager(
+        bytes memory data,
+        uint validatorsExited
+    ) external onlyRole(DELEGATION_MANAGER_ADMIN) {
+        (bool success, ) = DELEGATION_MANAGER.call(data);
         require(success, "Call failed");
-        apEthStorage.subUint(keccak256(abi.encodePacked("active.validators")), validatorsExited);
+        activeValidators -= validatorsExited;
     }
 
     /**
@@ -237,10 +275,16 @@ contract APETH is IAPETH, Initializable, ERC20Upgradeable, AccessControlUpgradea
      * @param amount the amount to transfer
      *
      */
-    function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(ADMIN) {
+    function transferToken(
+        address tokenAddress,
+        address to,
+        uint256 amount
+    ) external onlyRole(MISCELLANEOUS) {
         IERC20 token = IERC20(tokenAddress);
         token.transfer(to, amount);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(UPGRADER) {}
 }
