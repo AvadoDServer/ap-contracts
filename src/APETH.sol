@@ -38,6 +38,9 @@ error APETH__NOT_ENOUGH_ETH();
 /// @notice thrown when attempting to mint over cap
 error APETH__CAP_REACHED();
 
+/// @notice thrown when the public key used in `stake` was already used
+error APETH__PUBKEY_ALREADY_USED(bytes pubKey);
+
 /**
  *
  * CONTRACT
@@ -199,7 +202,7 @@ contract APETH is
         activeValidators++;
         emit Stake(_pubKey, msg.sender);
     }
-
+    
     /**
      *
      * @notice allows contract owner to call functions on the ssvNetwork
