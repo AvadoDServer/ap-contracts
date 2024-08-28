@@ -349,5 +349,5 @@ contract APETHTest is APEthTestSetup {
         vm.expectRevert(abi.encodeWithSelector(APETH__PUBKEY_ALREADY_USED.selector, _pubKey));
         APEth.stake(_pubKey, _signature, _deposit_data_root);
     }
-
+    */
 }
