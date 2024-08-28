@@ -111,7 +111,10 @@ contract APETH is
         feeAmount = _feeAmount;
     }
 
-    // TODO: Check that msg.sender is the expected contract and not an EOA
+    /**
+     * @notice adding ETH without minting APEth is allowed. External rewards
+     * @notice such as restaking might be converted to ETH and sent here.
+     */
     receive() external payable {}
 
     /**
