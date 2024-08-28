@@ -13,7 +13,7 @@ contract DeployProxy is ScriptBase {
     }
 
     function run(ProxyConfig memory config) public returns (APETH) {
-        return run(config, address(new APETH()));
+        return run(config, address(deployApEth(config)));
     }
 
     function run() public returns (APETH) {
