@@ -38,6 +38,9 @@ error APETH__NOT_ENOUGH_ETH();
 /// @notice thrown when attempting to mint over cap
 error APETH__CAP_REACHED();
 
+/// @notice thrown when the public key used in `stake` was already used
+error APETH__PUBKEY_ALREADY_USED(bytes pubKey);
+
 /**
  *
  * CONTRACT
@@ -117,7 +120,10 @@ contract APETH is
         EIGEN_POD_MANAGER.createPod();
     }
 
-    // TODO: Check that msg.sender is the expected contract and not an EOA
+    /**
+     * @notice adding ETH without minting APEth is allowed. External rewards
+     * @notice such as restaking might be converted to ETH and sent here.
+     */
     receive() external payable {}
 
     /**
@@ -196,7 +202,7 @@ contract APETH is
         activeValidators++;
         emit Stake(_pubKey, msg.sender);
     }
-
+    
     /**
      *
      * @notice allows contract owner to call functions on the ssvNetwork
