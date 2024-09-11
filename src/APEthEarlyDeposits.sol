@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title APEth early depositor contract
- * @author Aqua Patina, Zug Switzerland
+ * @author Aqua Patina - A Product of AVADO AG, Zug Switzerland
  * @notice Terms of Service: https://www.aquapatina.com/blog/terms-of-service
  * @notice The main functionalities are:
  * @notice - Receive ETH from early depositors
