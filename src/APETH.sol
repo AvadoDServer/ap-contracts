@@ -102,6 +102,10 @@ contract APETH is
         uint256 feeAmount
     ) {
         _disableInitializers();
+
+        // enforce feeAmount to be within range ( max 10% )
+        require(feeAmount < 10000, "feeAmount out of range");
+
         INITIAL_CAP = initialCap;
         EIGEN_POD_MANAGER = eigenPodManager;
         DELEGATION_MANAGER = delegationManager;
@@ -202,7 +206,7 @@ contract APETH is
         activeValidators++;
         emit Stake(_pubKey, msg.sender);
     }
-    
+
     /**
      *
      * @notice allows contract owner to call functions on the ssvNetwork
