@@ -43,6 +43,9 @@ error APETH__CAP_REACHED();
 /// @notice thrown when the public key used in `stake` was already used
 error APETH__PUBKEY_ALREADY_USED(bytes pubKey);
 
+/// @notice thrown when the user tries to withdraw more than they have
+error APETH__WITHDRAWAL_TOO_LARGE(uint256 amount);
+
 /**
  *
  * CONTRACT
@@ -147,6 +150,30 @@ contract APETH is
         emit Mint(msg.sender, amount);
 
         return amount;
+    }
+
+    /**
+     * @notice This function allows users to withdraw their APEth tokens for ETH
+     * @param amount the amount of APEth tokens to withdraw
+     */
+    function withdraw(uint256 amount) external {
+        uint256 userBalance = balanceOf(msg.sender);
+        if (amount > userBalance) {
+            revert APETH__WITHDRAWAL_TOO_LARGE(amount);
+        }
+        uint256 contractBalance = address(this).balance;
+        uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
+        //happy path
+        if (contractBalance > ethToWithdraw) {
+            _burn(msg.sender, amount);
+            payable(msg.sender).transfer(ethToWithdraw);
+        } else {
+            //if the contract doesn't have enough eth to cover the withdrawal, the user will get a partial withdrawal
+            uint256 partialWithdrawal = contractBalance * 1 ether / _ethPerAPEth(0);
+            _burn(msg.sender, partialWithdrawal);
+            payable(msg.sender).transfer(contractBalance);
+            // TODO: add NFT generation for remaining withdrawal amount
+        }
     }
 
     /**
