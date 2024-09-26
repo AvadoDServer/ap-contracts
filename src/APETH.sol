@@ -59,6 +59,9 @@ error APETH__NOT_OWNER();
 /// @notice thrown if a user attempts to withdrawal before withdrawals are enabled
 error APETH__WITHDRAWALS_NOT_ENABLED();
 
+/// @notice thrown if the upgrader tries to set the withdrawal queue ticket after it has already been set
+error APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
+
 /**
  *
  * CONTRACT
@@ -174,7 +177,8 @@ contract APETH is
      * @dev if there is not enough eth in the contract to cover the withdrawal,and there is no queue,
      * the user will get a partial withdrawal, and a queue ticket for the remaining amount
      */
-    function withdraw(uint256 amount) external {if (address(withdrawalQueueTicket) == address(0)) {
+    function withdraw(uint256 amount) external {
+        if (address(withdrawalQueueTicket) == address(0)) {
             revert APETH__WITHDRAWALS_NOT_ENABLED();
         }
         uint256 userBalance = balanceOf(msg.sender);
@@ -190,7 +194,7 @@ contract APETH is
             //if the contract has enough eth to cover the withdrawal, the user will get the full withdrawal
             _burn(msg.sender, amount);
             payable(msg.sender).transfer(ethToWithdraw);
-        } else { 
+        } else {
             //if the contract doesn't have enough eth to cover the withdrawal, the user will get a partial withdrawal
             // TODO: double check this accounting (make a test)
             uint256 partialWithdrawal = contractBalance * 1 ether / _ethPerAPEth(0);
@@ -212,9 +216,7 @@ contract APETH is
         if (address(withdrawalQueueTicket) == address(0)) {
             revert APETH__WITHDRAWALS_NOT_ENABLED();
         }
-        if (
-            block.timestamp < withdrawalQueueTicket.tokenIdToExitQueueTimestamp(ticketId)
-        ) {
+        if (block.timestamp < withdrawalQueueTicket.tokenIdToExitQueueTimestamp(ticketId)) {
             revert APETH__TOO_EARLY();
         }
         if (withdrawalQueueTicket.ownerOf(ticketId) != msg.sender) {
@@ -345,6 +347,19 @@ contract APETH is
     function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(MISCELLANEOUS) {
         IERC20 token = IERC20(tokenAddress);
         token.transfer(to, amount);
+    }
+
+    /**
+     *
+     * @notice allows the upgrader to set the withdrawal queue ticket contract
+     * @param _withdrawalQueueTicket the address of the withdrawal queue ticket contract
+     *
+     */
+    function setWithdrawalQueueTicket(address _withdrawalQueueTicket) external onlyRole(UPGRADER) {
+        if (address(withdrawalQueueTicket) != address(0)) {
+            revert APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
+        }
+        withdrawalQueueTicket = IAPETHWithdrawalQueueTicket(_withdrawupgraderQueueTicket);
     }
 
     /**
