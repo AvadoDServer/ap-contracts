@@ -156,6 +156,9 @@ contract APETH is
     /**
      * @notice This function allows users to withdraw their APEth tokens for ETH
      * @param amount the amount of APEth tokens to withdraw
+     * @dev if there is a withdrawal queue, the user will mint a ticket for their withdrawal (joining the queue)
+     * @dev if there is not enough eth in the contract to cover the withdrawal,and there is no queue,
+     * the user will get a partial withdrawal, and a queue ticket for the remaining amount
      */
     function withdraw(uint256 amount) external {
         uint256 userBalance = balanceOf(msg.sender);
@@ -165,16 +168,30 @@ contract APETH is
         uint256 contractBalance = address(this).balance;
         uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
         //happy path
-        if (contractBalance > ethToWithdraw && withdrawalQueue == 0) {
+        if (contractBalance >= ethToWithdraw && withdrawalQueue == 0) {
             _burn(msg.sender, amount);
             payable(msg.sender).transfer(ethToWithdraw);
-        } else {
+        } else if (withdrawalQueue == 0) {
             //if the contract doesn't have enough eth to cover the withdrawal, the user will get a partial withdrawal
+            // TODO: double check this accounting (make a test)
             uint256 partialWithdrawal = contractBalance * 1 ether / _ethPerAPEth(0);
-            _burn(msg.sender, partialWithdrawal);
+            uint256 remainingAmount = amount - partialWithdrawal;
+            withdrawalQueue += remainingAmount;
+            _mintWithdrawQueueTicket(remainingAmount);
             payable(msg.sender).transfer(contractBalance);
-            // TODO: add NFT generation for remaining withdrawal amount
+        } else {
+            //if there is a withdrawal queue, there is no partial withdrawal allowed
+            _mintWithdrawQueueTicket(amount);
         }
+    }
+
+    function _mintWithdrawQueueTicket(uint256 amount) internal {
+        _burn(msg.sender, amount);
+        //
+    }
+
+    function redeemWithdrawQueueTicket(uint256 ticketId) external {
+        //
     }
 
     /**
