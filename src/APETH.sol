@@ -28,6 +28,8 @@ import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManage
 import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
+import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
+import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
 /**
  *
@@ -37,6 +39,9 @@ import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
 /// @notice thrown when attempting to stake when there is not enough eth in the contract
 error APETH__NOT_ENOUGH_ETH();
 
+/// @notice thrown when attempting to withdraw when there is not enough eth in the contract
+error APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
+
 /// @notice thrown when attempting to mint over cap
 error APETH__CAP_REACHED();
 
@@ -45,6 +50,12 @@ error APETH__PUBKEY_ALREADY_USED(bytes pubKey);
 
 /// @notice thrown when the user tries to withdraw more than they have
 error APETH__WITHDRAWAL_TOO_LARGE(uint256 amount);
+
+/// @notice thrown when the user tries to claim a ticket too early
+error APETH__TOO_EARLY();
+
+/// @notice thrown when the user tries to claim a ticket that is not theirs
+error APETH__NOT_OWNER();
 
 /**
  *
@@ -79,6 +90,7 @@ contract APETH is
 
     /// @dev Immutables because these are not going to change
     IEigenPodManager private immutable EIGEN_POD_MANAGER;
+    address private immutable WITHDRAWAL_QUEUE_TICKET;
     address private immutable DELEGATION_MANAGER;
     address private immutable SSV_NETWORK;
 
@@ -103,7 +115,8 @@ contract APETH is
         address delegationManager,
         address ssvNetwork,
         address feeRecipient,
-        uint256 feeAmount
+        uint256 feeAmount,
+        address withdrawalQueueTicket
     ) {
         _disableInitializers();
         INITIAL_CAP = initialCap;
@@ -112,6 +125,7 @@ contract APETH is
         SSV_NETWORK = ssvNetwork;
         FEE_RECIPIENT = feeRecipient;
         FEE_AMOUNT = feeAmount;
+        WITHDRAWAL_QUEUE_TICKET = withdrawalQueueTicket;
     }
 
     function initialize(address admin) public initializer {
@@ -187,11 +201,26 @@ contract APETH is
 
     function _mintWithdrawQueueTicket(uint256 amount) internal {
         _burn(msg.sender, amount);
-        //
+        uint256 withdrawTimeStamp = block.timestamp + 1 weeks; //??
+        IAPETHWithdrawalQueueTicket(WITHDRAWAL_QUEUE_TICKET).mint(msg.sender, withdrawTimeStamp, amount);
     }
 
     function redeemWithdrawQueueTicket(uint256 ticketId) external {
-        //
+        if (
+            block.timestamp < IAPETHWithdrawalQueueTicket(WITHDRAWAL_QUEUE_TICKET).tokenIdToExitQueueTimestamp(ticketId)
+        ) {
+            revert APETH__TOO_EARLY();
+        }
+        if (IERC721(WITHDRAWAL_QUEUE_TICKET).ownerOf(ticketId) != msg.sender) {
+            revert APETH__NOT_OWNER();
+        }
+        uint256 amount = IAPETHWithdrawalQueueTicket(WITHDRAWAL_QUEUE_TICKET).tokenIdToExitQueueExitAmount(ticketId);
+        uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
+        if (address(this).balance < ethToWithdraw) {
+            revert APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
+        }
+        IAPETHWithdrawalQueueTicket(WITHDRAWAL_QUEUE_TICKET).burn(ticketId);
+        payable(msg.sender).transfer(ethToWithdraw);
     }
 
     /**

@@ -37,6 +37,8 @@ contract ScriptBase is Script {
     bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
     bytes32 public constant ADMIN = keccak256("ADMIN");
 
+    address public withdrawalQueueTicket;
+
     function getSalt(ProxyConfig memory config) private pure returns (bytes32) {
         if (config.salt == bytes32(0)) {
             return DEFAULT_SALT;
@@ -95,7 +97,8 @@ contract ScriptBase is Script {
             config.network.delegationManager,
             config.network.ssvNetwork,
             config.feeRecipient,
-            config.feeAmount
+            config.feeAmount,
+            withdrawalQueueTicket
         );
     }
 
