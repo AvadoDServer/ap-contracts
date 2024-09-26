@@ -81,10 +81,10 @@ contract APETH is
     /// @dev Immutables because these are not going to change without a contract upgrade
     uint256 private immutable FEE_AMOUNT; // divided by PRECISION in calculation
     uint256 private immutable PRECISION = 1e6;
-    address private immutable FEE_RECIPIENT;
 
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
+    address private FEE_RECIPIENT;
 
     /**
      *
@@ -291,4 +291,11 @@ contract APETH is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyRole(UPGRADER) {}
+
+    /**
+     * @notice This set fee recipient address
+     */
+    function setFeeRecipient(address feeRecipient) external onlyRole(UPGRADER) {
+        FEE_RECIPIENT = feeRecipient;
+    }    
 }
