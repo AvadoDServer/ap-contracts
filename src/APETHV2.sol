@@ -17,6 +17,7 @@ import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManage
 import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
+import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
 
 /// @custom:oz-upgrades-from APETH
 contract APETHV2 is
@@ -44,6 +45,7 @@ contract APETHV2 is
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
     uint256 public withdrawalQueue;
+    IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {

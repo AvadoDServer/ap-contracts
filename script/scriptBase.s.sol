@@ -97,8 +97,7 @@ contract ScriptBase is Script {
             config.network.delegationManager,
             config.network.ssvNetwork,
             config.feeRecipient,
-            config.feeAmount,
-            withdrawalQueueTicket
+            config.feeAmount
         );
     }
 

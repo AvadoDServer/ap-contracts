@@ -29,7 +29,6 @@ import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
 import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
-import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
 /**
  *
@@ -56,6 +55,9 @@ error APETH__TOO_EARLY();
 
 /// @notice thrown when the user tries to claim a ticket that is not theirs
 error APETH__NOT_OWNER();
+
+/// @notice thrown if a user attempts to withdrawal before withdrawals are enabled
+error APETH__WITHDRAWALS_NOT_ENABLED();
 
 /**
  *
@@ -90,7 +92,6 @@ contract APETH is
 
     /// @dev Immutables because these are not going to change
     IEigenPodManager private immutable EIGEN_POD_MANAGER;
-    address private immutable WITHDRAWAL_QUEUE_TICKET;
     address private immutable DELEGATION_MANAGER;
     address private immutable SSV_NETWORK;
 
@@ -101,6 +102,7 @@ contract APETH is
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
     uint256 public withdrawalQueue;
+    IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
 
     /**
      *
@@ -115,8 +117,7 @@ contract APETH is
         address delegationManager,
         address ssvNetwork,
         address feeRecipient,
-        uint256 feeAmount,
-        address withdrawalQueueTicket
+        uint256 feeAmount
     ) {
         _disableInitializers();
         INITIAL_CAP = initialCap;
@@ -125,7 +126,6 @@ contract APETH is
         SSV_NETWORK = ssvNetwork;
         FEE_RECIPIENT = feeRecipient;
         FEE_AMOUNT = feeAmount;
-        WITHDRAWAL_QUEUE_TICKET = withdrawalQueueTicket;
     }
 
     function initialize(address admin) public initializer {
@@ -174,18 +174,23 @@ contract APETH is
      * @dev if there is not enough eth in the contract to cover the withdrawal,and there is no queue,
      * the user will get a partial withdrawal, and a queue ticket for the remaining amount
      */
-    function withdraw(uint256 amount) external {
+    function withdraw(uint256 amount) external {if (address(withdrawalQueueTicket) == address(0)) {
+            revert APETH__WITHDRAWALS_NOT_ENABLED();
+        }
         uint256 userBalance = balanceOf(msg.sender);
         if (amount > userBalance) {
             revert APETH__WITHDRAWAL_TOO_LARGE(amount);
         }
         uint256 contractBalance = address(this).balance;
         uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
-        //happy path
-        if (contractBalance >= ethToWithdraw && withdrawalQueue == 0) {
+        if (withdrawalQueue > 0) {
+            //if there is a withdrawal queue, there is no partial withdrawal allowed
+            _mintWithdrawQueueTicket(amount);
+        } else if (contractBalance >= ethToWithdraw) {
+            //if the contract has enough eth to cover the withdrawal, the user will get the full withdrawal
             _burn(msg.sender, amount);
             payable(msg.sender).transfer(ethToWithdraw);
-        } else if (withdrawalQueue == 0) {
+        } else { 
             //if the contract doesn't have enough eth to cover the withdrawal, the user will get a partial withdrawal
             // TODO: double check this accounting (make a test)
             uint256 partialWithdrawal = contractBalance * 1 ether / _ethPerAPEth(0);
@@ -193,33 +198,34 @@ contract APETH is
             withdrawalQueue += remainingAmount;
             _mintWithdrawQueueTicket(remainingAmount);
             payable(msg.sender).transfer(contractBalance);
-        } else {
-            //if there is a withdrawal queue, there is no partial withdrawal allowed
-            _mintWithdrawQueueTicket(amount);
         }
     }
 
-    function _mintWithdrawQueueTicket(uint256 amount) internal {
-        _burn(msg.sender, amount);
-        uint256 withdrawTimeStamp = block.timestamp + 1 weeks; //??
-        IAPETHWithdrawalQueueTicket(WITHDRAWAL_QUEUE_TICKET).mint(msg.sender, withdrawTimeStamp, amount);
-    }
-
+    /**
+     * @notice This function allows users to redeem their withdrawal queue tickets for ETH
+     * @param ticketId the tokenId of the ticket to redeem
+     * @dev the user must wait 1 week after the ticket was minted to redeem
+     * @dev the user must be the owner of the ticket
+     * @dev the user will receive the amount of ETH specified on the ticket
+     */
     function redeemWithdrawQueueTicket(uint256 ticketId) external {
+        if (address(withdrawalQueueTicket) == address(0)) {
+            revert APETH__WITHDRAWALS_NOT_ENABLED();
+        }
         if (
-            block.timestamp < IAPETHWithdrawalQueueTicket(WITHDRAWAL_QUEUE_TICKET).tokenIdToExitQueueTimestamp(ticketId)
+            block.timestamp < withdrawalQueueTicket.tokenIdToExitQueueTimestamp(ticketId)
         ) {
             revert APETH__TOO_EARLY();
         }
-        if (IERC721(WITHDRAWAL_QUEUE_TICKET).ownerOf(ticketId) != msg.sender) {
+        if (withdrawalQueueTicket.ownerOf(ticketId) != msg.sender) {
             revert APETH__NOT_OWNER();
         }
-        uint256 amount = IAPETHWithdrawalQueueTicket(WITHDRAWAL_QUEUE_TICKET).tokenIdToExitQueueExitAmount(ticketId);
+        uint256 amount = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(ticketId);
         uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
         if (address(this).balance < ethToWithdraw) {
             revert APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
         }
-        IAPETHWithdrawalQueueTicket(WITHDRAWAL_QUEUE_TICKET).burn(ticketId);
+        withdrawalQueueTicket.burn(ticketId);
         payable(msg.sender).transfer(ethToWithdraw);
     }
 
@@ -339,6 +345,18 @@ contract APETH is
     function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(MISCELLANEOUS) {
         IERC20 token = IERC20(tokenAddress);
         token.transfer(to, amount);
+    }
+
+    /**
+     *
+     * @notice mints a withdrawal queue ticket, with a date when the withdrawal will be enabled, and the amount withdrawalable by the ticket
+     * @param amount this is the ETh value (in wei) if the withdrawal ticket
+     *
+     */
+    function _mintWithdrawQueueTicket(uint256 amount) internal {
+        _burn(msg.sender, amount);
+        uint256 withdrawTimeStamp = block.timestamp + 1 weeks; //??
+        withdrawalQueueTicket.mint(msg.sender, withdrawTimeStamp, amount);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}

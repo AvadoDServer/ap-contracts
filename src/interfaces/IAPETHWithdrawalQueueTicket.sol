@@ -43,4 +43,6 @@ interface IAPETHWithdrawalQueueTicket {
     function tokenIdToExitQueueTimestamp(uint256 tokenId) external view returns (uint256);
 
     function tokenIdToExitQueueExitAmount(uint256 tokenId) external view returns (uint256);
+
+    function ownerOf(uint256 tokenId) external view returns (address);
 }

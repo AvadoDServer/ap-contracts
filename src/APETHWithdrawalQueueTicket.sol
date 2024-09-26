@@ -93,5 +93,9 @@ contract APETHWithdrawalQueueTicket is
         );
     }
 
+    function ownerOf(uint256 tokenId) public view override(IAPETHWithdrawalQueueTicket, ERC721Upgradeable) returns (address) {
+        return super.ownerOf(tokenId);
+    }
+
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
 }
