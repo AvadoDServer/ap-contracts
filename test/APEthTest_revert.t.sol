@@ -99,4 +99,9 @@ contract APETHTestRevert is APEthTestSetup {
         vm.expectRevert("Call failed");
         APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
+
+    function test_revert_withdraw_amountTooHigh() public mintAlice(5 ether) {
+        vm.expectRevert(); //APETH__WITHDRAW_AMOUNT_TOO_HIGH
+        APEth.withdraw(6 ether);
+    }
 }
