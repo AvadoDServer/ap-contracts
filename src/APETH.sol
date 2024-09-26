@@ -80,7 +80,8 @@ contract APETH is
     address private immutable SSV_NETWORK;
 
     /// @dev Immutables because these are not going to change without a contract upgrade
-    uint256 private immutable FEE_AMOUNT; // divided by 1e6
+    uint256 private immutable FEE_AMOUNT; // divided by PRECISION in calculation
+    uint256 private immutable PRECISION = 1e6;
     address private immutable FEE_RECIPIENT;
 
     /// @dev uses storage slots (caution when upgrading)
@@ -142,7 +143,7 @@ contract APETH is
             revert APETH__CAP_REACHED();
         }
 
-        uint256 fee = (amount * FEE_AMOUNT) / 1e6;
+        uint256 fee = (amount * FEE_AMOUNT) / PRECISION;
         amount = amount - fee;
 
         _mint(msg.sender, amount);
