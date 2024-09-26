@@ -17,6 +17,7 @@ pragma solidity 0.8.20;
  * IMPORTS
  *
  */
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import {AccessControlUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
@@ -51,6 +52,7 @@ contract APETH is
     ERC20PermitUpgradeable,
     UUPSUpgradeable
 {
+    using SafeERC20 for IERC20;
     /**
      *
      * STORAGE
