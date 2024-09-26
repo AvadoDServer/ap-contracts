@@ -88,6 +88,7 @@ contract APETH is
 
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
+    uint256 public withdrawalQueue;
 
     /**
      *
@@ -164,7 +165,7 @@ contract APETH is
         uint256 contractBalance = address(this).balance;
         uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
         //happy path
-        if (contractBalance > ethToWithdraw) {
+        if (contractBalance > ethToWithdraw && withdrawalQueue == 0) {
             _burn(msg.sender, amount);
             payable(msg.sender).transfer(ethToWithdraw);
         } else {

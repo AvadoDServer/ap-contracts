@@ -43,6 +43,8 @@ interface IAPETH {
      */
     function mint() external payable returns (uint256);
 
+    function withdraw(uint256 _amount) external;
+
     function ethPerAPEth() external view returns (uint256);
 
     function stake(bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root) external;

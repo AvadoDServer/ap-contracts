@@ -10,7 +10,8 @@ import {
     MockSsvNetwork,
     IMockEigenPodManager,
     IMockEigenPod,
-    IMockDelegationManager
+    IMockDelegationManager,
+    console
 } from "./APEthTestSetup.t.sol";
 
 contract APETHTest is APEthTestSetup {
@@ -247,10 +248,10 @@ contract APETHTest is APEthTestSetup {
     }
 
     function test_DelegationManagerCall() public {
-        if (block.chainid != 31337) vm.expectRevert("Call failed");
         vm.prank(owner);
         APEth.grantRole(DELEGATION_MANAGER_ADMIN, alice);
         vm.prank(alice);
+        if (block.chainid != 31337) vm.expectRevert("Call failed");
         APEth.callDelegationManager(
             abi.encodeWithSelector(IMockDelegationManager.undelegate.selector, address(APEth)), 0
         );
@@ -261,6 +262,25 @@ contract APETHTest is APEthTestSetup {
         APEth.grantRole(EIGEN_POD_ADMIN, alice);
         vm.prank(alice);
         APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
+    }
+
+    function test_Withdrawal() public mintAlice(10 ether) {
+        // Send eth to contract to increase balance
+        payable(address(APEth)).transfer(1 ether);
+        assertEq(address(APEth).balance, 11 ether);
+        //check eth per apeth
+        uint256 ethPerAPEth = 11 ether / 10;
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        uint256 aliceApethBalance = APEth.balanceOf(alice);
+        uint256 aliceEthWithdrawalAmountExpected = aliceApethBalance * ethPerAPEth / 1 ether;
+        uint256 aliceEthBalanceBefore = alice.balance;
+        vm.prank(alice);
+        APEth.withdraw(aliceApethBalance);
+        uint256 aliceEthBalanceAfter = alice.balance;
+        uint256 aliceEthWithdrawalAmount = aliceEthBalanceAfter - aliceEthBalanceBefore;
+
+        assertEq(APEth.balanceOf(alice), 0);
+        assertEq(aliceEthWithdrawalAmount, aliceEthWithdrawalAmountExpected);
     }
 
     /*
