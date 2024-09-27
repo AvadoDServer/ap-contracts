@@ -7,6 +7,7 @@ import {console} from "forge-std/console.sol";
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
+import {APETHWithdrawalQueueTicket} from "../src/APETHWithdrawalQueueTicket.sol";
 import {DeployProxy} from "../script/deployToken.s.sol";
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
@@ -21,11 +22,13 @@ import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
+import {DeployWithdrawalQueue} from "../script/deployWithdrawalQueue.s.sol";
 
 contract APEthTestSetup is Test {
     APETH public APEth;
     APETH public implementation;
     APEthEarlyDeposits public earlyDeposits;
+    APETHWithdrawalQueueTicket public withdrawalQueueTicket;
     // IAPEthPodWrapper public wrapper;
 
     address public owner;
@@ -98,6 +101,7 @@ contract APEthTestSetup is Test {
         newOwner = address(1);
 
         DeployProxy deployProxy = new DeployProxy();
+        DeployWithdrawalQueue deployWithdrawalQueue = new DeployWithdrawalQueue();
         proxyConfig.admin = owner;
         proxyConfig = new ScriptBase().getConfig(proxyConfig);
         APEth = deployProxy.run(proxyConfig);
@@ -105,7 +109,12 @@ contract APEthTestSetup is Test {
         vm.startPrank(owner);
         APEth.grantRole(ETH_STAKER, staker);
         APEth.grantRole(UPGRADER, upgrader);
+        withdrawalQueueTicket = deployWithdrawalQueue.run(proxyConfig);
+        withdrawalQueueTicket.grantRole(keccak256("APETH_CONTRACT"), address(APEth));
         vm.stopPrank();
+
+        vm.prank(upgrader);
+        APEth.setWithdrawalQueueTicket(address(withdrawalQueueTicket));
     }
 
     modifier mintAlice(uint256 amount) {

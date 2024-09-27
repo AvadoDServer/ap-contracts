@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
+import {APETHWithdrawalQueueTicket} from "../src/APETHWithdrawalQueueTicket.sol";
 import {HelperConfig, NetworkConfig} from "./HelperConfig.s.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Script} from "forge-std/Script.sol";
@@ -105,6 +106,20 @@ contract ScriptBase is Script {
         ERC1967Proxy proxy = new ERC1967Proxy{salt: getSalt(config)}(implementation, encodeInitializer(config));
 
         return APETH(payable(address(proxy)));
+    }
+
+    function deployAPETHWithdrawalQueueTicket(ProxyConfig memory partialConfig)
+        public
+        returns (APETHWithdrawalQueueTicket)
+    {
+        APETHWithdrawalQueueTicket apethWQTImplementation = new APETHWithdrawalQueueTicket();
+        ProxyConfig memory config = getConfig(partialConfig);
+        ERC1967Proxy apethWQT1967Proxy = new ERC1967Proxy(
+            address(apethWQTImplementation), abi.encodeCall(APETHWithdrawalQueueTicket.initialize, (config.admin))
+        );
+        APETHWithdrawalQueueTicket apethWQTProxy = APETHWithdrawalQueueTicket(payable(address(apethWQT1967Proxy)));
+
+        return APETHWithdrawalQueueTicket(payable(address(apethWQTProxy)));
     }
 
     function deployEarlyDeposit(address owner) public returns (APEthEarlyDeposits) {

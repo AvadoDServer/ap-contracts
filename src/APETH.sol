@@ -359,7 +359,7 @@ contract APETH is
         if (address(withdrawalQueueTicket) != address(0)) {
             revert APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
         }
-        withdrawalQueueTicket = IAPETHWithdrawalQueueTicket(_withdrawupgraderQueueTicket);
+        withdrawalQueueTicket = IAPETHWithdrawalQueueTicket(_withdrawalQueueTicket);
     }
 
     /**
@@ -370,7 +370,7 @@ contract APETH is
      */
     function _mintWithdrawQueueTicket(uint256 amount) internal {
         _burn(msg.sender, amount);
-        uint256 withdrawTimeStamp = block.timestamp + 1 weeks; //??
+        uint256 withdrawTimeStamp = block.timestamp + 1 weeks; //TODO: make this a variable
         withdrawalQueueTicket.mint(msg.sender, withdrawTimeStamp, amount);
     }
 
