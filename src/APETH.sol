@@ -17,6 +17,7 @@ pragma solidity 0.8.20;
  * IMPORTS
  *
  */
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import {AccessControlUpgradeable} from
     "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
@@ -43,9 +44,6 @@ error APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
 
 /// @notice thrown when attempting to mint over cap
 error APETH__CAP_REACHED();
-
-/// @notice thrown when the public key used in `stake` was already used
-error APETH__PUBKEY_ALREADY_USED(bytes pubKey);
 
 /// @notice thrown when the user tries to withdraw more than they have
 error APETH__WITHDRAWAL_TOO_LARGE(uint256 amount);
@@ -75,6 +73,8 @@ contract APETH is
     ERC20PermitUpgradeable,
     UUPSUpgradeable
 {
+    using SafeERC20 for IERC20;
+
     /**
      *
      * STORAGE
@@ -89,6 +89,7 @@ contract APETH is
     bytes32 private constant DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
     bytes32 private constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
     bytes32 private constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
+    uint256 private constant PRECISION = 1e6;
 
     /// @dev Immutables because will disappear in the next upgrade
     uint256 private immutable INITIAL_CAP;
@@ -99,8 +100,8 @@ contract APETH is
     address private immutable SSV_NETWORK;
 
     /// @dev Immutables because these are not going to change without a contract upgrade
-    uint256 private immutable FEE_AMOUNT; // divided by 1e6
-    address private immutable FEE_RECIPIENT;
+    uint256 private immutable FEE_AMOUNT; // divided by PRECISION
+    address private immutable feeRecipient;
 
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
@@ -119,15 +120,15 @@ contract APETH is
         IEigenPodManager eigenPodManager,
         address delegationManager,
         address ssvNetwork,
-        address feeRecipient,
         uint256 feeAmount
     ) {
         _disableInitializers();
+        // enforce feeAmount to be within range ( max 10% )
+        require(feeAmount < 10000, "feeAmount out of range");
         INITIAL_CAP = initialCap;
         EIGEN_POD_MANAGER = eigenPodManager;
         DELEGATION_MANAGER = delegationManager;
         SSV_NETWORK = ssvNetwork;
-        FEE_RECIPIENT = feeRecipient;
         FEE_AMOUNT = feeAmount;
     }
 
@@ -137,6 +138,7 @@ contract APETH is
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        feeRecipient = admin;
 
         EIGEN_POD_MANAGER.createPod();
     }
@@ -159,11 +161,11 @@ contract APETH is
             revert APETH__CAP_REACHED();
         }
 
-        uint256 fee = (amount * FEE_AMOUNT) / 1e6;
+        uint256 fee = (amount * FEE_AMOUNT) / PRECISION;
         amount = amount - fee;
 
         _mint(msg.sender, amount);
-        _mint(FEE_RECIPIENT, fee);
+        _mint(feeRecipient, fee);
 
         emit Mint(msg.sender, amount);
 
@@ -346,7 +348,7 @@ contract APETH is
      */
     function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(MISCELLANEOUS) {
         IERC20 token = IERC20(tokenAddress);
-        token.transfer(to, amount);
+        token.safeTransfer(to, amount);
     }
 
     /**
@@ -375,4 +377,11 @@ contract APETH is
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
+
+    /**
+     * @notice This set fee recipient address
+     */
+    function setFeeRecipient(address _feeRecipient) external onlyRole(UPGRADER) {
+        feeRecipient = _feeRecipient;
+    }
 }
