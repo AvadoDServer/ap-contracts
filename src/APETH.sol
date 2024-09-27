@@ -85,7 +85,7 @@ contract APETH is
 
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
-    address private FEE_RECIPIENT;
+    address private feeRecipient;
 
     /**
      *
@@ -99,7 +99,6 @@ contract APETH is
         IEigenPodManager eigenPodManager,
         address delegationManager,
         address ssvNetwork,
-        address feeRecipient,
         uint256 feeAmount
     ) {
         _disableInitializers();
@@ -111,7 +110,6 @@ contract APETH is
         EIGEN_POD_MANAGER = eigenPodManager;
         DELEGATION_MANAGER = delegationManager;
         SSV_NETWORK = ssvNetwork;
-        FEE_RECIPIENT = feeRecipient;
         FEE_AMOUNT = feeAmount;
     }
 
@@ -121,6 +119,7 @@ contract APETH is
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        feeRecipient = admin;
 
         EIGEN_POD_MANAGER.createPod();
     }
@@ -147,7 +146,7 @@ contract APETH is
         amount = amount - fee;
 
         _mint(msg.sender, amount);
-        _mint(FEE_RECIPIENT, fee);
+        _mint(feeRecipient, fee);
 
         emit Mint(msg.sender, amount);
 
@@ -277,7 +276,7 @@ contract APETH is
     /**
      * @notice This set fee recipient address
      */
-    function setFeeRecipient(address feeRecipient) external onlyRole(UPGRADER) {
-        FEE_RECIPIENT = feeRecipient;
+    function setFeeRecipient(address _feeRecipient) external onlyRole(UPGRADER) {
+        feeRecipient = _feeRecipient;
     }
 }

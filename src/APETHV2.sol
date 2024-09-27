@@ -27,6 +27,7 @@ contract APETHV2 is
 
     // Storage slots
     uint256 private activeValidators;
+    address private feeRecipient;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {

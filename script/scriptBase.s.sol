@@ -94,7 +94,6 @@ contract ScriptBase is Script {
             IEigenPodManager(config.network.eigenPodManager),
             config.network.delegationManager,
             config.network.ssvNetwork,
-            config.feeRecipient,
             config.feeAmount
         );
     }
