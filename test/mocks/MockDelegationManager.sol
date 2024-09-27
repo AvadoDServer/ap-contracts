@@ -8,8 +8,8 @@ interface IMockDelegationManager {
 }
 
 contract MockDelegationManager {
-    function undelegate(address staker) external  view returns (bytes32[] memory withdrawalRoots) {
+    function undelegate(address staker) external view returns (bytes32[] memory withdrawalRoots) {
         console.log("undelegate() called", staker);
-        return(new bytes32[](0));
+        return (new bytes32[](0));
     }
 }
