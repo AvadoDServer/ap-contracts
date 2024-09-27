@@ -41,10 +41,7 @@ contract APETHV2 is
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
     }
 
-    function mint(
-        address to,
-        uint256 amount
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function mint(address to, uint256 amount) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _mint(to, amount);
     }
 
@@ -52,7 +49,5 @@ contract APETHV2 is
         return 2;
     }
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }
