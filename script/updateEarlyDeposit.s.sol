@@ -12,10 +12,7 @@ library UpdateEarlyDepositLibrary {
 
 contract UpdateEarlyDeposit is ScriptBase {
     function run(address apEth, address earlyDeposit) public {
-        UpdateEarlyDepositLibrary.run(
-            getAPETH(apEth),
-            getAPEthEarlyDeposits(earlyDeposit)
-        );
+        UpdateEarlyDepositLibrary.run(getAPETH(apEth), getAPEthEarlyDeposits(earlyDeposit));
     }
 
     function run() public {

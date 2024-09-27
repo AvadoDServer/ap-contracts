@@ -27,8 +27,8 @@ contract APETHV2 is
 
     // Storage slots
     uint256 private activeValidators;
-    address private FEE_RECIPIENT;
-    
+    address private feeRecipient;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -42,10 +42,7 @@ contract APETHV2 is
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
     }
 
-    function mint(
-        address to,
-        uint256 amount
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function mint(address to, uint256 amount) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _mint(to, amount);
     }
 
@@ -53,7 +50,5 @@ contract APETHV2 is
         return 2;
     }
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }
