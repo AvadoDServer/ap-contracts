@@ -84,9 +84,7 @@ contract EarlyDepositTest is Test {
         _;
     }
 
-    function testWithdrawal(
-        uint128 x
-    ) public depositAlice(uint256(x)) updateEarlyDepositAddr {
+    function testWithdrawal(uint128 x) public depositAlice(uint256(x)) updateEarlyDepositAddr {
         uint256 aliceBalance = alice.balance;
         vm.prank(alice);
         earlyDeposits.withdraw();
@@ -99,17 +97,13 @@ contract EarlyDepositTest is Test {
     function testFallback(uint128 x) public {
         assertEq(earlyDeposits.deposits(alice), 0);
         hoax(alice);
-        (bool success, ) = payable(address(earlyDeposits)).call{
-            value: uint256(x)
-        }("");
+        (bool success,) = payable(address(earlyDeposits)).call{value: uint256(x)}("");
         assert(success);
         assertEq(earlyDeposits.deposits(alice), uint256(x));
         assertEq(address(earlyDeposits).balance, uint256(x));
     }
 
-    function testMint(
-        uint72 x
-    ) public depositAlice(uint256(x)) updateEarlyDepositAddr {
+    function testMint(uint72 x) public depositAlice(uint256(x)) updateEarlyDepositAddr {
         recipients.push(alice);
         vm.prank(owner);
         earlyDeposits.mintAPEthBulk(recipients);
@@ -118,15 +112,11 @@ contract EarlyDepositTest is Test {
         assertEq(earlyDeposits.deposits(alice), 0);
     }
 
-    function testBulkMint(
-        uint64 a,
-        uint64 b,
-        uint64 c,
-        uint64 d,
-        uint64 e,
-        uint64 f,
-        uint64 aa
-    ) public depositAlice(uint256(a)) updateEarlyDepositAddr {
+    function testBulkMint(uint64 a, uint64 b, uint64 c, uint64 d, uint64 e, uint64 f, uint64 aa)
+        public
+        depositAlice(uint256(a))
+        updateEarlyDepositAddr
+    {
         // deposit to early deposit contract
         hoax(bob);
         earlyDeposits.deposit{value: uint256(b)}(bob);
@@ -166,9 +156,7 @@ contract EarlyDepositTest is Test {
         assertEq(earlyDeposits.deposits(vm.addr(71)), 0);
         assertEq(earlyDeposits.deposits(vm.addr(72)), 0);
         // check that they recieved their tokens
-        uint256 aliceBalance = _calculateAmountLessFee(
-            uint256(a) + uint256(aa)
-        );
+        uint256 aliceBalance = _calculateAmountLessFee(uint256(a) + uint256(aa));
         assertEq(APEth.balanceOf(alice), aliceBalance);
         uint256 bobBalance = _calculateAmountLessFee(uint256(b));
         assertEq(APEth.balanceOf(bob), bobBalance);
@@ -194,9 +182,7 @@ contract EarlyDepositTest is Test {
         return (amount * proxyConfig.feeAmount) / 1e6;
     }
 
-    function _calculateAmountLessFee(
-        uint256 amount
-    ) internal view returns (uint256) {
+    function _calculateAmountLessFee(uint256 amount) internal view returns (uint256) {
         return (amount - _calculateFee(amount));
     }
 }

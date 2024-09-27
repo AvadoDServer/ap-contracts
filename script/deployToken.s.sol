@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ScriptBase, APEthEarlyDeposits, APETH, console, Create2, ERC1967Proxy, Upgrades, stdJson, ProxyConfig} from "./scriptBase.s.sol";
+import {
+    ScriptBase,
+    APEthEarlyDeposits,
+    APETH,
+    console,
+    Create2,
+    ERC1967Proxy,
+    Upgrades,
+    stdJson,
+    ProxyConfig
+} from "./scriptBase.s.sol";
 import {HelperConfig, NetworkConfig} from "./HelperConfig.s.sol";
 
 contract DeployProxy is ScriptBase {
-    function run(
-        ProxyConfig memory config,
-        address implementation
-    ) public returns (APETH) {
+    function run(ProxyConfig memory config, address implementation) public returns (APETH) {
         return deployProxy(implementation, config);
     }
 
