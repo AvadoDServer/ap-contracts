@@ -101,10 +101,10 @@ contract APETH is
 
     /// @dev Immutables because these are not going to change without a contract upgrade
     uint256 private immutable FEE_AMOUNT; // divided by PRECISION
-    address private immutable feeRecipient;
 
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
+    address public feeRecipient;
     uint256 public withdrawalQueue;
     IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
 
