@@ -267,7 +267,7 @@ contract APETH is
      */
     function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(MISCELLANEOUS) {
         IERC20 token = IERC20(tokenAddress);
-        token.transfer(to, amount);
+        token.safeTransfer(to, amount);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
