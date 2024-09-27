@@ -70,6 +70,7 @@ contract APETH is
     bytes32 private constant DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
     bytes32 private constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
     bytes32 private constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
+    uint256 private constant PRECISION = 1e6;
 
     /// @dev Immutables because will disappear in the next upgrade
     uint256 private immutable INITIAL_CAP;
@@ -81,7 +82,6 @@ contract APETH is
 
     /// @dev Immutables because these are not going to change without a contract upgrade
     uint256 private immutable FEE_AMOUNT; // divided by PRECISION in calculation
-    uint256 private immutable PRECISION = 1e6;
     address private immutable FEE_RECIPIENT;
 
     /// @dev uses storage slots (caution when upgrading)
