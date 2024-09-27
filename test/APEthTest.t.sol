@@ -288,9 +288,9 @@ contract APETHTest is APEthTestSetup {
     }
 
     function test_DelegationManagerCall() public {
-        if (block.chainid != 31337) vm.expectRevert("Call failed");
         vm.prank(owner);
         APEth.grantRole(DELEGATION_MANAGER_ADMIN, alice);
+        if (block.chainid != 31337) vm.expectRevert("Call failed");
         vm.prank(alice);
         APEth.callDelegationManager(
             abi.encodeWithSelector(
