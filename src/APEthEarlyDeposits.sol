@@ -24,7 +24,7 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
  * CONTRACT
  *
  */
-contract APEthEarlyDeposits is Ownable{
+contract APEthEarlyDeposits is Ownable {
     /**
      *
      * STORAGE
@@ -52,7 +52,7 @@ contract APEthEarlyDeposits is Ownable{
      * FUNCTIONS
      *
      */
-    constructor(address _owner)Ownable(_owner){
+    constructor(address _owner) Ownable(_owner) {
         //
     }
 
@@ -64,17 +64,17 @@ contract APEthEarlyDeposits is Ownable{
         deposits[_depositor] += msg.value;
         emit Deposit(_depositor, msg.value);
     }
-    
-    receive()external payable {
-        deposit(msg.sender);
-    }
-    
-    fallback()external payable {
+
+    receive() external payable {
         deposit(msg.sender);
     }
 
-    function mintAPEthBulk(address[] calldata recipients) external onlyOwner{
-        for(uint256 i = 0; i < recipients.length; i++) {
+    fallback() external payable {
+        deposit(msg.sender);
+    }
+
+    function mintAPEthBulk(address[] calldata recipients) external onlyOwner {
+        for (uint256 i = 0; i < recipients.length; i++) {
             require(address(_APETH) != address(0), "APEth contract address not set");
             _mintAPEth(recipients[i]);
         }
@@ -83,7 +83,7 @@ contract APEthEarlyDeposits is Ownable{
     function _mintAPEth(address recipient) internal {
         uint256 amount = deposits[recipient];
         deposits[recipient] = 0;
-        uint256 newCoins =_APETH.mint{value: amount}();
+        uint256 newCoins = _APETH.mint{value: amount}();
         bool success = IERC20(address(_APETH)).transfer(recipient, newCoins);
         assert(success);
         emit Minted(recipient, newCoins);
@@ -92,7 +92,7 @@ contract APEthEarlyDeposits is Ownable{
     function withdraw() external {
         uint256 amount = deposits[msg.sender];
         deposits[msg.sender] = 0;
-        (bool success, /*return data*/) = msg.sender.call{value: amount}("");
+        (bool success, /*return data*/ ) = msg.sender.call{value: amount}("");
         assert(success);
         emit Withdrawal(msg.sender, amount);
     }

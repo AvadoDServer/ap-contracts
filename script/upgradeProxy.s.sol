@@ -7,12 +7,7 @@ contract UpgradeProxy is ScriptBase {
     address _proxyAddress;
 
     function run(address apEth, address owner) public {
-        Upgrades.upgradeProxy(
-            apEth,
-            "APETHV2.sol:APETHV2",
-            abi.encodeCall(APETHV2.initialize, (owner)),
-            owner
-        );
+        Upgrades.upgradeProxy(apEth, "APETHV2.sol:APETHV2", abi.encodeCall(APETHV2.initialize, (owner)), owner);
     }
 
     function run() public {
