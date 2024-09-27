@@ -85,7 +85,7 @@ contract APETH is
 
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
-    address private feeRecipient;
+    address public feeRecipient;
 
     /**
      *
