@@ -73,14 +73,40 @@ contract WithdrawalTicketTest is APEthTestSetup {
         }
         vm.prank(staker);
         APEth.stake(_pubKey, _signature, _deposit_data_root);
-        /*if (workingKeys)*/
+        /*if (workingKeys) {*/
         assertEq(address(APEth).balance, 0 ether);
+        uint256 aliceApethBalance = APEth.balanceOf(alice);
         vm.prank(alice);
         APEth.withdraw(15 ether);
         assertEq(APEth.withdrawalQueue(), 15 ether);
+        assertEq(aliceApethBalance - 15 ether, APEth.balanceOf(alice));
         assertEq(withdrawalQueueTicket.ownerOf(1), alice);
         assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), 15 ether);
         assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
+        // }
+    }
+
+    function test_partialWithdrawal() public mintAlice(30 ether) mintBob(12 ether) {
+        assertEq(address(APEth).balance, 42 ether);
+        if (!workingKeys && block.chainid != 31337) {
+            APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
+            vm.expectRevert(
+                /*"DepositContract: reconstructed DepositData does not match supplied deposit_data_root"*/
+            );
+        }
+        vm.prank(staker);
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
+        /*if (workingKeys) {*/
+        assertEq(address(APEth).balance, 10 ether);
+        uint256 aliceEthBalanceBefore = alice.balance;
+        vm.prank(alice);
+        APEth.withdraw(15 ether);
+        assertEq(alice.balance - aliceEthBalanceBefore, 10 ether);
+        assertEq(APEth.withdrawalQueue(), 5 ether);
+        assertEq(withdrawalQueueTicket.ownerOf(1), alice);
+        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), 5 ether);
+        assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
+        // }
     }
 
     function test_revert_withdraw_amountTooHigh() public mintAlice(5 ether) {
