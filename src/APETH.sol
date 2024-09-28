@@ -189,20 +189,20 @@ contract APETH is
         }
         uint256 contractBalance = address(this).balance;
         uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
+        _burn(msg.sender, amount);
         if (withdrawalQueue > 0) {
             //if there is a withdrawal queue, there is no partial withdrawal allowed
-            _mintWithdrawQueueTicket(amount);
+            withdrawalQueue += ethToWithdraw;
+            _mintWithdrawQueueTicket(ethToWithdraw);
         } else if (contractBalance >= ethToWithdraw) {
             //if the contract has enough eth to cover the withdrawal, the user will get the full withdrawal
-            _burn(msg.sender, amount);
             payable(msg.sender).transfer(ethToWithdraw);
         } else {
             //if the contract doesn't have enough eth to cover the withdrawal, the user will get a partial withdrawal
             // TODO: double check this accounting (make a test)
-            uint256 partialWithdrawal = contractBalance * 1 ether / _ethPerAPEth(0);
-            uint256 remainingAmount = amount - partialWithdrawal;
+            uint256 remainingAmount = ethToWithdraw - contractBalance;
             withdrawalQueue += remainingAmount;
-            _mintWithdrawQueueTicket(remainingAmount);
+            _mintWithdrawQueueTicket(remainingAmount); //TODO: fix reentrancy
             payable(msg.sender).transfer(contractBalance);
         }
     }
@@ -229,6 +229,7 @@ contract APETH is
         if (address(this).balance < ethToWithdraw) {
             revert APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
         }
+        withdrawalQueue -= amount;
         withdrawalQueueTicket.burn(ticketId);
         payable(msg.sender).transfer(ethToWithdraw);
     }
@@ -371,7 +372,6 @@ contract APETH is
      *
      */
     function _mintWithdrawQueueTicket(uint256 amount) internal {
-        _burn(msg.sender, amount);
         uint256 withdrawTimeStamp = block.timestamp + 1 weeks; //TODO: make this a variable
         withdrawalQueueTicket.mint(msg.sender, withdrawTimeStamp, amount);
     }
@@ -383,5 +383,12 @@ contract APETH is
      */
     function setFeeRecipient(address _feeRecipient) external onlyRole(UPGRADER) {
         feeRecipient = _feeRecipient;
+    }
+
+    // for testing only
+    // TODO: remove this function before deploying to mainnet
+    function fakeStake() external {
+        payable(address(0)).transfer(32 ether);
+        activeValidators++;
     }
 }
