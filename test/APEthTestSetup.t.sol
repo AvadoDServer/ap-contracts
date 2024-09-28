@@ -136,6 +136,24 @@ contract APEthTestSetup is Test {
         _;
     }
 
+    modifier mintBob(uint256 amount) {
+        vm.prank(owner);
+        APEth.grantRole(EARLY_ACCESS, bob);
+        uint256 cap = proxyConfig.initialCap;
+        uint256 bobBalance = _calculateAmountLessFee(amount);
+        if (amount > cap) {
+            bobBalance = 0;
+            vm.expectRevert(); //APETH__CAP_REACHED()
+        }
+        hoax(bob);
+        APEth.mint{value: amount}();
+        assertEq(APEth.balanceOf(bob), bobBalance);
+        if (amount > cap) {
+            vm.expectRevert(); //APETH__CAP_REACHED()
+        }
+        _;
+    }
+
     // modifier deployPods(uint256 numberOfPods) {
     //     vm.startPrank(staker);
     //     for(uint256 i; i < numberOfPods; i++) {
