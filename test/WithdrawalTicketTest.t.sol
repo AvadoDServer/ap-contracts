@@ -143,7 +143,6 @@ contract WithdrawalTicketTest is APEthTestSetup {
     }
 
     //TODO: test more complicated withdrawal scenarios (maybe with fuzzing)
-    //TODO: test claiming ticket
 
     function test_revert_directMint() public setWQT {
         vm.expectRevert(); //AccessControl...
@@ -164,5 +163,39 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_revert_withdrawalsNotEnabled() public mintAlice(10 ether) {
         vm.expectRevert(0x1ba990d1); //"APETH__WITHDRAWALS_NOT_ENABLED()"
         APEth.withdraw(5 ether);
+    }
+
+    function test_revert_redeemWithdrawlsNotEnabled() public {
+        vm.expectRevert(0x1ba990d1); //"APETH__WITHDRAWALS_NOT_ENABLED()"
+        APEth.redeemWithdrawQueueTicket(1);
+    }
+
+    function test_revert_redeemTooEarly() public {
+        test_multipleWithdrawalsWithTicket();
+        vm.deal(address(APEth), 15 ether);
+        // alice claim
+        vm.expectRevert(0x72bf9c5a); //"APETH__TOO_EARLY()"
+        vm.prank(alice);
+        APEth.redeemWithdrawQueueTicket(1);
+    }
+
+    function test_revert_redeemNotEnoughEth() public {
+        test_multipleWithdrawalsWithTicket();
+        //advance block.timestamp by one week
+        skip(1 weeks);
+        // alice claim
+        vm.expectRevert(0x57b43b8f); //"APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL()"
+        vm.prank(alice);
+        APEth.redeemWithdrawQueueTicket(1);
+    }
+
+    function test_revert_redeemNotOwner() public {
+        test_multipleWithdrawalsWithTicket();
+        vm.deal(address(APEth), 15 ether);
+        //advance block.timestamp by one week
+        skip(1 weeks);
+        vm.expectRevert(0x4b63d80d); // APETH__NOT_OWNER()
+        vm.prank(vm.addr(69));
+        APEth.redeemWithdrawQueueTicket(1);
     }
 }
