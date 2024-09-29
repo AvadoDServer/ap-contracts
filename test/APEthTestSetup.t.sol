@@ -112,9 +112,12 @@ contract APEthTestSetup is Test {
         withdrawalQueueTicket = deployWithdrawalQueue.run(proxyConfig);
         withdrawalQueueTicket.grantRole(keccak256("APETH_CONTRACT"), address(APEth));
         vm.stopPrank();
+    }
 
+    modifier setWQT() {
         vm.prank(upgrader);
         APEth.setWithdrawalQueueTicket(address(withdrawalQueueTicket));
+        _;
     }
 
     modifier mintAlice(uint256 amount) {
