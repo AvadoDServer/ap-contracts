@@ -225,13 +225,12 @@ contract APETH is
             revert APETH__NOT_OWNER();
         }
         uint256 amount = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(ticketId);
-        uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
-        if (address(this).balance < ethToWithdraw) {
+        if (address(this).balance < amount) {
             revert APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
         }
         withdrawalQueue -= amount;
         withdrawalQueueTicket.burn(ticketId);
-        payable(msg.sender).transfer(ethToWithdraw);
+        payable(msg.sender).transfer(amount);
     }
 
     /**

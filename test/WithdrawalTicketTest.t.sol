@@ -109,26 +109,8 @@ contract WithdrawalTicketTest is APEthTestSetup {
         // }
     }
 
-    function test_multipleWithdrawalsWithTicket() public setWQT mintAlice(30 ether) mintBob(12 ether) {
-        assertEq(address(APEth).balance, 42 ether);
-        if (!workingKeys && block.chainid != 31337) {
-            APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
-            vm.expectRevert(
-                /*"DepositContract: reconstructed DepositData does not match supplied deposit_data_root"*/
-            );
-        }
-        vm.prank(staker);
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
-        /*if (workingKeys) {*/
-        assertEq(address(APEth).balance, 10 ether);
-        uint256 aliceEthBalanceBefore = alice.balance;
-        vm.prank(alice);
-        APEth.withdraw(15 ether);
-        assertEq(alice.balance - aliceEthBalanceBefore, 10 ether);
-        assertEq(APEth.withdrawalQueue(), 5 ether);
-        assertEq(withdrawalQueueTicket.ownerOf(1), alice);
-        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), 5 ether);
-        assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
+    function test_multipleWithdrawalsWithTicket() public {
+        test_partialWithdrawal();
         // bob withdrawal
         uint256 bobEthBalanceBefore = bob.balance;
         vm.prank(bob);
@@ -139,6 +121,25 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), 5 ether);
         assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(2), block.timestamp);
         // }
+    }
+
+    function test_ticketClaim() public {
+        test_multipleWithdrawalsWithTicket();
+        vm.deal(address(APEth), 15 ether);
+        //advance block.timestamp by one week
+        skip(1 weeks);
+        // alice claim
+        uint256 aliceEthBalanceBefore = alice.balance;
+        vm.prank(alice);
+        APEth.redeemWithdrawQueueTicket(1);
+        assertEq(alice.balance - aliceEthBalanceBefore, 5 ether, "alice balance");
+        assertEq(APEth.withdrawalQueue(), 5 ether);
+        // bob claim
+        uint256 bobEthBalanceBefore = bob.balance;
+        vm.prank(bob);
+        APEth.redeemWithdrawQueueTicket(2);
+        assertEq(bob.balance - bobEthBalanceBefore, 5 ether);
+        assertEq(APEth.withdrawalQueue(), 0 ether);
     }
 
     //TODO: test more complicated withdrawal scenarios (maybe with fuzzing)
