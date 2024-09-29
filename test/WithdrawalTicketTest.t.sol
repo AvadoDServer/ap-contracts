@@ -109,6 +109,38 @@ contract WithdrawalTicketTest is APEthTestSetup {
         // }
     }
 
+    function test_multipleWithdrawalsWithTicket() public setWQT mintAlice(30 ether) mintBob(12 ether) {
+        assertEq(address(APEth).balance, 42 ether);
+        if (!workingKeys && block.chainid != 31337) {
+            APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
+            vm.expectRevert(
+                /*"DepositContract: reconstructed DepositData does not match supplied deposit_data_root"*/
+            );
+        }
+        vm.prank(staker);
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
+        /*if (workingKeys) {*/
+        assertEq(address(APEth).balance, 10 ether);
+        uint256 aliceEthBalanceBefore = alice.balance;
+        vm.prank(alice);
+        APEth.withdraw(15 ether);
+        assertEq(alice.balance - aliceEthBalanceBefore, 10 ether);
+        assertEq(APEth.withdrawalQueue(), 5 ether);
+        assertEq(withdrawalQueueTicket.ownerOf(1), alice);
+        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), 5 ether);
+        assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
+        // bob withdrawal
+        uint256 bobEthBalanceBefore = bob.balance;
+        vm.prank(bob);
+        APEth.withdraw(5 ether);
+        assertEq(bob.balance, bobEthBalanceBefore);
+        assertEq(APEth.withdrawalQueue(), 10 ether);
+        assertEq(withdrawalQueueTicket.ownerOf(2), bob);
+        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), 5 ether);
+        assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(2), block.timestamp);
+        // }
+    }
+
     //TODO: test more complicated withdrawal scenarios (maybe with fuzzing)
     //TODO: test claiming ticket
 

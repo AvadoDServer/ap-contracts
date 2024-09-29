@@ -249,13 +249,13 @@ contract APETH is
      */
     function _ethPerAPEth(uint256 _value) internal view returns (uint256) {
         // don't divide by 0
-        if (totalSupply() == 0) {
+        if (totalSupply() == 0 && withdrawalQueue == 0) {
             return 1 ether;
         } else {
             // subtract the amount a user has deposited from contract balance
             uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
-            return ((totalEth * 1 ether) / totalSupply());
+            return ((totalEth * 1 ether) / (totalSupply() + withdrawalQueue));
         }
     }
 
