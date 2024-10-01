@@ -277,6 +277,7 @@ contract APETH is
      * @notice This set fee recipient address
      */
     function setFeeRecipient(address _feeRecipient) external onlyRole(UPGRADER) {
+        require(_feeRecipient != address(0), "Fee recipient cannot be zero address");
         feeRecipient = _feeRecipient;
     }
 }
