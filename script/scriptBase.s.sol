@@ -108,8 +108,10 @@ contract ScriptBase is Script {
         if (owner == address(0)) {
             owner = vm.envAddress("CONTRACT_OWNER");
         }
-
-        return new APEthEarlyDeposits(owner);
+        if (earlydeposit_signer == address(0)) {
+            earlydeposit_signer = vm.envAddress("EARLYDEPOSIT_SIGNER");
+        }
+        return new APEthEarlyDeposits(owner, earlydeposit_signer);
     }
 
     function getProxyAddress() public view returns (address addr) {

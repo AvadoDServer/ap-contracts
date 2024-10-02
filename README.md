@@ -42,7 +42,7 @@ add --legacy
 )
 
 ```shell
-forge clean && forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
+~~forge clean && forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify~~
 ```
 for vanity address (deployer address here is the Create2 contract, modify --starts-with and --case-sensitive as required):
 ```shell
