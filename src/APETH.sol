@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.21;
 
 /**
  * @title Liquid Restaking Token by Avado
@@ -17,9 +17,12 @@ pragma solidity ^0.8.19;
  * IMPORTS
  *
  */
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import {AccessControlUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import {ERC20PermitUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {AccessControlUpgradeable} from
+    "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
@@ -38,9 +41,6 @@ error APETH__NOT_ENOUGH_ETH();
 /// @notice thrown when attempting to mint over cap
 error APETH__CAP_REACHED();
 
-/// @notice thrown when the public key used in `stake` was already used
-error APETH__PUBKEY_ALREADY_USED(bytes pubKey);
-
 /**
  *
  * CONTRACT
@@ -54,22 +54,23 @@ contract APETH is
     ERC20PermitUpgradeable,
     UUPSUpgradeable
 {
+    using SafeERC20 for IERC20;
     /**
      *
      * STORAGE
      *
      */
     /// @dev storage outside of upgradeable storage
+
     bytes32 private constant ETH_STAKER = keccak256("ETH_STAKER");
     bytes32 private constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
     bytes32 private constant UPGRADER = keccak256("UPGRADER");
     bytes32 private constant MISCELLANEOUS = keccak256("MISCELLANEOUS");
     bytes32 private constant SSV_NETWORK_ADMIN = keccak256("SSV_NETWORK_ADMIN");
-    bytes32 private constant DELEGATION_MANAGER_ADMIN =
-        keccak256("DELEGATION_MANAGER_ADMIN");
+    bytes32 private constant DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
     bytes32 private constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
-    bytes32 private constant EIGEN_POD_MANAGER_ADMIN =
-        keccak256("EIGEN_POD_MANAGER_ADMIN");
+    bytes32 private constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
+    uint256 private constant PRECISION = 1e6;
 
     /// @dev Immutables because will disappear in the next upgrade
     uint256 private immutable INITIAL_CAP;
@@ -80,11 +81,11 @@ contract APETH is
     address private immutable SSV_NETWORK;
 
     /// @dev Immutables because these are not going to change without a contract upgrade
-    uint256 private immutable FEE_AMOUNT; // divided by 1e6
-    address private immutable FEE_RECIPIENT;
+    uint256 private immutable FEE_AMOUNT; // divided by PRECISION in calculation
 
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
+    address public feeRecipient;
 
     /**
      *
@@ -98,15 +99,17 @@ contract APETH is
         IEigenPodManager eigenPodManager,
         address delegationManager,
         address ssvNetwork,
-        address feeRecipient,
         uint256 feeAmount
     ) {
         _disableInitializers();
+
+        // enforce feeAmount to be within range ( max 10% )
+        require(feeAmount < 10000, "feeAmount out of range");
+
         INITIAL_CAP = initialCap;
         EIGEN_POD_MANAGER = eigenPodManager;
         DELEGATION_MANAGER = delegationManager;
         SSV_NETWORK = ssvNetwork;
-        FEE_RECIPIENT = feeRecipient;
         FEE_AMOUNT = feeAmount;
     }
 
@@ -116,6 +119,7 @@ contract APETH is
         __ERC20Permit_init("AP-Restaked-Eth");
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        feeRecipient = admin;
 
         EIGEN_POD_MANAGER.createPod();
     }
@@ -138,11 +142,11 @@ contract APETH is
             revert APETH__CAP_REACHED();
         }
 
-        uint256 fee = (amount * FEE_AMOUNT) / 1e6;
+        uint256 fee = (amount * FEE_AMOUNT) / PRECISION;
         amount = amount - fee;
 
         _mint(msg.sender, amount);
-        _mint(FEE_RECIPIENT, fee);
+        _mint(feeRecipient, fee);
 
         emit Mint(msg.sender, amount);
 
@@ -168,9 +172,7 @@ contract APETH is
             return 1 ether;
         } else {
             // subtract the amount a user has deposited from contract balance
-            uint256 totalEth = address(this).balance +
-                (32 ether * activeValidators) -
-                _value;
+            uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
             return ((totalEth * 1 ether) / totalSupply());
         }
@@ -185,24 +187,19 @@ contract APETH is
      * @param _deposit_data_root data root for this deposit  (generated by contract owner)
      *
      */
-    function stake(
-        bytes calldata _pubKey,
-        bytes calldata _signature,
-        bytes32 _deposit_data_root
-    ) external onlyRole(ETH_STAKER) {
+    function stake(bytes calldata _pubKey, bytes calldata _signature, bytes32 _deposit_data_root)
+        external
+        onlyRole(ETH_STAKER)
+    {
         // requires 32 ETH
         if (address(this).balance < 32 ether) revert APETH__NOT_ENOUGH_ETH();
         // Stake into eigenPod using the eigenPodManager
-        EIGEN_POD_MANAGER.stake{value: 32 ether}(
-            _pubKey,
-            _signature,
-            _deposit_data_root
-        );
+        EIGEN_POD_MANAGER.stake{value: 32 ether}(_pubKey, _signature, _deposit_data_root);
         // increase the number of active validators for accounting
         activeValidators++;
         emit Stake(_pubKey, msg.sender);
     }
-    
+
     /**
      *
      * @notice allows contract owner to call functions on the ssvNetwork
@@ -210,10 +207,8 @@ contract APETH is
      * @param data the calldata for the ssvNetwork
      *
      */
-    function callSSVNetwork(
-        bytes memory data
-    ) external onlyRole(SSV_NETWORK_ADMIN) {
-        (bool success, ) = SSV_NETWORK.call(data);
+    function callSSVNetwork(bytes memory data) external onlyRole(SSV_NETWORK_ADMIN) {
+        (bool success,) = SSV_NETWORK.call(data);
         require(success, "Call failed");
     }
 
@@ -224,11 +219,9 @@ contract APETH is
      * @param data the calldata for the eigenPod
      *
      */
-    function callEigenPod(
-        bytes memory data
-    ) external onlyRole(EIGEN_POD_ADMIN) {
+    function callEigenPod(bytes memory data) external onlyRole(EIGEN_POD_ADMIN) {
         address eigenPod = address(EIGEN_POD_MANAGER.getPod(address(this)));
-        (bool success, ) = eigenPod.call(data);
+        (bool success,) = eigenPod.call(data);
         require(success, "Call failed");
     }
 
@@ -240,10 +233,8 @@ contract APETH is
      * @param data the calldata for the eigenPodManager
      *
      */
-    function callEigenPodManager(
-        bytes memory data
-    ) external onlyRole(EIGEN_POD_MANAGER_ADMIN) {
-        (bool success, ) = address(EIGEN_POD_MANAGER).call(data);
+    function callEigenPodManager(bytes memory data) external onlyRole(EIGEN_POD_MANAGER_ADMIN) {
+        (bool success,) = address(EIGEN_POD_MANAGER).call(data);
         require(success, "Call failed");
     }
 
@@ -258,11 +249,11 @@ contract APETH is
      * @dev if there is not some multiple of 32 ETH being recieved from this txn, validatorsExited should be zero.
      *
      */
-    function callDelegationManager(
-        bytes memory data,
-        uint validatorsExited
-    ) external onlyRole(DELEGATION_MANAGER_ADMIN) {
-        (bool success, ) = DELEGATION_MANAGER.call(data);
+    function callDelegationManager(bytes memory data, uint256 validatorsExited)
+        external
+        onlyRole(DELEGATION_MANAGER_ADMIN)
+    {
+        (bool success,) = DELEGATION_MANAGER.call(data);
         require(success, "Call failed");
         activeValidators -= validatorsExited;
     }
@@ -275,16 +266,18 @@ contract APETH is
      * @param amount the amount to transfer
      *
      */
-    function transferToken(
-        address tokenAddress,
-        address to,
-        uint256 amount
-    ) external onlyRole(MISCELLANEOUS) {
+    function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(MISCELLANEOUS) {
         IERC20 token = IERC20(tokenAddress);
-        token.transfer(to, amount);
+        token.safeTransfer(to, amount);
     }
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(UPGRADER) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
+
+    /**
+     * @notice This set fee recipient address
+     */
+    function setFeeRecipient(address _feeRecipient) external onlyRole(UPGRADER) {
+        require(_feeRecipient != address(0), "Fee recipient cannot be zero address");
+        feeRecipient = _feeRecipient;
+    }
 }

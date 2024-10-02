@@ -29,6 +29,7 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
  * CONTRACT
  *
  */
+
 contract APEthEarlyDeposits is Ownable, EIP712 {
     event Debug(string message);
 
@@ -68,6 +69,7 @@ contract APEthEarlyDeposits is Ownable, EIP712 {
      * FUNCTIONS
      *
      */
+
     constructor(
         address _owner,
         address _verifierAddress
@@ -85,6 +87,7 @@ contract APEthEarlyDeposits is Ownable, EIP712 {
     fallback() external payable {
         revert("Sending ETH not allowed");
     }
+
 
     /**
      * @notice Deposit ETH to the queue involves sending ETH as well as provising a _signature

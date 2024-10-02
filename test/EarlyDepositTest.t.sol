@@ -197,9 +197,7 @@ contract EarlyDepositTest is Test {
         return (amount * proxyConfig.feeAmount) / 1e6;
     }
 
-    function _calculateAmountLessFee(
-        uint256 amount
-    ) internal view returns (uint256) {
+    function _calculateAmountLessFee(uint256 amount) internal view returns (uint256) {
         return (amount - _calculateFee(amount));
     }
 }

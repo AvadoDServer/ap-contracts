@@ -24,8 +24,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
  * INTERFACE
  *
  */
-
-interface IAPETH{
+interface IAPETH {
     /**
      *
      * EVENTS
@@ -42,7 +41,7 @@ interface IAPETH{
      * FUNCTIONS
      *
      */
-    function mint() external payable returns(uint256);
+    function mint() external payable returns (uint256);
 
     function ethPerAPEth() external view returns (uint256);
 
