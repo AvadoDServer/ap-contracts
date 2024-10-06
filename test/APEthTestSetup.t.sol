@@ -142,7 +142,7 @@ contract APEthTestSetup is Test {
     modifier mintBob(uint256 amount) {
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, bob);
-        uint256 cap = proxyConfig.initialCap;
+        uint256 cap = proxyConfig.initialCap - address(APEth).balance;
         uint256 bobBalance = _calculateAmountLessFee(amount);
         if (amount > cap) {
             bobBalance = 0;
@@ -151,9 +151,6 @@ contract APEthTestSetup is Test {
         hoax(bob);
         APEth.mint{value: amount}();
         assertEq(APEth.balanceOf(bob), bobBalance);
-        if (amount > cap) {
-            vm.expectRevert(); //APETH__CAP_REACHED()
-        }
         _;
     }
 

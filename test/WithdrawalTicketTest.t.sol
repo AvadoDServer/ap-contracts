@@ -142,7 +142,145 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(APEth.withdrawalQueue(), 0 ether);
     }
 
-    //TODO: test more complicated withdrawal scenarios (maybe with fuzzing)
+    function test_fuzz_partialWithdrawal(uint128 a, uint128 b, uint128 c, uint256 d)
+        public
+        setWQT
+        mintAlice(a)
+        mintBob(b)
+    {
+        uint256 a256 = uint256(a);
+        uint256 b256 = uint256(b);
+        uint256 c256 = uint256(c);
+        uint256 d256 = uint256(d);
+        // Send eth to contract to increase balance
+        vm.deal(address(this), c256);
+        payable(address(APEth)).transfer(c256);
+        uint256 cap = proxyConfig.initialCap;
+        uint256 balance = a256 + b256 + c256;
+        if (a256 > cap && b256 > cap) {
+            balance = c256;
+        } else if (a256 > cap) {
+            balance = b256 + c256;
+        } else if (b256 > cap || a256 + b256 > cap) {
+            balance = a256 + c256;
+        }
+        assertEq(address(APEth).balance, balance, "contract balance does not match calculated");
+        //check eth per apeth
+        uint256 ethPerAPEth;
+        if (a256 == 0 && b256 == 0) {
+            ethPerAPEth = 1 ether;
+        } else if (a256 > cap && b256 > cap) {
+            ethPerAPEth = 1 ether;
+        } else if (a256 > cap) {
+            if (b256 == 0) {
+                ethPerAPEth = 1 ether;
+            } else {
+                ethPerAPEth = (b256 + c256) * 1 ether / b256;
+            }
+        } else if (b256 > cap || a256 + b256 > cap) {
+            if (a256 == 0) {
+                ethPerAPEth = 1 ether;
+            } else {
+                ethPerAPEth = (a256 + c256) * 1 ether / a256;
+            }
+        } else {
+            ethPerAPEth = (a256 + b256 + c256) * 1 ether / (a256 + b256);
+        }
+        assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethPerAPEth not correct");
+        uint256 ethInValidators;
+        if (balance >= 32 ether) {
+            if (!workingKeys && block.chainid != 31337) {
+                APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
+                vm.expectRevert(
+                    /*"DepositContract: reconstructed DepositData does not match supplied deposit_data_root"*/
+                );
+            }
+            vm.prank(staker);
+            APEth.stake(_pubKey, _signature, _deposit_data_root);
+            /*if (workingKeys) {*/
+            assertEq(address(APEth).balance, balance - 32 ether, "contract balance after staking");
+            ethInValidators += 32 ether;
+            balance -= 32 ether;
+            //}
+        }
+        uint256 aliceEthBalanceBefore = alice.balance;
+        if (APEth.balanceOf(alice) > 0) {
+            d256 = d256 % APEth.balanceOf(alice);
+            uint256 expectedWithdrawal = d256 * ethPerAPEth / 1 ether;
+            vm.prank(alice);
+            APEth.withdraw(d256);
+            if (expectedWithdrawal > balance) {
+                assertEq(alice.balance - aliceEthBalanceBefore, balance, "alice  partial balance");
+                assertEq(APEth.withdrawalQueue(), expectedWithdrawal - balance);
+                assertEq(withdrawalQueueTicket.ownerOf(1), alice);
+                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal - balance);
+                assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
+            } else {
+                assertEq(alice.balance - aliceEthBalanceBefore, expectedWithdrawal, "alice balance");
+            }
+        }
+    }
+
+    function test_fuzz_multipleWithdrawalsWithTicket(uint128 a, uint128 b, uint128 c, uint128 d, uint128 e) public {
+        test_fuzz_partialWithdrawal(a, b, c, d);
+        uint256 e256 = uint256(e);
+        // bob withdrawal
+        uint256 bobEthBalanceBefore = bob.balance;
+        uint256 bobApethBalance = APEth.balanceOf(bob);
+        uint256 withdrawalQueue = APEth.withdrawalQueue();
+        uint256 contractBalance = address(APEth).balance;
+        if (bobApethBalance > 0 && e256 > 0) {
+            e256 = e256 % bobApethBalance;
+            uint256 expectedWithdrawal = e256 * APEth.ethPerAPEth() / 1 ether;
+            vm.prank(bob);
+            APEth.withdraw(e256);
+            if (withdrawalQueue > 0) {
+                assertEq(bob.balance, bobEthBalanceBefore);
+                assertEq(APEth.withdrawalQueue(), withdrawalQueue + expectedWithdrawal);
+                assertEq(withdrawalQueueTicket.ownerOf(2), bob);
+                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), expectedWithdrawal);
+                assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(2), block.timestamp);
+            } else if (expectedWithdrawal > contractBalance) {
+                assertEq(bob.balance - bobEthBalanceBefore, contractBalance);
+                assertEq(APEth.withdrawalQueue(), expectedWithdrawal - contractBalance);
+                assertEq(withdrawalQueueTicket.ownerOf(1), bob);
+                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal - contractBalance);
+                assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
+            } else {
+                assertEq(bob.balance - bobEthBalanceBefore, expectedWithdrawal);
+            }
+        }
+    }
+
+    function test_fuzz_ticketClaim(uint128 a, uint128 b, uint128 c, uint128 d, uint128 e) public {
+        test_fuzz_multipleWithdrawalsWithTicket(a, b, c, d, e);
+        if (APEth.withdrawalQueue() > 0) {
+            vm.deal(address(this), 32 ether);
+            payable(address(APEth)).transfer(32 ether);
+            //advance block.timestamp by one week
+            skip(1 weeks);
+            if (withdrawalQueueTicket.ownerOf(1) == alice) {
+                uint256 aliceEthBalanceBefore = alice.balance;
+                uint256 expectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
+                vm.prank(alice);
+                APEth.redeemWithdrawQueueTicket(1);
+                assertEq(alice.balance - aliceEthBalanceBefore, expectedWithdrawal, "alice balance");
+            } else if (withdrawalQueueTicket.ownerOf(1) == bob) {
+                uint256 bobEthBalanceBefore = bob.balance;
+                uint256 expectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
+                vm.prank(bob);
+                APEth.redeemWithdrawQueueTicket(1);
+                assertEq(bob.balance - bobEthBalanceBefore, expectedWithdrawal, "bob balance");
+            }
+            if (APEth.withdrawalQueue() > 0) {
+                uint256 bobEthBalanceBefore = bob.balance;
+                uint256 expectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2);
+                vm.prank(bob);
+                APEth.redeemWithdrawQueueTicket(2);
+                assertEq(bob.balance - bobEthBalanceBefore, expectedWithdrawal, "bob balance");
+            }
+        }
+    }
 
     function test_revert_directMint() public setWQT {
         vm.expectRevert(); //AccessControl...
