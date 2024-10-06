@@ -60,7 +60,7 @@ contract EarlyDepositTest is Test {
         APEth = new DeployProxy().run(proxyConfig);
 
         //deploy early deposit contract sepatately
-        earlyDeposits = new DeployEarlyDeposits().run(owner,earlydeposit_signer);
+        earlyDeposits = new DeployEarlyDeposits().run(owner, earlydeposit_signer);
     }
 
     modifier updateEarlyDepositAddr() {

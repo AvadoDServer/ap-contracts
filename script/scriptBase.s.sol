@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
@@ -89,22 +89,26 @@ contract ScriptBase is Script {
 
     function deployApEth(ProxyConfig memory partialConfig) public returns (APETH) {
         ProxyConfig memory config = getConfig(partialConfig);
-        return new APETH(
+        vm.startBroadcast();
+        APETH apETH = new APETH(
             config.initialCap,
             IEigenPodManager(config.network.eigenPodManager),
             config.network.delegationManager,
             config.network.ssvNetwork,
             config.feeAmount
         );
+        vm.stopBroadcast();
+        return apETH;
     }
 
     function deployProxy(address implementation, ProxyConfig memory config) public returns (APETH) {
+        vm.startBroadcast();
         ERC1967Proxy proxy = new ERC1967Proxy{salt: getSalt(config)}(implementation, encodeInitializer(config));
-
+        vm.stopBroadcast();
         return APETH(payable(address(proxy)));
     }
 
-    function deployEarlyDeposit(address owner) public returns (APEthEarlyDeposits) {
+    function deployEarlyDeposit(address owner, address earlydeposit_signer) public returns (APEthEarlyDeposits) {
         if (owner == address(0)) {
             owner = vm.envAddress("CONTRACT_OWNER");
         }

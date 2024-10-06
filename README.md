@@ -32,6 +32,16 @@ on Holesky
 forge clean && forge test --fork-url holesky
 ```
 
+to deploy on forked mainnet:
+fill out .env file CONTRACT_OWNER will be contract admin
+```shell
+anvil -f mainnet
+```
+in a seperate window
+```shell
+forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast -vvvv
+```
+
 ### Deploy
 Deploy in 2 parts (3 if you want a vanity address), following the steps below. 
 
@@ -41,17 +51,9 @@ Failed to get EIP-1559 fees
 add --legacy
 )
 
-```shell
-~~forge clean && forge script script/deployStorage.s.sol:DeployStorageContract --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify~~
-```
-for vanity address (deployer address here is the Create2 contract, modify --starts-with and --case-sensitive as required):
-```shell
-cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C --init-code-hash <get this from previous deployment logs>
-```
-
 UPDATE .env WITH SALT FOR VANITY ADDRESS (Leave 0x0...0 if not using)
 ```shell
-forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url holesky --account defaultKey --broadcast --etherscan-api-key holesky --verify
+forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url mainnet --account defaultKey --broadcast --etherscan-api-key mainnet --verify
 ```
 
 ### Upgrade

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
  * @notice The main functionalities are:
  * @notice - Receive ETH from early depositors
  * @notice - Depositors can withdraw their eth before launch
- * @notice - Contract owner can "flush" early deposits so that users 
+ * @notice - Contract owner can "flush" early deposits so that users
  * @notice   recieve APEth for their deposit
  */
 
@@ -29,7 +29,6 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
  * CONTRACT
  *
  */
-
 contract APEthEarlyDeposits is Ownable, EIP712 {
     event Debug(string message);
 
@@ -69,11 +68,7 @@ contract APEthEarlyDeposits is Ownable, EIP712 {
      * FUNCTIONS
      *
      */
-
-    constructor(
-        address _owner,
-        address _verifierAddress
-    ) Ownable(_owner) EIP712(SIGNING_DOMAIN, SIGNATURE_VERSION) {
+    constructor(address _owner, address _verifierAddress) Ownable(_owner) EIP712(SIGNING_DOMAIN, SIGNATURE_VERSION) {
         verifierAddress = _verifierAddress;
     }
 
@@ -87,7 +82,6 @@ contract APEthEarlyDeposits is Ownable, EIP712 {
     fallback() external payable {
         revert("Sending ETH not allowed");
     }
-
 
     /**
      * @notice Deposit ETH to the queue involves sending ETH as well as provising a _signature
@@ -109,7 +103,7 @@ contract APEthEarlyDeposits is Ownable, EIP712 {
     function withdraw() external {
         uint256 amount = deposits[msg.sender];
         deposits[msg.sender] = 0;
-        (bool success /*return data*/, ) = msg.sender.call{value: amount}("");
+        (bool success, /*return data*/ ) = msg.sender.call{value: amount}("");
         assert(success);
         emit Withdrawal(msg.sender, amount);
     }
@@ -128,10 +122,7 @@ contract APEthEarlyDeposits is Ownable, EIP712 {
      * @notice mint tokens for selected recipients
      */
     function mintAPEthBulk(address[] calldata recipients) external onlyOwner {
-        require(
-            address(_APETH) != address(0),
-            "APEth contract address not set"
-        );
+        require(address(_APETH) != address(0), "APEth contract address not set");
         for (uint256 i = 0; i < recipients.length; i++) {
             _mintAPEth(recipients[i]);
         }
@@ -150,28 +141,15 @@ contract APEthEarlyDeposits is Ownable, EIP712 {
      * @notice generate the structHash of the EarlyDeposit struct (EIP712)
      * @dev external because it's used by the signer account during the signup
      */
-    function generateHash(
-        EarlyDeposit memory _deposit
-    ) external view returns (bytes32) {
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        keccak256("EarlyDeposit(address sender)"),
-                        _deposit.sender
-                    )
-                )
-            );
+    function generateHash(EarlyDeposit memory _deposit) external view returns (bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(keccak256("EarlyDeposit(address sender)"), _deposit.sender)));
     }
 
     /**
      * @notice verify that the signature matches the EarlyDeposit data
      * @notice and was signed by the verifierAddress
      */
-    function verify(
-        EarlyDeposit memory _deposit,
-        bytes memory _signature
-    ) internal view returns (bool) {
+    function verify(EarlyDeposit memory _deposit, bytes memory _signature) internal view returns (bool) {
         bytes32 digest = this.generateHash(_deposit);
         address recoveredAddress = recover(digest, _signature);
         return recoveredAddress == verifierAddress;
@@ -180,14 +158,7 @@ contract APEthEarlyDeposits is Ownable, EIP712 {
     /**
      * @notice recover the signer address from _digest and _signature
      */
-    function recover(
-        bytes32 _digest,
-        bytes memory _signature
-    ) public pure returns (address) {
-        return
-            ECDSA.recover(
-                MessageHashUtils.toEthSignedMessageHash(_digest),
-                _signature
-            );
+    function recover(bytes32 _digest, bytes memory _signature) public pure returns (address) {
+        return ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(_digest), _signature);
     }
 }
