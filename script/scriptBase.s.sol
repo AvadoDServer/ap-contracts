@@ -31,11 +31,13 @@ contract ScriptBase is Script {
     address private constant FACTORY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
     bytes32 private constant DEFAULT_SALT = 0x0000000000000000000000000000000000000000000000000000000000000969;
 
-    string chainId = "17000";
+    string chainId;
 
     bytes32 public constant UPGRADER = keccak256("UPGRADER");
     bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
     bytes32 public constant ADMIN = keccak256("ADMIN");
+
+    APETH public _implementation;
 
     function getSalt(ProxyConfig memory config) private pure returns (bytes32) {
         if (config.salt == bytes32(0)) {
@@ -66,6 +68,18 @@ contract ScriptBase is Script {
         }
 
         return config;
+    }
+
+    function computeProxyInitCodeHash() public {
+        address _owner = vm.envAddress("CONTRACT_OWNER");
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                type(ERC1967Proxy).creationCode,
+                abi.encode(address(_implementation), abi.encodeCall(_implementation.initialize, (_owner)))
+            )
+        );
+        console.log("init code hash");
+        console.logBytes32(hash);
     }
 
     function calcProxyAddress(address implementation, ProxyConfig memory config) public returns (address) {
@@ -118,14 +132,30 @@ contract ScriptBase is Script {
         return new APEthEarlyDeposits(owner, earlydeposit_signer);
     }
 
-    function getProxyAddress() public view returns (address addr) {
+    function getProxyAddress() public returns (address addr) {
+        if (block.chainid == 1) {
+            chainId = "1";
+        } else if (block.chainid == 17000) {
+            chainId = "17000";
+        } else {
+            chainId = "31337";
+        }
+
         string memory root = vm.projectRoot();
         string memory path = string.concat(root, "/broadcast/deployToken.s.sol/", chainId, "/run-latest.json");
         string memory json = vm.readFile(path);
         addr = stdJson.readAddress(json, ".transactions[1].contractAddress");
     }
 
-    function getEarlyDepositAddress() public view returns (address) {
+    function getEarlyDepositAddress() public returns (address) {
+        if (block.chainid == 1) {
+            chainId = "1";
+        } else if (block.chainid == 17000) {
+            chainId = "17000";
+        } else {
+            chainId = "31337";
+        }
+
         string memory root = vm.projectRoot();
         string memory path =
             string.concat(root, "/broadcast/deployEarlyDepositOnly.s.sol/", chainId, "/run-latest.json");
@@ -135,6 +165,23 @@ contract ScriptBase is Script {
 
     function getAPETH(address addr) public pure returns (APETH) {
         return APETH(payable(addr));
+    }
+
+    function getDeployedAddress() public returns (address) {
+        if (block.chainid == 1) {
+            chainId = "1";
+        } else if (block.chainid == 17000) {
+            chainId = "17000";
+        } else {
+            chainId = "31337";
+        }
+
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/broadcast/deployToken.s.sol/", chainId, "/run-latest.json");
+        string memory json = vm.readFile(path);
+        address implement = stdJson.readAddress(json, ".transactions[0].contractAddress");
+        console.log("implementation: ", implement);
+        return implement;
     }
 
     function getAPEthEarlyDeposits(address addr) public pure returns (APEthEarlyDeposits) {

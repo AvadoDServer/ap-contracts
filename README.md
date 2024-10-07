@@ -39,7 +39,16 @@ anvil -f mainnet
 ```
 in a seperate window
 ```shell
-forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast -vvvv
+forge clean && forge script script/deployToken.s.sol:DeployImplementation --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast -vvvv
+```
+
+```shell
+cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C --init-code-hash <get this from previous deployment logs>
+```
+
+UPDATE .env WITH SALT FOR VANITY ADDRESS (Leave 0x0...0 if not using)
+```shell
+forge clean && forge script script/deployToken.s.sol:DeployProxyWithCreate2 --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast -vvvv
 ```
 
 ### Deploy
@@ -51,9 +60,17 @@ Failed to get EIP-1559 fees
 add --legacy
 )
 
+```shell
+forge clean && forge script script/deployToken.s.sol:DeployImplementation --rpc-url mainnet --account defaultKey --broadcast --etherscan-api-key mainnet --verify -vvvv
+```
+
+```shell
+cast create2 --starts-with AAAAAAA --case-sensitive --deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C --init-code-hash <get this from previous deployment logs>
+```
+
 UPDATE .env WITH SALT FOR VANITY ADDRESS (Leave 0x0...0 if not using)
 ```shell
-forge clean && forge script script/deployToken.s.sol:DeployProxy --rpc-url mainnet --account defaultKey --broadcast --etherscan-api-key mainnet --verify
+forge clean && forge script script/deployToken.s.sol:DeployProxyWithCreate2 --rpc-url mainnet --account defaultKey --broadcast --etherscan-api-key mainnet --verify -vvvv
 ```
 
 ### Upgrade

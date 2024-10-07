@@ -31,3 +31,33 @@ contract DeployProxy is ScriptBase {
         return run(config);
     }
 }
+
+contract DeployImplementation is ScriptBase {
+    function run(ProxyConfig memory config) public returns (APETH) {
+        _implementation = deployApEth(config);
+        computeProxyInitCodeHash();
+        return _implementation;
+    }
+
+    function run() public returns (APETH) {
+        ProxyConfig memory config;
+        config.network = new HelperConfig().getConfig();
+        config.salt = vm.envBytes32("SALT");
+
+        return run(config);
+    }
+}
+
+contract DeployProxyWithCreate2 is ScriptBase {
+    function run(ProxyConfig memory config, address implementation) public returns (APETH) {
+        return deployProxy(implementation, config);
+    }
+
+    function run() public returns (APETH) {
+        ProxyConfig memory config;
+        config.network = new HelperConfig().getConfig();
+        config.salt = vm.envBytes32("SALT");
+
+        return run(config, getDeployedAddress());
+    }
+}
