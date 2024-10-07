@@ -58,6 +58,19 @@ contract DeployProxyWithCreate2 is ScriptBase {
         config.network = new HelperConfig().getConfig();
         config.salt = vm.envBytes32("SALT");
 
-        return run(config, getDeployedAddress());
+        APETH proxy = run(config, getDeployedAddress());
+
+        vm.startBroadcast();
+        proxy.grantRole(_EARLY_ACCESS, vm.envAddress("EARLY_ACCESS"));
+        proxy.grantRole(_UPGRADER, vm.envAddress("UPGRADER"));
+        proxy.grantRole(_MISCELLANEOUS, vm.envAddress("MISCELLANEOUS"));
+        proxy.grantRole(_SSV_NETWORK_ADMIN, vm.envAddress("SSV_NETWORK_ADMIN"));
+        proxy.grantRole(_DELEGATION_MANAGER_ADMIN, vm.envAddress("DELEGATION_MANAGER_ADMIN"));
+        proxy.grantRole(_EIGEN_POD_ADMIN, vm.envAddress("EIGEN_POD_ADMIN"));
+        proxy.grantRole(_EIGEN_POD_MANAGER_ADMIN, vm.envAddress("EIGEN_POD_MANAGER_ADMIN"));
+        proxy.grantRole(_ADMIN, config.admin);
+        proxy.renounceRole(_ADMIN, config.DEPLOYER_PUBLIC_KEY);
+        vm.stopBroadcast();
+        return proxy;
     }
 }

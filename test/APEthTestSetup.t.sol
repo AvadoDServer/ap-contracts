@@ -99,6 +99,7 @@ contract APEthTestSetup is Test {
 
         DeployProxy deployProxy = new DeployProxy();
         proxyConfig.admin = owner;
+        proxyConfig.DEPLOYER_PUBLIC_KEY = owner;
         proxyConfig = new ScriptBase().getConfig(proxyConfig);
         APEth = deployProxy.run(proxyConfig);
 

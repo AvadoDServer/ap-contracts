@@ -23,6 +23,7 @@ struct ProxyConfig {
     uint256 feeAmount;
     uint256 initialCap;
     NetworkConfig network;
+    address DEPLOYER_PUBLIC_KEY;
 }
 
 bytes32 constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
@@ -33,9 +34,15 @@ contract ScriptBase is Script {
 
     string chainId;
 
-    bytes32 public constant UPGRADER = keccak256("UPGRADER");
-    bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
-    bytes32 public constant ADMIN = keccak256("ADMIN");
+    bytes32 public constant _ETH_STAKER = keccak256("ETH_STAKER");
+    bytes32 public constant _EARLY_ACCESS = keccak256("EARLY_ACCESS");
+    bytes32 public constant _UPGRADER = keccak256("UPGRADER");
+    bytes32 public constant _MISCELLANEOUS = keccak256("MISCELLANEOUS");
+    bytes32 public constant _SSV_NETWORK_ADMIN = keccak256("SSV_NETWORK_ADMIN");
+    bytes32 public constant _DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
+    bytes32 public constant _EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
+    bytes32 public constant _EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
+    bytes32 public constant _ADMIN = 0x00;
 
     APETH public _implementation;
 
@@ -67,11 +74,15 @@ contract ScriptBase is Script {
             config.network = new HelperConfig().getConfig();
         }
 
+        if (config.DEPLOYER_PUBLIC_KEY == address(0)) {
+            config.DEPLOYER_PUBLIC_KEY = vm.envAddress("DEPLOYER_PUBLIC_KEY");
+        }
+
         return config;
     }
 
-    function computeProxyInitCodeHash() public {
-        address _owner = vm.envAddress("CONTRACT_OWNER");
+    function computeProxyInitCodeHash() public view {
+        address _owner = vm.envAddress("DEPLOYER_PUBLIC_KEY");
         bytes32 hash = keccak256(
             abi.encodePacked(
                 type(ERC1967Proxy).creationCode,
@@ -98,7 +109,7 @@ contract ScriptBase is Script {
 
     function encodeInitializer(ProxyConfig memory partialConfig) public returns (bytes memory) {
         ProxyConfig memory config = getConfig(partialConfig);
-        return abi.encodeCall(APETH.initialize, (config.admin));
+        return abi.encodeCall(APETH.initialize, (config.DEPLOYER_PUBLIC_KEY));
     }
 
     function deployApEth(ProxyConfig memory partialConfig) public returns (APETH) {

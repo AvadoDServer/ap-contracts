@@ -12,7 +12,7 @@ cast wallet import defaultKey --interactive
 
 ### View Public Key for the Private Key stored as "defaultKey"
 
-use this in the .env as sender
+use this in the .env as DEPLOYER_PUBLIC_KEY
 ```shell
 cast wallet address --account defaultKey
 ```
@@ -32,8 +32,8 @@ on Holesky
 forge clean && forge test --fork-url holesky
 ```
 
-to deploy on forked mainnet:
-fill out .env file CONTRACT_OWNER will be contract admin
+## to deploy on forked mainnet:
+fill out .env file CONTRACT_OWNER will be contract admin, set DEPLOYER_PUBLIC_KEY to 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (first Anvil account)
 ```shell
 anvil -f mainnet
 ```
