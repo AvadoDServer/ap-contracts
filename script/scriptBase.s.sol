@@ -61,11 +61,11 @@ contract ScriptBase is Script {
 
         if (config.feeRecipient == address(0)) {
             config.feeRecipient = config.admin;
-            config.feeAmount = 500;
+            config.feeAmount = 10000;
         }
 
         if (config.initialCap == 0) {
-            config.initialCap = 100000 ether;
+            config.initialCap = 1280 ether;
         }
 
         config.salt = getSalt(config);
