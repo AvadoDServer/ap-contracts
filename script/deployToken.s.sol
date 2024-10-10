@@ -69,6 +69,9 @@ contract DeployProxyWithCreate2 is ScriptBase {
         proxy.grantRole(_EIGEN_POD_ADMIN, vm.envAddress("EIGEN_POD_ADMIN"));
         proxy.grantRole(_EIGEN_POD_MANAGER_ADMIN, vm.envAddress("EIGEN_POD_MANAGER_ADMIN"));
         proxy.grantRole(_ADMIN, config.admin);
+        proxy.grantRole(_UPGRADER, config.DEPLOYER_PUBLIC_KEY);
+        proxy.setFeeRecipient(config.admin);
+        proxy.renounceRole(_UPGRADER, config.DEPLOYER_PUBLIC_KEY);
         proxy.renounceRole(_ADMIN, config.DEPLOYER_PUBLIC_KEY);
         vm.stopBroadcast();
         return proxy;
