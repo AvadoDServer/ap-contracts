@@ -61,7 +61,7 @@ contract ScriptBase is Script {
 
         if (config.feeRecipient == address(0)) {
             config.feeRecipient = config.admin;
-            config.feeAmount = 10000;
+            config.feeAmount = 1000;
         }
 
         if (config.initialCap == 0) {
