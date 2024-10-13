@@ -135,17 +135,7 @@ contract APETH is
         FEE_AMOUNT = feeAmount;
     }
 
-    // TODO: make reinitalizer
-    function initialize(address admin) public initializer {
-        __ERC20_init("AP-Restaked-Eth", "APETH");
-        __AccessControl_init();
-        __ERC20Permit_init("AP-Restaked-Eth");
-        __UUPSUpgradeable_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
-        feeRecipient = admin;
-
-        EIGEN_POD_MANAGER.createPod();
-        //remove everything above this line
+    function initialize() public reinitializer(2) {
         withdrawalDelay = 1 weeks;
     }
 
@@ -401,4 +391,3 @@ contract APETH is
         activeValidators++;
     }
 }
-
