@@ -135,8 +135,9 @@ contract APETH is
         FEE_AMOUNT = feeAmount;
     }
 
-    function initialize() public reinitializer(2) {
+    function initialize(IAPETHWithdrawalQueueTicket _withdrawalQueueTicket) public reinitializer(2) {
         withdrawalDelay = 1 weeks;
+        withdrawalQueueTicket = _withdrawalQueueTicket;
     }
 
     /**
@@ -345,19 +346,6 @@ contract APETH is
     function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(MISCELLANEOUS) {
         IERC20 token = IERC20(tokenAddress);
         token.safeTransfer(to, amount);
-    }
-
-    /**
-     *
-     * @notice allows the upgrader to set the withdrawal queue ticket contract
-     * @param _withdrawalQueueTicket the address of the withdrawal queue ticket contract
-     *
-     */
-    function setWithdrawalQueueTicket(address _withdrawalQueueTicket) external onlyRole(UPGRADER) {
-        if (address(withdrawalQueueTicket) != address(0)) {
-            revert APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
-        }
-        withdrawalQueueTicket = IAPETHWithdrawalQueueTicket(_withdrawalQueueTicket);
     }
 
     /**
