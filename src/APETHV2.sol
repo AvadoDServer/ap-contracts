@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 /**
  * @title Liquid Restaking Token by Avado
@@ -67,7 +67,7 @@ error APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
  */
 
 /// @custom:oz-upgrades-from APETH
-contract APETH is
+contract APETHV2 is
     IAPETH,
     Initializable,
     ERC20Upgradeable,

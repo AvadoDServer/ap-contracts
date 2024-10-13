@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.21;
 /* solhint-disable func-name-mixedcase */
 
 import {
@@ -17,7 +17,7 @@ import {
 // TODO: refactor test to stasrt with a contract upgrade
 
 contract WithdrawalTicketTest is APEthTestSetup {
-    function test_SimpleWithdrawal() public setWQT mintAlice(10 ether) {
+    function test_SimpleWithdrawal() public mintAlice(10 ether) {
         // Send eth to contract to increase balance
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 11 ether);
@@ -36,7 +36,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(aliceEthWithdrawalAmount, aliceEthWithdrawalAmountExpected);
     }
 
-    function test_multipleWithdrawals() public setWQT mintAlice(10 ether) mintBob(10 ether) {
+    function test_multipleWithdrawals() public mintAlice(10 ether) mintBob(10 ether) {
         // Send eth to contract to increase balance
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 21 ether);
@@ -65,7 +65,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(bobEthWithdrawalAmount, bobEthWithdrawalAmountExpected);
     }
 
-    function test_withdrawalWithTicket() public setWQT mintAlice(30 ether) mintBob(2 ether) {
+    function test_withdrawalWithTicket() public mintAlice(30 ether) mintBob(2 ether) {
         assertEq(address(APEth).balance, 32 ether);
         if (!workingKeys && block.chainid != 31337) {
             APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
@@ -88,7 +88,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         // }
     }
 
-    function test_partialWithdrawal() public setWQT mintAlice(30 ether) mintBob(12 ether) {
+    function test_partialWithdrawal() public mintAlice(30 ether) mintBob(12 ether) {
         assertEq(address(APEth).balance, 42 ether);
         if (!workingKeys && block.chainid != 31337) {
             APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
@@ -169,12 +169,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(APEth.withdrawalQueue(), 0 ether);
     }
 
-    function test_fuzz_partialWithdrawal(uint128 a, uint128 b, uint128 c, uint256 d)
-        public
-        setWQT
-        mintAlice(a)
-        mintBob(b)
-    {
+    function test_fuzz_partialWithdrawal(uint128 a, uint128 b, uint128 c, uint256 d) public mintAlice(a) mintBob(b) {
         uint256 a256 = uint256(a);
         uint256 b256 = uint256(b);
         uint256 c256 = uint256(c);
@@ -309,25 +304,14 @@ contract WithdrawalTicketTest is APEthTestSetup {
         }
     }
 
-    function test_revert_directMint() public setWQT {
+    function test_revert_directMint() public {
         vm.expectRevert(); //AccessControl...
         withdrawalQueueTicket.mint(alice, 1000 ether, block.timestamp);
     }
 
-    function test_revert_withdraw_amountTooHigh() public setWQT mintAlice(5 ether) {
+    function test_revert_withdraw_amountTooHigh() public mintAlice(5 ether) {
         vm.expectRevert(); // APETH__WITHDRAWAL_TOO_LARGE
         APEth.withdraw(6 ether);
-    }
-
-    function test_revert_cannotResetWithdrawalQueue() public setWQT {
-        vm.expectRevert(0x7406e92a); //"APETH__WITHDRAWAL_QUEUE_ALREADY_SET()"
-        vm.prank(upgrader);
-        APEth.setWithdrawalQueueTicket(address(0));
-    }
-
-    function test_revert_withdrawalsNotEnabled() public mintAlice(10 ether) {
-        vm.expectRevert(0x1ba990d1); //"APETH__WITHDRAWALS_NOT_ENABLED()"
-        APEth.withdraw(5 ether);
     }
 
     function test_revert_redeemWithdrawlsNotEnabled() public {

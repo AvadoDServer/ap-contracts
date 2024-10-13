@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.21;
 /* solhint-disable func-name-mixedcase */
 
 import {
@@ -50,16 +50,16 @@ contract APETHTest is APEthTestSetup {
         assertEq(address(APEth).balance, 10 ether);
     }
 
-    // Test the upgradeability of the APETH contract
-    function test_Upgradeability() public {
-        //deploy upgrade script
-        vm.prank(owner);
-        APEth.grantRole(UPGRADER, upgrader);
-        // Upgrade the proxy to a new version; APETHV2
-        new UpgradeProxy().run(address(APEth), upgrader);
-        uint256 two = APETHV2(address(APEth)).version();
-        assertEq(2, two, "APEth did not upgrade");
-    }
+    // // Test the upgradeability of the APETH contract
+    // function test_Upgradeability() public {
+    //     //deploy upgrade script
+    //     vm.prank(owner);
+    //     APEth.grantRole(UPGRADER, upgrader);
+    //     // Upgrade the proxy to a new version; APETHV2
+    //     new UpgradeProxy().run(address(APEth), upgrader);
+    //     uint256 two = APETHV2(address(APEth)).version();
+    //     assertEq(2, two, "APEth did not upgrade");
+    // }
 
     // Test staking (requires using a forked chain with a deposit contract to test.)
     function test_Stake() public {

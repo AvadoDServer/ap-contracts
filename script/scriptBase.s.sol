@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
@@ -13,6 +13,7 @@ import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
+import {IAPETHWithdrawalQueueTicket} from "../src/interfaces/IAPETHWithdrawalQueueTicket.sol";
 
 error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 /* solhint-disable func-name-mixedcase */
 
 import {Test} from "forge-std/Test.sol";
@@ -23,9 +23,11 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
 import {DeployWithdrawalQueue} from "../script/deployWithdrawalQueue.s.sol";
+import {IAPETHWithdrawalQueueTicket} from "../src/interfaces/IAPETHWithdrawalQueueTicket.sol";
+import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 
 contract APEthTestSetup is Test {
-    APETH public APEth;
+    APETHV2 public APEth;
     APETH public implementation;
     APEthEarlyDeposits public earlyDeposits;
     APETHWithdrawalQueueTicket public withdrawalQueueTicket;
@@ -104,20 +106,15 @@ contract APEthTestSetup is Test {
         DeployWithdrawalQueue deployWithdrawalQueue = new DeployWithdrawalQueue();
         proxyConfig.admin = owner;
         proxyConfig = new ScriptBase().getConfig(proxyConfig);
-        APEth = deployProxy.run(proxyConfig);
+        APEth = APETHV2(payable(deployProxy.run(proxyConfig)));
+        UpgradeProxy upgradeProxy = new UpgradeProxy();
 
         vm.startPrank(owner);
         APEth.grantRole(ETH_STAKER, staker);
         APEth.grantRole(UPGRADER, upgrader);
         withdrawalQueueTicket = deployWithdrawalQueue.run(proxyConfig);
-        withdrawalQueueTicket.grantRole(keccak256("APETH_CONTRACT"), address(APEth));
+        upgradeProxy.run(address(APEth), owner, IAPETHWithdrawalQueueTicket(address(withdrawalQueueTicket)));
         vm.stopPrank();
-    }
-
-    modifier setWQT() {
-        vm.prank(upgrader);
-        APEth.setWithdrawalQueueTicket(address(withdrawalQueueTicket));
-        _;
     }
 
     modifier mintAlice(uint256 amount) {
