@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 /**
  * @title Liquid Restaking Token by Avado
@@ -29,7 +29,6 @@ import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManage
 import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
-import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
 
 /**
  *
@@ -39,26 +38,8 @@ import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTic
 /// @notice thrown when attempting to stake when there is not enough eth in the contract
 error APETH__NOT_ENOUGH_ETH();
 
-/// @notice thrown when attempting to withdraw when there is not enough eth in the contract
-error APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
-
 /// @notice thrown when attempting to mint over cap
 error APETH__CAP_REACHED();
-
-/// @notice thrown when the user tries to withdraw more than they have
-error APETH__WITHDRAWAL_TOO_LARGE(uint256 amount);
-
-/// @notice thrown when the user tries to claim a ticket too early
-error APETH__TOO_EARLY();
-
-/// @notice thrown when the user tries to claim a ticket that is not theirs
-error APETH__NOT_OWNER();
-
-/// @notice thrown if a user attempts to withdrawal before withdrawals are enabled
-error APETH__WITHDRAWALS_NOT_ENABLED();
-
-/// @notice thrown if the upgrader tries to set the withdrawal queue ticket after it has already been set
-error APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
 
 /**
  *
@@ -74,13 +55,13 @@ contract APETH is
     UUPSUpgradeable
 {
     using SafeERC20 for IERC20;
-
     /**
      *
      * STORAGE
      *
      */
     /// @dev storage outside of upgradeable storage
+
     bytes32 private constant ETH_STAKER = keccak256("ETH_STAKER");
     bytes32 private constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
     bytes32 private constant UPGRADER = keccak256("UPGRADER");
@@ -89,7 +70,7 @@ contract APETH is
     bytes32 private constant DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
     bytes32 private constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
     bytes32 private constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
-    uint256 private constant PRECISION = 1e6;
+    uint256 private constant PRECISION = 1e5;
 
     /// @dev Immutables because will disappear in the next upgrade
     uint256 private immutable INITIAL_CAP;
@@ -100,14 +81,11 @@ contract APETH is
     address private immutable SSV_NETWORK;
 
     /// @dev Immutables because these are not going to change without a contract upgrade
-    uint256 private immutable FEE_AMOUNT; // divided by PRECISION
+    uint256 private immutable FEE_AMOUNT; // divided by PRECISION in calculation
 
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
     address public feeRecipient;
-    uint256 public withdrawalQueue;
-    uint256 public withdrawalDelay;
-    IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
 
     /**
      *
@@ -124,8 +102,10 @@ contract APETH is
         uint256 feeAmount
     ) {
         _disableInitializers();
+
         // enforce feeAmount to be within range ( max 10% )
         require(feeAmount < 10000, "feeAmount out of range");
+
         INITIAL_CAP = initialCap;
         EIGEN_POD_MANAGER = eigenPodManager;
         DELEGATION_MANAGER = delegationManager;
@@ -133,7 +113,6 @@ contract APETH is
         FEE_AMOUNT = feeAmount;
     }
 
-    // TODO: make reinitalizer
     function initialize(address admin) public initializer {
         __ERC20_init("AP-Restaked-Eth", "APETH");
         __AccessControl_init();
@@ -143,8 +122,6 @@ contract APETH is
         feeRecipient = admin;
 
         EIGEN_POD_MANAGER.createPod();
-        //remove everything above this line
-        withdrawalDelay = 1 weeks;
     }
 
     /**
@@ -177,67 +154,6 @@ contract APETH is
     }
 
     /**
-     * @notice This function allows users to withdraw their APEth tokens for ETH
-     * @param amount the amount of APEth tokens to withdraw
-     * @dev if there is a withdrawal queue, the user will mint a ticket for their withdrawal (joining the queue)
-     * @dev if there is not enough eth in the contract to cover the withdrawal,and there is no queue,
-     * the user will get a partial withdrawal, and a queue ticket for the remaining amount
-     */
-    function withdraw(uint256 amount) external {
-        if (address(withdrawalQueueTicket) == address(0)) {
-            revert APETH__WITHDRAWALS_NOT_ENABLED();
-        }
-        uint256 userBalance = balanceOf(msg.sender);
-        if (amount > userBalance) {
-            revert APETH__WITHDRAWAL_TOO_LARGE(amount);
-        }
-        uint256 contractBalance = address(this).balance;
-        uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
-        _burn(msg.sender, amount);
-        if (withdrawalQueue > 0) {
-            //if there is a withdrawal queue, there is no partial withdrawal allowed
-            withdrawalQueue += ethToWithdraw;
-            _mintWithdrawQueueTicket(ethToWithdraw);
-        } else if (contractBalance >= ethToWithdraw) {
-            //if the contract has enough eth to cover the withdrawal, the user will get the full withdrawal
-            payable(msg.sender).transfer(ethToWithdraw);
-        } else {
-            //if the contract doesn't have enough eth to cover the withdrawal, the user will get a partial withdrawal
-            // TODO: double check this accounting (make a test)
-            uint256 remainingAmount = ethToWithdraw - contractBalance;
-            withdrawalQueue += remainingAmount;
-            _mintWithdrawQueueTicket(remainingAmount); //TODO: fix reentrancy
-            payable(msg.sender).transfer(contractBalance);
-        }
-    }
-
-    /**
-     * @notice This function allows users to redeem their withdrawal queue tickets for ETH
-     * @param ticketId the tokenId of the ticket to redeem
-     * @dev the user must wait 1 week after the ticket was minted to redeem
-     * @dev the user must be the owner of the ticket
-     * @dev the user will receive the amount of ETH specified on the ticket
-     */
-    function redeemWithdrawQueueTicket(uint256 ticketId) external {
-        if (address(withdrawalQueueTicket) == address(0)) {
-            revert APETH__WITHDRAWALS_NOT_ENABLED();
-        }
-        if (block.timestamp < withdrawalQueueTicket.tokenIdToExitQueueTimestamp(ticketId)) {
-            revert APETH__TOO_EARLY();
-        }
-        if (withdrawalQueueTicket.ownerOf(ticketId) != msg.sender) {
-            revert APETH__NOT_OWNER();
-        }
-        uint256 amount = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(ticketId);
-        if (address(this).balance < amount) {
-            revert APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
-        }
-        withdrawalQueue -= amount;
-        withdrawalQueueTicket.burn(ticketId);
-        payable(msg.sender).transfer(amount);
-    }
-
-    /**
      * @notice This function calculates the ratio of ETH per APEth token - this will increase as the stakng rewards accrue
      * @return uint256 assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
      */
@@ -252,13 +168,13 @@ contract APETH is
      */
     function _ethPerAPEth(uint256 _value) internal view returns (uint256) {
         // don't divide by 0
-        if (totalSupply() == 0 && withdrawalQueue == 0) {
+        if (totalSupply() == 0) {
             return 1 ether;
         } else {
             // subtract the amount a user has deposited from contract balance
             uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
-            return ((totalEth * 1 ether) / (totalSupply() + withdrawalQueue));
+            return ((totalEth * 1 ether) / totalSupply());
         }
     }
 
@@ -355,47 +271,13 @@ contract APETH is
         token.safeTransfer(to, amount);
     }
 
-    /**
-     *
-     * @notice allows the upgrader to set the withdrawal queue ticket contract
-     * @param _withdrawalQueueTicket the address of the withdrawal queue ticket contract
-     *
-     */
-    function setWithdrawalQueueTicket(address _withdrawalQueueTicket) external onlyRole(UPGRADER) {
-        if (address(withdrawalQueueTicket) != address(0)) {
-            revert APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
-        }
-        withdrawalQueueTicket = IAPETHWithdrawalQueueTicket(_withdrawalQueueTicket);
-    }
-
-    /**
-     *
-     * @notice mints a withdrawal queue ticket, with a date when the withdrawal will be enabled, and the amount withdrawalable by the ticket
-     * @param amount this is the ETh value (in wei) if the withdrawal ticket
-     *
-     */
-    function _mintWithdrawQueueTicket(uint256 amount) internal {
-        uint256 withdrawTimeStamp = block.timestamp + withdrawalDelay;
-        withdrawalQueueTicket.mint(msg.sender, withdrawTimeStamp, amount);
-    }
-
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
 
     /**
      * @notice This set fee recipient address
      */
     function setFeeRecipient(address _feeRecipient) external onlyRole(UPGRADER) {
+        require(_feeRecipient != address(0), "Fee recipient cannot be zero address");
         feeRecipient = _feeRecipient;
-    }
-
-    function setWithdrawalDelay(uint256 _withdrawalDelay) external onlyRole(UPGRADER) {
-        withdrawalDelay = _withdrawalDelay;
-    }
-
-    // for testing only
-    // TODO: remove this function before deploying to mainnet
-    function fakeStake() external {
-        payable(address(0)).transfer(32 ether);
-        activeValidators++;
     }
 }
