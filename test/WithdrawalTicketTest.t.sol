@@ -14,6 +14,8 @@ import {
     console
 } from "./APEthTestSetup.t.sol";
 
+// TODO: refactor test to stasrt with a contract upgrade
+
 contract WithdrawalTicketTest is APEthTestSetup {
     function test_SimpleWithdrawal() public setWQT mintAlice(10 ether) {
         // Send eth to contract to increase balance
@@ -130,6 +132,31 @@ contract WithdrawalTicketTest is APEthTestSetup {
         skip(1 weeks);
         // alice claim
         uint256 aliceEthBalanceBefore = alice.balance;
+        vm.prank(alice);
+        APEth.redeemWithdrawQueueTicket(1);
+        assertEq(alice.balance - aliceEthBalanceBefore, 5 ether, "alice balance");
+        assertEq(APEth.withdrawalQueue(), 5 ether);
+        // bob claim
+        uint256 bobEthBalanceBefore = bob.balance;
+        vm.prank(bob);
+        APEth.redeemWithdrawQueueTicket(2);
+        assertEq(bob.balance - bobEthBalanceBefore, 5 ether);
+        assertEq(APEth.withdrawalQueue(), 0 ether);
+    }
+
+    function test_changeWithdrawalDelay() public {
+        vm.prank(upgrader);
+        APEth.setWithdrawalDelay(2 weeks);
+        test_multipleWithdrawalsWithTicket();
+        vm.deal(address(APEth), 15 ether);
+        //advance block.timestamp by one week
+        skip(1 weeks);
+        // alice claim
+        uint256 aliceEthBalanceBefore = alice.balance;
+        vm.expectRevert(0x72bf9c5a); //"APETH__TOO_EARLY()"
+        vm.prank(alice);
+        APEth.redeemWithdrawQueueTicket(1);
+        skip(1 weeks);
         vm.prank(alice);
         APEth.redeemWithdrawQueueTicket(1);
         assertEq(alice.balance - aliceEthBalanceBefore, 5 ether, "alice balance");

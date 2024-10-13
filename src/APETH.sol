@@ -106,6 +106,7 @@ contract APETH is
     uint256 public activeValidators;
     address public feeRecipient;
     uint256 public withdrawalQueue;
+    uint256 public withdrawalDelay;
     IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
 
     /**
@@ -132,6 +133,7 @@ contract APETH is
         FEE_AMOUNT = feeAmount;
     }
 
+    // TODO: make reinitalizer
     function initialize(address admin) public initializer {
         __ERC20_init("AP-Restaked-Eth", "APETH");
         __AccessControl_init();
@@ -141,6 +143,8 @@ contract APETH is
         feeRecipient = admin;
 
         EIGEN_POD_MANAGER.createPod();
+        //remove everything above this line
+        withdrawalDelay = 1 weeks;
     }
 
     /**
@@ -371,7 +375,7 @@ contract APETH is
      *
      */
     function _mintWithdrawQueueTicket(uint256 amount) internal {
-        uint256 withdrawTimeStamp = block.timestamp + 1 weeks; //TODO: make this a variable
+        uint256 withdrawTimeStamp = block.timestamp + withdrawalDelay;
         withdrawalQueueTicket.mint(msg.sender, withdrawTimeStamp, amount);
     }
 
@@ -382,6 +386,10 @@ contract APETH is
      */
     function setFeeRecipient(address _feeRecipient) external onlyRole(UPGRADER) {
         feeRecipient = _feeRecipient;
+    }
+
+    function setWithdrawalDelay(uint256 _withdrawalDelay) external onlyRole(UPGRADER) {
+        withdrawalDelay = _withdrawalDelay;
     }
 
     // for testing only

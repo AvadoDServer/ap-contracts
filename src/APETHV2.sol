@@ -46,6 +46,7 @@ contract APETHV2 is
     uint256 public activeValidators;
     address public feeRecipient;
     uint256 public withdrawalQueue;
+    uint256 public withdrawalDelay;
     IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
 
     /// @custom:oz-upgrades-unsafe-allow constructor

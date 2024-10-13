@@ -102,5 +102,15 @@ contract APETHWithdrawalQueueTicket is
         return super.ownerOf(tokenId);
     }
 
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(IAPETHWithdrawalQueueTicket, ERC721Upgradeable)
+        returns (string memory)
+    {
+        // TODO: add art
+        return super.tokenURI(tokenId);
+    }
+
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
 }
