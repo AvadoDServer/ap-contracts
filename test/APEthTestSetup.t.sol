@@ -27,8 +27,8 @@ import {IAPETHWithdrawalQueueTicket} from "../src/interfaces/IAPETHWithdrawalQue
 import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 
 contract APEthTestSetup is Test {
+    APETH public APEthV1;
     APETHV2 public APEth;
-    APETH public implementation;
     APEthEarlyDeposits public earlyDeposits;
     APETHWithdrawalQueueTicket public withdrawalQueueTicket;
     // IAPEthPodWrapper public wrapper;
@@ -106,15 +106,17 @@ contract APEthTestSetup is Test {
         DeployWithdrawalQueue deployWithdrawalQueue = new DeployWithdrawalQueue();
         proxyConfig.admin = owner;
         proxyConfig = new ScriptBase().getConfig(proxyConfig);
-        APEth = APETHV2(payable(deployProxy.run(proxyConfig)));
+        APEthV1 = deployProxy.run(proxyConfig);
         UpgradeProxy upgradeProxy = new UpgradeProxy();
 
         vm.startPrank(owner);
-        APEth.grantRole(ETH_STAKER, staker);
-        APEth.grantRole(UPGRADER, upgrader);
+        APEthV1.grantRole(ETH_STAKER, staker);
+        APEthV1.grantRole(UPGRADER, upgrader);
         withdrawalQueueTicket = deployWithdrawalQueue.run(proxyConfig);
-        upgradeProxy.run(address(APEth), owner, IAPETHWithdrawalQueueTicket(address(withdrawalQueueTicket)));
+
         vm.stopPrank();
+        upgradeProxy.run(address(APEthV1), upgrader, IAPETHWithdrawalQueueTicket(address(withdrawalQueueTicket)));
+        APEth = APETHV2(payable(address(APEthV1)));
     }
 
     modifier mintAlice(uint256 amount) {

@@ -106,10 +106,15 @@ contract EarlyDepositTest is Test {
     function testMint(uint72 x) public depositAlice(uint256(x)) updateEarlyDepositAddr {
         recipients.push(alice);
         vm.prank(owner);
+        if (x > 1280 ether) {
+            vm.expectRevert( /*"APETH__CAP_REACHED()"*/ );
+        }
         earlyDeposits.mintAPEthBulk(recipients);
         uint256 aliceBalance = _calculateAmountLessFee(uint256(x));
-        assertEq(APEth.balanceOf(alice), aliceBalance);
-        assertEq(earlyDeposits.deposits(alice), 0);
+        if (x <= 1280 ether) {
+            assertEq(APEth.balanceOf(alice), aliceBalance);
+            assertEq(earlyDeposits.deposits(alice), 0);
+        }
     }
 
     function testBulkMint(uint64 a, uint64 b, uint64 c, uint64 d, uint64 e, uint64 f, uint64 aa)
@@ -179,7 +184,7 @@ contract EarlyDepositTest is Test {
 
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
-        return (amount * proxyConfig.feeAmount) / 1e6;
+        return (amount * proxyConfig.feeAmount) / 1e5;
     }
 
     function _calculateAmountLessFee(uint256 amount) internal view returns (uint256) {

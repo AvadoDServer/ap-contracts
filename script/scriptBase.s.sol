@@ -10,7 +10,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {IAPETHWithdrawalQueueTicket} from "../src/interfaces/IAPETHWithdrawalQueueTicket.sol";
@@ -56,11 +56,11 @@ contract ScriptBase is Script {
 
         if (config.feeRecipient == address(0)) {
             config.feeRecipient = config.admin;
-            config.feeAmount = 500;
+            config.feeAmount = 1000;
         }
 
         if (config.initialCap == 0) {
-            config.initialCap = 100000 ether;
+            config.initialCap = 1280 ether;
         }
 
         config.salt = getSalt(config);

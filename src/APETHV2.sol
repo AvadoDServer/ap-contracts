@@ -94,14 +94,18 @@ contract APETHV2 is
     uint256 private constant PRECISION = 1e6;
 
     /// @dev Immutables because will disappear in the next upgrade
-    uint256 private immutable INITIAL_CAP;
+    // uint256 private immutable INITIAL_CAP; //TODO: if the cap is NOT going to be removed in this version, reinitialize it
 
     /// @dev Immutables because these are not going to change
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IEigenPodManager private immutable EIGEN_POD_MANAGER;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address private immutable DELEGATION_MANAGER;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address private immutable SSV_NETWORK;
 
     /// @dev Immutables because these are not going to change without a contract upgrade
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     uint256 private immutable FEE_AMOUNT; // divided by PRECISION
 
     /// @dev uses storage slots (caution when upgrading)
@@ -117,9 +121,8 @@ contract APETHV2 is
      *
      */
     /// @custom:oz-upgrades-unsafe-allow constructor
-    /// @dev eigenPod value needs to
     constructor(
-        uint256 initialCap,
+        // uint256 initialCap,
         IEigenPodManager eigenPodManager,
         address delegationManager,
         address ssvNetwork,
@@ -128,7 +131,7 @@ contract APETHV2 is
         _disableInitializers();
         // enforce feeAmount to be within range ( max 10% )
         require(feeAmount < 10000, "feeAmount out of range");
-        INITIAL_CAP = initialCap;
+        // INITIAL_CAP = initialCap;
         EIGEN_POD_MANAGER = eigenPodManager;
         DELEGATION_MANAGER = delegationManager;
         SSV_NETWORK = ssvNetwork;
@@ -154,9 +157,9 @@ contract APETHV2 is
     function mint() external payable onlyRole(EARLY_ACCESS) returns (uint256) {
         uint256 amount = (msg.value * 1 ether) / _ethPerAPEth(msg.value);
 
-        if (totalSupply() + amount > INITIAL_CAP) {
-            revert APETH__CAP_REACHED();
-        }
+        // if (totalSupply() + amount > INITIAL_CAP) {
+        //     revert APETH__CAP_REACHED();
+        // } TODO: is this to be remover in this version?
 
         uint256 fee = (amount * FEE_AMOUNT) / PRECISION;
         amount = amount - fee;
