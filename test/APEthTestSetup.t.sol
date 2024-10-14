@@ -19,7 +19,7 @@ import {IMockDelegationManager} from "./mocks/MockDelegationManager.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
 import {DeployWithdrawalQueue} from "../script/deployWithdrawalQueue.s.sol";
@@ -32,6 +32,7 @@ contract APEthTestSetup is Test {
     APEthEarlyDeposits public earlyDeposits;
     APETHWithdrawalQueueTicket public withdrawalQueueTicket;
     // IAPEthPodWrapper public wrapper;
+    Options public options;
 
     address public owner;
     address public newOwner;
@@ -99,6 +100,7 @@ contract APEthTestSetup is Test {
         bob = vm.addr(3);
         staker = vm.addr(4);
         upgrader = vm.addr(5);
+        console.log("upgrader", upgrader);
         // Define a new owner address for upgrade tests
         newOwner = address(1);
 
@@ -108,6 +110,12 @@ contract APEthTestSetup is Test {
         proxyConfig = new ScriptBase().getConfig(proxyConfig);
         APEthV1 = deployProxy.run(proxyConfig);
         UpgradeProxy upgradeProxy = new UpgradeProxy();
+        options.constructorData = abi.encode(
+            vm.envAddress("EIGEN_POD_MANAGER"), //TODO: move from .env to helper config
+            vm.envAddress("DELEGATION_MANAGER"), //TODO: move from .env to helper config
+            vm.envAddress("SSV_NETWORK"), //TODO: move from .env to helper config
+            1000
+        );
 
         vm.startPrank(owner);
         APEthV1.grantRole(ETH_STAKER, staker);
@@ -115,7 +123,9 @@ contract APEthTestSetup is Test {
         withdrawalQueueTicket = deployWithdrawalQueue.run(proxyConfig);
 
         vm.stopPrank();
-        upgradeProxy.run(address(APEthV1), upgrader, IAPETHWithdrawalQueueTicket(address(withdrawalQueueTicket)));
+        upgradeProxy.run(
+            address(APEthV1), upgrader, IAPETHWithdrawalQueueTicket(address(withdrawalQueueTicket)), options
+        );
         APEth = APETHV2(payable(address(APEthV1)));
     }
 
