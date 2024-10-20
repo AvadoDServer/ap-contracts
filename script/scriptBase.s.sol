@@ -60,7 +60,7 @@ contract ScriptBase is Script {
         }
 
         if (config.initialCap == 0) {
-            config.initialCap = 1280 ether;
+            config.initialCap = type(uint256).max;
         }
 
         config.salt = getSalt(config);

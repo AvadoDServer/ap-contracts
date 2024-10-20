@@ -31,13 +31,13 @@ contract APETHTest is APEthTestSetup {
         assertEq(address(APEth).balance, 10 ether);
     }
 
-    function test_Cap() public mintAlice(100000 ether) {
-        uint256 aliceBalance = APEth.balanceOf(alice);
-        vm.expectRevert(); //APETH__CAP_REACHED()
-        hoax(alice);
-        APEth.mint{value: 1}();
-        assertEq(APEth.balanceOf(alice), aliceBalance);
-    }
+    // function test_Cap() public mintAlice(100000 ether) {
+    //     uint256 aliceBalance = APEth.balanceOf(alice);
+    //     vm.expectRevert(); //APETH__CAP_REACHED()
+    //     hoax(alice);
+    //     APEth.mint{value: 1}();
+    //     assertEq(APEth.balanceOf(alice), aliceBalance);
+    // }
 
     // Test the basic ERC20 functionality of the APETH contract
     function test_ERC20Functionality() public mintAlice(10 ether) {

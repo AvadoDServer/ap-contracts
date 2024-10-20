@@ -106,9 +106,9 @@ contract EarlyDepositTest is Test {
     function testMint(uint72 x) public depositAlice(uint256(x)) updateEarlyDepositAddr {
         recipients.push(alice);
         vm.prank(owner);
-        if (x > 1280 ether) {
-            vm.expectRevert( /*"APETH__CAP_REACHED()"*/ );
-        }
+        // if (x > 1280 ether) {
+        //     vm.expectRevert( /*"APETH__CAP_REACHED()"*/ );
+        // }
         earlyDeposits.mintAPEthBulk(recipients);
         uint256 aliceBalance = _calculateAmountLessFee(uint256(x));
         if (x <= 1280 ether) {

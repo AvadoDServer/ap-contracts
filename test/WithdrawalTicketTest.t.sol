@@ -314,8 +314,8 @@ contract WithdrawalTicketTest is APEthTestSetup {
         APEth.withdraw(6 ether);
     }
 
-    function test_revert_redeemWithdrawlsNotEnabled() public {
-        vm.expectRevert(0x1ba990d1); //"APETH__WITHDRAWALS_NOT_ENABLED()"
+    function test_revert_redeemnonexistantToken() public {
+        vm.expectRevert(); //"ERC721NonexistentToken(1)"
         APEth.redeemWithdrawQueueTicket(1);
     }
 

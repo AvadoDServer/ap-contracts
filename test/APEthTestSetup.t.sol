@@ -55,6 +55,7 @@ contract APEthTestSetup is Test {
     bytes32 public constant DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
     bytes32 public constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
     bytes32 public constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
+    bytes32 private constant APETH_CONTRACT = keccak256("APETH_CONTRACT");
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool public workingKeys = false;
@@ -94,12 +95,12 @@ contract APEthTestSetup is Test {
     function setUp() public {
         console.log("chain ID: ", block.chainid);
         // Define the owner and alice addresses
-        owner = vm.addr(1);
+        owner = vm.envAddress("CONTRACT_OWNER");
         console.log("owner", owner);
         alice = vm.addr(2);
         bob = vm.addr(3);
-        staker = vm.addr(4);
-        upgrader = vm.addr(5);
+        staker = vm.envAddress("ETH_STAKER");
+        upgrader = vm.envAddress("UPGRADER");
         console.log("upgrader", upgrader);
         // Define a new owner address for upgrade tests
         newOwner = address(1);
@@ -111,9 +112,9 @@ contract APEthTestSetup is Test {
         APEthV1 = deployProxy.run(proxyConfig);
         UpgradeProxy upgradeProxy = new UpgradeProxy();
         options.constructorData = abi.encode(
-            vm.envAddress("EIGEN_POD_MANAGER"), //TODO: move from .env to helper config
-            vm.envAddress("DELEGATION_MANAGER"), //TODO: move from .env to helper config
-            vm.envAddress("SSV_NETWORK"), //TODO: move from .env to helper config
+            proxyConfig.network.eigenPodManager,
+            proxyConfig.network.delegationManager,
+            proxyConfig.network.ssvNetwork,
             1000
         );
 
@@ -121,7 +122,8 @@ contract APEthTestSetup is Test {
         APEthV1.grantRole(ETH_STAKER, staker);
         APEthV1.grantRole(UPGRADER, upgrader);
         withdrawalQueueTicket = deployWithdrawalQueue.run(proxyConfig);
-
+        withdrawalQueueTicket.grantRole(APETH_CONTRACT, address(APEthV1));
+        withdrawalQueueTicket.grantRole(UPGRADER, upgrader);
         vm.stopPrank();
         upgradeProxy.run(
             address(APEthV1), upgrader, IAPETHWithdrawalQueueTicket(address(withdrawalQueueTicket)), options

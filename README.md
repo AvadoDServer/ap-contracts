@@ -27,9 +27,9 @@ locally
 ```shell
 forge clean && forge test 
 ```
-on Holesky
+on Mainnet
 ```shell
-forge clean && forge test --fork-url holesky
+forge clean && forge test --fork-url mainnet
 ```
 
 ### Deploy
