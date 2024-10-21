@@ -4,58 +4,19 @@ pragma solidity 0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {APETH} from "../src/APETH.sol";
-import {APETHV2} from "../src/APETHV2.sol";
-import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
-import {APETHWithdrawalQueueTicket} from "../src/APETHWithdrawalQueueTicket.sol";
-import {DeployProxy} from "../script/deployToken.s.sol";
-import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
+import {Deploy} from "../scripts/Deploy.s.js";
+
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
 import {IMockEigenPodManager} from "./mocks/MockEigenPodManager.sol";
 import {IMockEigenPod} from "./mocks/MockEigenPod.sol";
 import {IMockDelegationManager} from "./mocks/MockDelegationManager.sol";
-// import {IAPEthPodWrapper} from "../src/interfaces/IAPEthPodWrapper.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
-import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
-import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
-import {DeployWithdrawalQueue} from "../script/deployWithdrawalQueue.s.sol";
-import {IAPETHWithdrawalQueueTicket} from "../src/interfaces/IAPETHWithdrawalQueueTicket.sol";
-import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 
-contract APEthTestSetup is Test {
-    APETH public APEthV1;
-    APETHV2 public APEth;
-    APEthEarlyDeposits public earlyDeposits;
-    APETHWithdrawalQueueTicket public withdrawalQueueTicket;
-    // IAPEthPodWrapper public wrapper;
-    Options public options;
-
-    address public owner;
+contract APEthTestSetup is Test, Deploy {
     address public newOwner;
 
     address public alice;
     address public bob;
-
-    address public staker;
-    address public upgrader;
-
-    ProxyConfig public proxyConfig;
-
-    // address public podWrapper;
-
-    bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
-    bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
-    bytes32 public constant UPGRADER = keccak256("UPGRADER");
-    bytes32 public constant MISCELLANEOUS = keccak256("MISCELLANEOUS");
-    bytes32 public constant SSV_NETWORK_ADMIN = keccak256("SSV_NETWORK_ADMIN");
-    bytes32 public constant DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
-    bytes32 public constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
-    bytes32 public constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
-    bytes32 private constant APETH_CONTRACT = keccak256("APETH_CONTRACT");
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool public workingKeys = false;
@@ -93,42 +54,7 @@ contract APEthTestSetup is Test {
 
     // Set up the test environment before running tests
     function setUp() public {
-        console.log("chain ID: ", block.chainid);
-        // Define the owner and alice addresses
-        owner = vm.envAddress("CONTRACT_OWNER");
-        console.log("owner", owner);
-        alice = vm.addr(2);
-        bob = vm.addr(3);
-        staker = vm.envAddress("ETH_STAKER");
-        upgrader = vm.envAddress("UPGRADER");
-        console.log("upgrader", upgrader);
-        // Define a new owner address for upgrade tests
-        newOwner = address(1);
-
-        DeployProxy deployProxy = new DeployProxy();
-        DeployWithdrawalQueue deployWithdrawalQueue = new DeployWithdrawalQueue();
-        proxyConfig.admin = owner;
-        proxyConfig = new ScriptBase().getConfig(proxyConfig);
-        APEthV1 = deployProxy.run(proxyConfig);
-        UpgradeProxy upgradeProxy = new UpgradeProxy();
-        options.constructorData = abi.encode(
-            proxyConfig.network.eigenPodManager,
-            proxyConfig.network.delegationManager,
-            proxyConfig.network.ssvNetwork,
-            1000
-        );
-
-        vm.startPrank(owner);
-        APEthV1.grantRole(ETH_STAKER, staker);
-        APEthV1.grantRole(UPGRADER, upgrader);
-        withdrawalQueueTicket = deployWithdrawalQueue.run(proxyConfig);
-        withdrawalQueueTicket.grantRole(APETH_CONTRACT, address(APEthV1));
-        withdrawalQueueTicket.grantRole(UPGRADER, upgrader);
-        vm.stopPrank();
-        upgradeProxy.run(
-            address(APEthV1), upgrader, IAPETHWithdrawalQueueTicket(address(withdrawalQueueTicket)), options
-        );
-        APEth = APETHV2(payable(address(APEthV1)));
+        run();
     }
 
     modifier mintAlice(uint256 amount) {

@@ -31,6 +31,11 @@ on Mainnet
 ```shell
 forge clean && forge test --fork-url mainnet
 ```
+or (temporary)
+```shell
+forge clean && forge script script/Deploy.s.sol:Deploy -f mainnet --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 -vvvv 
+```
+
 
 ### Deploy
 Deploy in 2 parts (3 if you want a vanity address), following the steps below. 

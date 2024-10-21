@@ -1,0 +1,24 @@
+{
+    "chainInfo": {
+        "chainId": 1
+    },
+
+    "permissions" : {
+        "owner": "0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84",
+        "miscellaneous": "0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84",
+        "upgrader": "0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84",
+        "staker": "0x991A08B9a857729C4e27B4eD0750Dd64CBaE64Fa",
+        "ssvAdmin": "0x991A08B9a857729C4e27B4eD0750Dd64CBaE64Fa",
+        "delegationManagerAdmin": "0x991A08B9a857729C4e27B4eD0750Dd64CBaE64Fa",
+        "eigenPodAdmin": "0x991A08B9a857729C4e27B4eD0750Dd64CBaE64Fa",
+        "eigenPodManagerAdmin": "0x991A08B9a857729C4e27B4eD0750Dd64CBaE64Fa",
+        "feeAmount": 1000
+    },
+
+    "addresses": {
+        "apEthProxy": "0xAaAaAAaBC6CBc3A1FD3a0fe0FDec43251C6562F5",
+        "ssvNetwork": "0xDD9BC35aE942eF0cFa76930954a156B3fF30a4E1",
+        "eigenPodManager": "0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338",
+        "delegationManager": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A"
+    }
+}

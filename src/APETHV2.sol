@@ -159,7 +159,7 @@ contract APETHV2 is
 
         // if (totalSupply() + amount > INITIAL_CAP) {
         //     revert APETH__CAP_REACHED();
-        // } TODO: is this to be remover in this version?
+        // } TODO: is this to be removed in this version?
 
         uint256 fee = (amount * FEE_AMOUNT) / PRECISION;
         amount = amount - fee;
