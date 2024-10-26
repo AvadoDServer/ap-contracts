@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {Deploy} from "../scripts/Deploy.s.js";
+import {Deploy, APETHV2} from "../script/Deploy.s.sol";
 
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
@@ -17,6 +17,7 @@ contract APEthTestSetup is Test, Deploy {
 
     address public alice;
     address public bob;
+    uint256 cap = type(uint256).max; // assuming no cap for this version
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool public workingKeys = false;
@@ -54,13 +55,15 @@ contract APEthTestSetup is Test, Deploy {
 
     // Set up the test environment before running tests
     function setUp() public {
+        if (block.chainid != 1) {
+            revert("RUN ON FORKED MAINNET ONLY: forge test -f mainnet");
+        }
         run();
     }
 
     modifier mintAlice(uint256 amount) {
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, alice);
-        uint256 cap = proxyConfig.initialCap;
         uint256 aliceBalance = _calculateAmountLessFee(amount);
         if (amount > cap) {
             aliceBalance = 0;
@@ -79,7 +82,6 @@ contract APEthTestSetup is Test, Deploy {
     modifier mintBob(uint256 amount) {
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, bob);
-        uint256 cap = proxyConfig.initialCap - address(APEth).balance;
         uint256 bobBalance = _calculateAmountLessFee(amount);
         if (amount > cap) {
             bobBalance = 0;
@@ -107,7 +109,7 @@ contract APEthTestSetup is Test, Deploy {
 
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
-        return (amount * proxyConfig.feeAmount) / 1e6;
+        return (amount * feeAmount) / 1e6;
     }
 
     function _calculateAmountLessFee(uint256 amount) internal view returns (uint256) {

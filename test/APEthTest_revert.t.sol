@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 
 import {
     APEthTestSetup,
-    UpgradeProxy,
     APETHV2,
     ERC20Mock,
     MockSsvNetwork,

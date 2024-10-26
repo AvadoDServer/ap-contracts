@@ -4,7 +4,6 @@ pragma solidity ^0.8.21;
 
 import {
     APEthTestSetup,
-    UpgradeProxy,
     APETHV2,
     ERC20Mock,
     MockSsvNetwork,
@@ -154,7 +153,6 @@ contract APETHTest is APEthTestSetup {
         // Send eth to contract to increase balance
         vm.deal(address(this), y);
         payable(address(APEth)).transfer(y);
-        uint256 cap = proxyConfig.initialCap;
         uint256 balance = uint256(x) + uint256(y);
         if (uint256(x) > cap) {
             balance = uint256(y);
@@ -234,7 +232,7 @@ contract APETHTest is APEthTestSetup {
             abi.encodeWithSelector(bytes4(keccak256("setFeeRecipientAddress(address)")), address(APEth))
         );
         if (block.chainid == 31337) {
-            MockSsvNetwork ssvNetwork = MockSsvNetwork(proxyConfig.network.ssvNetwork);
+            MockSsvNetwork ssvNetwork = MockSsvNetwork(ssvNetwork);
             address feeRecip = ssvNetwork.feeRecipient(address(APEth));
             assertEq(feeRecip, address(APEth), "feeRecip not set in ssv contract");
         }

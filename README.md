@@ -23,13 +23,10 @@ populate values in .env.example save as .env
 
 
 ### Test
-locally
-```shell
-forge clean && forge test 
-```
+
 on Mainnet
 ```shell
-forge clean && forge test --fork-url mainnet
+forge clean && forge test --f mainnet
 ```
 or (temporary)
 ```shell

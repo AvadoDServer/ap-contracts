@@ -177,7 +177,6 @@ contract WithdrawalTicketTest is APEthTestSetup {
         // Send eth to contract to increase balance
         vm.deal(address(this), c256);
         payable(address(APEth)).transfer(c256);
-        uint256 cap = proxyConfig.initialCap;
         uint256 balance = a256 + b256 + c256;
         if (a256 > cap && b256 > cap) {
             balance = c256;

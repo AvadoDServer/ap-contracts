@@ -13,7 +13,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {Utils} from "./utils/Utils.sol";
 
 contract Deploy is Script, Utils {
-    APETHV2 public apeth;
+    APETHV2 public APEth;
     APETHWithdrawalQueueTicket public withdrawalQueueTicket;
     ERC1967Proxy public proxy;
 
@@ -30,11 +30,15 @@ contract Deploy is Script, Utils {
     address public owner;
     address public staker;
     address public upgrader;
+    address public eigenPodManager;
+    address public delegationManager;
+    address public ssvNetwork;
+    uint256 public feeAmount;
 
     Options public options;
     bool public debug = true;
 
-    function run() external {
+    function run() public {
         string memory configData = readInput("aqua_patina_deployment_input");
         if (debug) console.log("configData", configData);
         //addresses:
@@ -46,13 +50,12 @@ contract Deploy is Script, Utils {
         if (debug) console.log("upgrader", upgrader);
         proxy = ERC1967Proxy(payable(stdJson.readAddress(configData, ".addresses.apEthProxy")));
         if (debug) console.log("proxy", address(proxy));
+        eigenPodManager = stdJson.readAddress(configData, ".addresses.eigenPodManager");
+        delegationManager = stdJson.readAddress(configData, ".addresses.delegationManager");
+        ssvNetwork = stdJson.readAddress(configData, ".addresses.ssvNetwork");
+        feeAmount = stdJson.readUint(configData, ".permissions.feeAmount");
         //build constructor for APETHV2
-        options.constructorData = abi.encode(
-            stdJson.readAddress(configData, ".addresses.eigenPodManager"),
-            stdJson.readAddress(configData, ".addresses.delegationManager"),
-            stdJson.readAddress(configData, ".addresses.ssvNetwork"),
-            stdJson.readUint(configData, ".permissions.feeAmount")
-        );
+        options.constructorData = abi.encode(eigenPodManager, delegationManager, ssvNetwork, feeAmount);
         _deployWithdrawalQueue();
         _upgradeApeth();
     }
@@ -72,6 +75,7 @@ contract Deploy is Script, Utils {
     }
 
     function _upgradeApeth() internal {
+        vm.startBroadcast(upgrader);
         Upgrades.upgradeProxy(
             address(proxy),
             "APETHV2.sol:APETHV2",
@@ -79,6 +83,7 @@ contract Deploy is Script, Utils {
             options,
             upgrader
         );
-        apeth = APETHV2(payable(address(proxy)));
+        vm.stopBroadcast();
+        APEth = APETHV2(payable(address(proxy)));
     }
 }
