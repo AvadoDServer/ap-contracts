@@ -247,6 +247,7 @@ contract APETHV2 is
      * @return uint256 assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
      */
     function _ethPerAPEth(uint256 _value) internal view returns (uint256) {
+        // TODO: add in the eigen pod eth balance
         // don't divide by 0
         if (totalSupply() == 0 && withdrawalQueue == 0) {
             return 1 ether;
@@ -254,7 +255,7 @@ contract APETHV2 is
             // subtract the amount a user has deposited from contract balance
             uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
-            return ((totalEth * 1 ether) / (totalSupply() + withdrawalQueue));
+            return ((totalEth * 1 ether) / (totalSupply() + withdrawalQueue)); //TODO: this implies that withdrawalQueue is in APEth, whenit is actually in ETH, must be fixed.
         }
     }
 
@@ -373,12 +374,5 @@ contract APETHV2 is
 
     function setWithdrawalDelay(uint256 _withdrawalDelay) external onlyRole(UPGRADER) {
         withdrawalDelay = _withdrawalDelay;
-    }
-
-    // for testing only
-    // TODO: remove this function before deploying to mainnet
-    function fakeStake() external {
-        payable(address(0)).transfer(32 ether);
-        activeValidators++;
     }
 }

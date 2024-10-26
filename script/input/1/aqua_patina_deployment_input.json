@@ -19,6 +19,7 @@
         "apEthProxy": "0xAaAaAAaBC6CBc3A1FD3a0fe0FDec43251C6562F5",
         "ssvNetwork": "0xDD9BC35aE942eF0cFa76930954a156B3fF30a4E1",
         "eigenPodManager": "0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338",
-        "delegationManager": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A"
+        "delegationManager": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A",
+        "eigenPod": "0x798e66aD86E2F3fE60BA21A07f8e7803114956Eb"
     }
 }

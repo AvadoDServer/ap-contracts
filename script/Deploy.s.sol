@@ -40,7 +40,7 @@ contract Deploy is Script, Utils {
 
     function run() public {
         string memory configData = readInput("aqua_patina_deployment_input");
-        if (debug) console.log("configData", configData);
+        // if (debug) console.log("configData", configData);
         //addresses:
         owner = stdJson.readAddress(configData, ".permissions.owner");
         if (debug) console.log("owner", owner);
@@ -83,7 +83,11 @@ contract Deploy is Script, Utils {
             options,
             upgrader
         );
+        // since this must be called by the upgrader (same address as owner),
+        // we will set the permission in the withdrwawl queue here.
+        withdrawalQueueTicket.grantRole(APETH_CONTRACT, address(proxy));
         vm.stopBroadcast();
         APEth = APETHV2(payable(address(proxy)));
+        if (debug) console.log("APEth", address(APEth));
     }
 }

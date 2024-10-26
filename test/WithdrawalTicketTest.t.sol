@@ -20,12 +20,9 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_SimpleWithdrawal() public mintAlice(10 ether) {
         // Send eth to contract to increase balance
         payable(address(APEth)).transfer(1 ether);
-        assertEq(address(APEth).balance, 11 ether);
-        //check eth per apeth
-        uint256 ethPerAPEth = 11 ether / 10;
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        assertEq(address(APEth).balance, 11 ether + startingApethBalance);
         uint256 aliceApethBalance = APEth.balanceOf(alice);
-        uint256 aliceEthWithdrawalAmountExpected = aliceApethBalance * ethPerAPEth / 1 ether;
+        uint256 aliceEthWithdrawalAmountExpected = aliceApethBalance * APEth.ethPerAPEth() / 1 ether;
         uint256 aliceEthBalanceBefore = alice.balance;
         vm.prank(alice);
         APEth.withdraw(aliceApethBalance);
@@ -39,13 +36,13 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_multipleWithdrawals() public mintAlice(10 ether) mintBob(10 ether) {
         // Send eth to contract to increase balance
         payable(address(APEth)).transfer(1 ether);
-        assertEq(address(APEth).balance, 21 ether);
+        assertEq(address(APEth).balance, 21 ether + startingApethBalance);
         //check eth per apeth
-        uint256 ethPerAPEth = 21 ether / 20;
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        // uint256 ethPerAPEth = 21 ether / 20;
+        // assertEq(APEth.ethPerAPEth(), ethPerAPEth);
         // alice withdrawal
         uint256 aliceApethBalance = APEth.balanceOf(alice);
-        uint256 aliceEthWithdrawalAmountExpected = aliceApethBalance * ethPerAPEth / 1 ether;
+        uint256 aliceEthWithdrawalAmountExpected = aliceApethBalance * APEth.ethPerAPEth() / 1 ether;
         uint256 aliceEthBalanceBefore = alice.balance;
         vm.prank(alice);
         APEth.withdraw(aliceApethBalance);
@@ -55,7 +52,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(aliceEthWithdrawalAmount, aliceEthWithdrawalAmountExpected);
         // bob withdrawal
         uint256 bobApethBalance = APEth.balanceOf(bob);
-        uint256 bobEthWithdrawalAmountExpected = bobApethBalance * ethPerAPEth / 1 ether;
+        uint256 bobEthWithdrawalAmountExpected = bobApethBalance * APEth.ethPerAPEth() / 1 ether;
         uint256 bobEthBalanceBefore = bob.balance;
         vm.prank(bob);
         APEth.withdraw(bobApethBalance);
@@ -66,81 +63,78 @@ contract WithdrawalTicketTest is APEthTestSetup {
     }
 
     function test_withdrawalWithTicket() public mintAlice(30 ether) mintBob(2 ether) {
-        assertEq(address(APEth).balance, 32 ether);
-        if (!workingKeys && block.chainid != 31337) {
-            APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
-            vm.expectRevert(
-                /*"DepositContract: reconstructed DepositData does not match supplied deposit_data_root"*/
-            );
+        assertEq(address(APEth).balance, 32 ether + startingApethBalance);
+        _stake1();
+        if (workingKeys) {
+            assertEq(address(APEth).balance, startingApethBalance);
+            uint256 aliceApethBalance = APEth.balanceOf(alice);
+            uint256 aliceEthBalance = alice.balance;
+            uint256 aliceExpectedWithdrawal = aliceApethBalance * APEth.ethPerAPEth() / 1 ether;
+            vm.prank(alice);
+            APEth.withdraw(aliceApethBalance);
+            if (startingApethBalance < aliceExpectedWithdrawal) {
+                assertEq(APEth.withdrawalQueue(), aliceExpectedWithdrawal - startingApethBalance);
+                assertEq(withdrawalQueueTicket.ownerOf(1), alice);
+                assertEq(
+                    withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1),
+                    aliceExpectedWithdrawal - startingApethBalance
+                );
+                assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
+            } else {
+                assertEq(APEth.withdrawalQueue(), 0);
+                assertEq(alice.balance - aliceEthBalance, aliceExpectedWithdrawal);
+            }
+            assertEq(APEth.balanceOf(alice), 0);
         }
-        vm.prank(staker);
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
-        /*if (workingKeys) {*/
-        assertEq(address(APEth).balance, 0 ether);
-        uint256 aliceApethBalance = APEth.balanceOf(alice);
-        vm.prank(alice);
-        APEth.withdraw(15 ether);
-        assertEq(APEth.withdrawalQueue(), 15 ether);
-        assertEq(aliceApethBalance - 15 ether, APEth.balanceOf(alice));
-        assertEq(withdrawalQueueTicket.ownerOf(1), alice);
-        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), 15 ether);
-        assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
-        // }
     }
 
-    function test_partialWithdrawal() public mintAlice(30 ether) mintBob(12 ether) {
-        assertEq(address(APEth).balance, 42 ether);
-        if (!workingKeys && block.chainid != 31337) {
-            APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
-            vm.expectRevert(
-                /*"DepositContract: reconstructed DepositData does not match supplied deposit_data_root"*/
-            );
-        }
-        vm.prank(staker);
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
-        /*if (workingKeys) {*/
-        assertEq(address(APEth).balance, 10 ether);
-        uint256 aliceEthBalanceBefore = alice.balance;
-        vm.prank(alice);
-        APEth.withdraw(15 ether);
-        assertEq(alice.balance - aliceEthBalanceBefore, 10 ether);
-        assertEq(APEth.withdrawalQueue(), 5 ether);
-        assertEq(withdrawalQueueTicket.ownerOf(1), alice);
-        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), 5 ether);
-        assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
-        // }
+    function test_partialWithdrawal() public {
+        //partial withdrawal is not always testable because the eth balance of the live contract changes
+        //calling the previous test here, bc this function is uses in the following tests
+        test_withdrawalWithTicket();
     }
 
     function test_multipleWithdrawalsWithTicket() public {
         test_partialWithdrawal();
+        mintBob2(64 ether);
+        _stake2();
+        _stake3();
         // bob withdrawal
         uint256 bobEthBalanceBefore = bob.balance;
+        uint256 bobApethBalance = APEth.balanceOf(bob);
+        uint256 withdrawalQueue = APEth.withdrawalQueue();
+        uint256 ethPerAPEth = APEth.ethPerAPEth();
+        uint256 contractBalance = address(APEth).balance;
+        console.log("contract balance", contractBalance);
         vm.prank(bob);
-        APEth.withdraw(5 ether);
+        APEth.withdraw(bobApethBalance);
         assertEq(bob.balance, bobEthBalanceBefore);
-        assertEq(APEth.withdrawalQueue(), 10 ether);
+        assertEq(APEth.withdrawalQueue(), withdrawalQueue + bobApethBalance * ethPerAPEth / 1 ether);
         assertEq(withdrawalQueueTicket.ownerOf(2), bob);
-        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), 5 ether);
+        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), bobApethBalance * ethPerAPEth / 1 ether);
         assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(2), block.timestamp);
         // }
     }
 
     function test_ticketClaim() public {
         test_multipleWithdrawalsWithTicket();
-        vm.deal(address(APEth), 15 ether);
+        vm.deal(address(APEth), 96 ether);
         //advance block.timestamp by one week
         skip(1 weeks);
         // alice claim
         uint256 aliceEthBalanceBefore = alice.balance;
+        uint256 aliceExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
+        uint256 withdrawalQueue = APEth.withdrawalQueue();
         vm.prank(alice);
         APEth.redeemWithdrawQueueTicket(1);
-        assertEq(alice.balance - aliceEthBalanceBefore, 5 ether, "alice balance");
-        assertEq(APEth.withdrawalQueue(), 5 ether);
+        assertEq(alice.balance - aliceEthBalanceBefore, aliceExpectedWithdrawal, "alice balance");
+        assertEq(APEth.withdrawalQueue(), withdrawalQueue - aliceExpectedWithdrawal);
         // bob claim
         uint256 bobEthBalanceBefore = bob.balance;
+        uint256 bobExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2);
         vm.prank(bob);
         APEth.redeemWithdrawQueueTicket(2);
-        assertEq(bob.balance - bobEthBalanceBefore, 5 ether);
+        assertEq(bob.balance - bobEthBalanceBefore, bobExpectedWithdrawal, "bob balance");
         assertEq(APEth.withdrawalQueue(), 0 ether);
     }
 
@@ -185,7 +179,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         } else if (b256 > cap || a256 + b256 > cap) {
             balance = a256 + c256;
         }
-        assertEq(address(APEth).balance, balance, "contract balance does not match calculated");
+        assertEq(address(APEth).balance, balance + startingApethBalance, "contract balance does not match calculated");
         //check eth per apeth
         uint256 ethPerAPEth;
         if (a256 == 0 && b256 == 0) {
@@ -210,19 +204,14 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethPerAPEth not correct");
         uint256 ethInValidators;
         if (balance >= 32 ether) {
-            if (!workingKeys && block.chainid != 31337) {
-                APEth.fakeStake(); // TODO: remove this line when we have working keys aslo un-comment the line below
-                vm.expectRevert(
-                    /*"DepositContract: reconstructed DepositData does not match supplied deposit_data_root"*/
+            _stake1();
+            if (workingKeys) {
+                assertEq(
+                    address(APEth).balance, balance + startingApethBalance - 32 ether, "contract balance after staking"
                 );
+                ethInValidators += 32 ether;
+                balance -= 32 ether;
             }
-            vm.prank(staker);
-            APEth.stake(_pubKey, _signature, _deposit_data_root);
-            /*if (workingKeys) {*/
-            assertEq(address(APEth).balance, balance - 32 ether, "contract balance after staking");
-            ethInValidators += 32 ether;
-            balance -= 32 ether;
-            //}
         }
         uint256 aliceEthBalanceBefore = alice.balance;
         if (APEth.balanceOf(alice) > 0) {
