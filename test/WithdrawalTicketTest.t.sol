@@ -166,7 +166,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(APEth.withdrawalQueue(), 0 ether);
     }
 
-    function test_fuzz_partialWithdrawal(uint128 a, uint128 b, uint128 c, uint256 d) public mintAlice(a) mintBob(b) {
+    function test_fuzz_partialWithdrawal(uint128 a, uint128 b, uint64 c, uint128 d) public mintAlice(a) mintBob(b) {
         uint256 a256 = uint256(a);
         uint256 b256 = uint256(b);
         uint256 c256 = uint256(c);
@@ -174,47 +174,26 @@ contract WithdrawalTicketTest is APEthTestSetup {
         // Send eth to contract to increase balance
         vm.deal(address(this), c256);
         payable(address(APEth)).transfer(c256);
-        uint256 balance = a256 + b256 + c256;
-        if (a256 > cap && b256 > cap) {
-            balance = c256;
-        } else if (a256 > cap) {
-            balance = b256 + c256;
-        } else if (b256 > cap || a256 + b256 > cap) {
-            balance = a256 + c256;
-        }
-        assertEq(address(APEth).balance, balance + startingApethBalance, "contract balance does not match calculated");
+        // assuming no cap on this release
+        uint256 balance = a256 + b256 + c256 + startingApethBalance;
+        // if (a256 > cap && b256 > cap) {
+        //     balance = c256;
+        // } else if (a256 > cap) {
+        //     balance = b256 + c256;
+        // } else if (b256 > cap || a256 + b256 > cap) {
+        //     balance = a256 + c256;
+        // }
+        assertEq(address(APEth).balance, balance, "contract balance does not match calculated");
         //check eth per apeth
-        uint256 ethPerAPEth = startingEthPerApeth;
-        if (a256 == 0 && b256 == 0) {
-            // no change
-        } else if (a256 > cap && b256 > cap) {
-            // no change
-        } else if (a256 > cap) {
-            if (b256 == 0) {
-                //no change
-            } else {
-                ethPerAPEth =
-                    (ethPerAPEth * startingTotalSupply / 1 ether + b256 + c256) * 1 ether / APEth.totalSupply();
-            }
-        } else if (b256 > cap || a256 + b256 > cap) {
-            if (a256 == 0) {
-                // no change
-            } else {
-                ethPerAPEth =
-                    (ethPerAPEth * startingTotalSupply / 1 ether + a256 + c256) * 1 ether / APEth.totalSupply();
-            }
-        } else {
-            ethPerAPEth =
-                (ethPerAPEth * startingTotalSupply / 1 ether + a256 + b256 + c256) * 1 ether / APEth.totalSupply();
-        }
+        // this will not work if cap is set to something less than type(uint128).max
+        uint256 ethPerAPEth =
+            (a256 + b256 + c256 + (startingEthPerApeth * startingTotalSupply / 1 ether)) * 1 ether / APEth.totalSupply();
         assertApproxEqAbs(APEth.ethPerAPEth(), ethPerAPEth, 1, "ethPerAPEth not correct");
         uint256 ethInValidators;
         if (balance >= 32 ether) {
             _stake1();
             if (workingKeys) {
-                assertEq(
-                    address(APEth).balance, balance + startingApethBalance - 32 ether, "contract balance after staking"
-                );
+                assertEq(address(APEth).balance, balance - 32 ether, "contract balance after staking");
                 ethInValidators += 32 ether;
                 balance -= 32 ether;
             }
@@ -222,7 +201,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         uint256 aliceEthBalanceBefore = alice.balance;
         if (APEth.balanceOf(alice) > 0) {
             d256 = d256 % APEth.balanceOf(alice);
-            uint256 expectedWithdrawal = d256 * ethPerAPEth / 1 ether;
+            uint256 expectedWithdrawal = d256 * APEth.ethPerAPEth() / 1 ether;
             vm.prank(alice);
             APEth.withdraw(d256);
             if (expectedWithdrawal > balance) {
@@ -232,13 +211,12 @@ contract WithdrawalTicketTest is APEthTestSetup {
                 assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal - balance);
                 assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
             } else {
-                // TODO: this seems like a big error for roundidng errors.
-                assertApproxEqAbs(alice.balance - aliceEthBalanceBefore, expectedWithdrawal, 1e3, "alice balance");
+                assertApproxEqAbs(alice.balance - aliceEthBalanceBefore, expectedWithdrawal, 1, "alice balance");
             }
         }
     }
 
-    function test_fuzz_multipleWithdrawalsWithTicket(uint128 a, uint128 b, uint128 c, uint128 d, uint128 e) public {
+    function test_fuzz_multipleWithdrawalsWithTicket(uint128 a, uint128 b, uint64 c, uint128 d, uint128 e) public {
         test_fuzz_partialWithdrawal(a, b, c, d);
         uint256 e256 = uint256(e);
         // bob withdrawal
@@ -269,7 +247,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         }
     }
 
-    function test_fuzz_ticketClaim(uint128 a, uint128 b, uint128 c, uint128 d, uint128 e) public {
+    function test_fuzz_ticketClaim(uint128 a, uint128 b, uint64 c, uint128 d, uint128 e) public {
         test_fuzz_multipleWithdrawalsWithTicket(a, b, c, d, e);
         if (APEth.withdrawalQueue() > 0) {
             vm.deal(address(this), 32 ether);
