@@ -20,6 +20,7 @@ contract APEthTestSetup is Test, Deploy {
     uint256 cap = type(uint256).max; // assuming no cap for this version
     uint256 startingApethBalance;
     uint256 startingTotalSupply;
+    uint256 startingEthPerApeth;
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool public workingKeys = true;
@@ -66,6 +67,7 @@ contract APEthTestSetup is Test, Deploy {
         run();
         startingApethBalance = address(APEth).balance;
         startingTotalSupply = APEth.totalSupply();
+        startingEthPerApeth = APEth.ethPerAPEth();
     }
 
     modifier mintAlice(uint256 amount) {
