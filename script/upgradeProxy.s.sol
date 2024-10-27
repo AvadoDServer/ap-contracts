@@ -16,20 +16,20 @@ contract UpgradeProxy is ScriptBase {
     }
 
     function run() public {
-        address owner = vm.envAddress("CONTRACT_OWNER");
-        address apEth = vm.envAddress("APETH_PROXY");
-        address withdrawalQueue = vm.envAddress("WITHDRAWAL_QUEUE");
-        _options.constructorData = abi.encode(
-            vm.envAddress("EIGEN_POD_MANAGER"), //TODO: move from .env to helper config
-            vm.envAddress("DELEGATION_MANAGER"), //TODO: move from .env to helper config
-            vm.envAddress("SSV_NETWORK"), //TODO: move from .env to helper config
-            1000
-        );
+        // address owner = vm.envAddress("CONTRACT_OWNER");
+        // address apEth = vm.envAddress("APETH_PROXY");
+        // address withdrawalQueue = vm.envAddress("WITHDRAWAL_QUEUE");
+        // _options.constructorData = abi.encode(
+        //     vm.envAddress("EIGEN_POD_MANAGER"), //TODO: move from .env to helper config
+        //     vm.envAddress("DELEGATION_MANAGER"), //TODO: move from .env to helper config
+        //     vm.envAddress("SSV_NETWORK"), //TODO: move from .env to helper config
+        //     1000
+        // );
 
-        if (apEth == address(0)) {
-            apEth = getProxyAddress();
-        }
-        vm.broadcast();
-        run(apEth, owner, IAPETHWithdrawalQueueTicket(withdrawalQueue), _options);
+        // if (apEth == address(0)) {
+        //     apEth = getProxyAddress();
+        // }
+        // vm.broadcast();
+        // run(apEth, owner, IAPETHWithdrawalQueueTicket(withdrawalQueue), _options);
     }
 }

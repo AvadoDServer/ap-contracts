@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 
 import {
     APEthTestSetup,
-    UpgradeProxy,
     APETHV2,
     ERC20Mock,
     MockSsvNetwork,
@@ -14,7 +13,7 @@ import {
 } from "./APEthTestSetup.t.sol";
 
 contract APETHTestRevert is APEthTestSetup {
-    function test_Revert_Stake_NotEnoughEth() public mintAlice(5) {
+    function test_Revert_Stake_NotEnoughEth() public mintAlice(5 ether) {
         vm.prank(staker);
         vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
         APEth.stake(_pubKey, _signature, _deposit_data_root);

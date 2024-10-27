@@ -4,79 +4,44 @@ pragma solidity 0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {APETH} from "../src/APETH.sol";
-import {APETHV2} from "../src/APETHV2.sol";
-import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
-import {APETHWithdrawalQueueTicket} from "../src/APETHWithdrawalQueueTicket.sol";
-import {DeployProxy} from "../script/deployToken.s.sol";
-import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
+import {Deploy, APETHV2} from "../script/Deploy.s.sol";
+
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";
 import {IMockEigenPodManager} from "./mocks/MockEigenPodManager.sol";
 import {IMockEigenPod} from "./mocks/MockEigenPod.sol";
 import {IMockDelegationManager} from "./mocks/MockDelegationManager.sol";
-// import {IAPEthPodWrapper} from "../src/interfaces/IAPEthPodWrapper.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import {Create2} from "@openzeppelin-contracts/utils/Create2.sol";
-import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
-import {ProxyConfig, ScriptBase} from "../script/scriptBase.s.sol";
-import {DeployWithdrawalQueue} from "../script/deployWithdrawalQueue.s.sol";
-import {IAPETHWithdrawalQueueTicket} from "../src/interfaces/IAPETHWithdrawalQueueTicket.sol";
-import {UpgradeProxy} from "../script/upgradeProxy.s.sol";
 
-contract APEthTestSetup is Test {
-    APETH public APEthV1;
-    APETHV2 public APEth;
-    APEthEarlyDeposits public earlyDeposits;
-    APETHWithdrawalQueueTicket public withdrawalQueueTicket;
-    // IAPEthPodWrapper public wrapper;
-    Options public options;
-
-    address public owner;
+contract APEthTestSetup is Test, Deploy {
     address public newOwner;
 
     address public alice;
     address public bob;
-
-    address public staker;
-    address public upgrader;
-
-    ProxyConfig public proxyConfig;
-
-    // address public podWrapper;
-
-    bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
-    bytes32 public constant EARLY_ACCESS = keccak256("EARLY_ACCESS");
-    bytes32 public constant UPGRADER = keccak256("UPGRADER");
-    bytes32 public constant MISCELLANEOUS = keccak256("MISCELLANEOUS");
-    bytes32 public constant SSV_NETWORK_ADMIN = keccak256("SSV_NETWORK_ADMIN");
-    bytes32 public constant DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
-    bytes32 public constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
-    bytes32 public constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
-    bytes32 private constant APETH_CONTRACT = keccak256("APETH_CONTRACT");
+    uint256 cap = type(uint256).max; // assuming no cap for this version
+    uint256 startingApethBalance;
+    uint256 startingTotalSupply;
+    uint256 startingEthPerApeth;
 
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
-    bool public workingKeys = false;
+    bool public workingKeys = true;
 
     bytes _pubKey =
         hex"aed26c6b7e0e2cc2efeae9c96611c3de6b982610e3be4bda9ac26fe8aea53276201b3e45dbc242bb24af7fb10fc12196";
     bytes _signature =
-        hex"b45314f927f2344883a59b2a4c50af9260cb0c716e11b8954d1e00225bdd71a9dfc2bb6ad3d2e71159fa994ab1c3f49f0f78754ed94bd959457072bf4efbf4ff6b36456037d922c6173fb3ed24d21970ed61160b1605ecc7d6e35685cdd1aeaa";
-    bytes32 _deposit_data_root = 0x7a71bc4430915cd6308a2b0e8bd18c91b8f8b9db13fd6d70101e1b53a4018dd0;
+        hex"ace9b7dada19911900abee07477915ffd922af490b34d479f70bd8fe163c2d9616f047e1edad2901b1b75801d4b4cfbf15d7ca425cd5877d24ac45e6d1c7378d00bf1d921ba99c4fc4f0b8b1c506e75c57c1876884ffec3e46bb7408ddb26adc";
+    bytes32 _deposit_data_root = 0x15320abc0a129b6a3c64357142261f337aad9ddf1d6028e6bb2374e30c2d1b88;
 
     bytes _pubKey2 =
         hex"91bebd77cd834b056ff242331dfcd3baecf3b89fcba6d866860a7ace128fb204af9b892cc84dd2d4eb933f6f8d0499b1";
     bytes _signature2 =
-        hex"8c0422c68f58930b12082da0bf2b72372a2092e4be42c461cb7a686d7969093240929c6313846409d2a8c481fd3513ec042da0ed7ffeedb98d0ee611aff2bd304214c5edb2d5f064ef7d3b282612eb1a083ecee5054f7d209ad86773aeab140a";
-    bytes32 _deposit_data_root2 = 0x79c26a0095560c824e3ba2674f788ef32f3deaf4dab89ee8040eab31855a25f9;
+        hex"afbef8c11a7cbd09234a305809317e647041cf318a75b4effda7ea7656872d2cf88076ddbc86baedfe1aa9a85ef73b270351f3b61f2fd337c421fbc3e67d95bf13ce8c4dc410f66540af059f1b659913ae5744ae3d22b51316bbaf90b0c4d093";
+    bytes32 _deposit_data_root2 = 0x39e092c8596cef2689b2f9f2ceec43dddcdec6f07bd8fa488f42dd8a50e0efca;
 
     bytes _pubKey3 =
         hex"b6ee6088e5b1dca8a7013f702140ab1f4825d349b20f8c4ba8436af36814dfb3309c13d7423898f60c5e332655a54f17";
     bytes _signature3 =
-        hex"a96e640ffdc0173ce037297440449d261621d2fe247e863d0cac73af879b99ed52944ddda74282326f5579ff6cdf6cb8041e0c0c1d1f722b6021a227958171b4168924f1efa955f12ae4072359b45406c3a1867424179b8e8812e5a9f478dfd5";
-    bytes32 _deposit_data_root3 = 0xa1b2ae2fcef94c75295b822eafadd7a38ebeaf30cfd9fc048f52ab281c4401b8;
+        hex"906ba542cceac07cec2b67918b5bc0203fe10d9d673edf384ed7811ef8afcd6fec8a05fe421b28d612e2986afe0b1c1f0eb5597ca8e275e4b3ae867c398f0a0e05b632ff715820b653002af62c9a843dfa674357a10e4c915373cacaf284eebd";
+    bytes32 _deposit_data_root3 = 0x054c04b2dc91b1859166cda618f6ec0665c867afd2d8299291b4f884319558b1;
 
     // // for multi pods
     // bytes _signature_M =
@@ -93,48 +58,21 @@ contract APEthTestSetup is Test {
 
     // Set up the test environment before running tests
     function setUp() public {
-        console.log("chain ID: ", block.chainid);
-        // Define the owner and alice addresses
-        owner = vm.envAddress("CONTRACT_OWNER");
-        console.log("owner", owner);
-        alice = vm.addr(2);
-        bob = vm.addr(3);
-        staker = vm.envAddress("ETH_STAKER");
-        upgrader = vm.envAddress("UPGRADER");
-        console.log("upgrader", upgrader);
-        // Define a new owner address for upgrade tests
-        newOwner = address(1);
-
-        DeployProxy deployProxy = new DeployProxy();
-        DeployWithdrawalQueue deployWithdrawalQueue = new DeployWithdrawalQueue();
-        proxyConfig.admin = owner;
-        proxyConfig = new ScriptBase().getConfig(proxyConfig);
-        APEthV1 = deployProxy.run(proxyConfig);
-        UpgradeProxy upgradeProxy = new UpgradeProxy();
-        options.constructorData = abi.encode(
-            proxyConfig.network.eigenPodManager,
-            proxyConfig.network.delegationManager,
-            proxyConfig.network.ssvNetwork,
-            1000
-        );
-
-        vm.startPrank(owner);
-        APEthV1.grantRole(ETH_STAKER, staker);
-        APEthV1.grantRole(UPGRADER, upgrader);
-        withdrawalQueueTicket = deployWithdrawalQueue.run(proxyConfig);
-        withdrawalQueueTicket.grantRole(APETH_CONTRACT, address(APEthV1));
-        withdrawalQueueTicket.grantRole(UPGRADER, upgrader);
-        vm.stopPrank();
-        upgradeProxy.run(
-            address(APEthV1), upgrader, IAPETHWithdrawalQueueTicket(address(withdrawalQueueTicket)), options
-        );
-        APEth = APETHV2(payable(address(APEthV1)));
+        if (block.chainid != 1) {
+            revert("RUN ON FORKED MAINNET ONLY: forge test -f mainnet");
+        }
+        alice = vm.addr(1);
+        bob = vm.addr(2);
+        newOwner = vm.addr(3);
+        run();
+        startingApethBalance = address(APEth).balance;
+        startingTotalSupply = APEth.totalSupply();
+        startingEthPerApeth = APEth.ethPerAPEth();
     }
 
     modifier mintAlice(uint256 amount) {
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, alice);
-        uint256 cap = proxyConfig.initialCap;
         uint256 aliceBalance = _calculateAmountLessFee(amount);
         if (amount > cap) {
             aliceBalance = 0;
@@ -142,28 +80,29 @@ contract APEthTestSetup is Test {
         }
         hoax(alice);
         APEth.mint{value: amount}();
-        assertEq(APEth.balanceOf(alice), aliceBalance);
+        assertApproxEqAbs(APEth.balanceOf(alice), aliceBalance, 1);
         if (amount > cap) {
             vm.expectRevert(); //APETH__CAP_REACHED()
         }
-        assertEq(address(APEth).balance, amount);
+        if (APEth.balanceOf(bob) == 0) assertEq(address(APEth).balance, amount + startingApethBalance);
         _;
     }
 
     modifier mintBob(uint256 amount) {
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, bob);
-        uint256 cap = proxyConfig.initialCap - address(APEth).balance;
-        uint256 bobBalance = _calculateAmountLessFee(amount);
+        uint256 bobBalance = _calculateAmountLessFee(amount) + APEth.balanceOf(bob);
         if (amount > cap) {
             bobBalance = 0;
             vm.expectRevert(); //APETH__CAP_REACHED()
         }
         hoax(bob);
         APEth.mint{value: amount}();
-        assertEq(APEth.balanceOf(bob), bobBalance);
+        assertApproxEqAbs(APEth.balanceOf(bob), bobBalance, 1);
         _;
     }
+
+    function mintBob2(uint256 amount) public mintBob(amount) {}
 
     // modifier deployPods(uint256 numberOfPods) {
     //     vm.startPrank(staker);
@@ -181,10 +120,35 @@ contract APEthTestSetup is Test {
 
     //internal functions
     function _calculateFee(uint256 amount) internal view returns (uint256) {
-        return (amount * proxyConfig.feeAmount) / 1e6;
+        return (amount * feeAmount) / 1e6;
     }
 
     function _calculateAmountLessFee(uint256 amount) internal view returns (uint256) {
-        return (amount - _calculateFee(amount));
+        uint256 ethPerAPEth = APEth.ethPerAPEth();
+        return ((amount - _calculateFee(amount)) * 1 ether / ethPerAPEth);
+    }
+
+    function _stake1() internal {
+        if (!workingKeys && block.chainid != 31337) {
+            vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+        }
+        vm.prank(staker);
+        APEth.stake(_pubKey, _signature, _deposit_data_root);
+    }
+
+    function _stake2() internal {
+        if (!workingKeys && block.chainid != 31337) {
+            vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+        }
+        vm.prank(staker);
+        APEth.stake(_pubKey2, _signature2, _deposit_data_root2);
+    }
+
+    function _stake3() internal {
+        if (!workingKeys && block.chainid != 31337) {
+            vm.expectRevert("DepositContract: reconstructed DepositData does not match supplied deposit_data_root");
+        }
+        vm.prank(staker);
+        APEth.stake(_pubKey3, _signature3, _deposit_data_root3);
     }
 }
