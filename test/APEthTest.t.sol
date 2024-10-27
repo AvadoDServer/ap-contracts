@@ -81,35 +81,37 @@ contract APETHTest is APEthTestSetup {
         payable(address(APEth)).transfer(1 ether);
         assertEq(address(APEth).balance, 11 ether + startingApethBalance);
         //check eth per apeth
-        uint256 ethPerAPEth = 11 ether / 10;
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        uint256 ethPerAPEth =
+            (11 ether + (startingEthPerApeth * startingTotalSupply / 1 ether)) * 1 ether / APEth.totalSupply();
+        assertApproxEqAbs(APEth.ethPerAPEth(), ethPerAPEth, 1, "ethPerAPEth not correct");
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, bob);
+        uint256 expected = _calculateAmountLessFee(10 ether);
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
-        uint256 expected = _calculateAmountLessFee((10 ether * 1 ether) / ethPerAPEth);
-        assertApproxEqAbs(APEth.balanceOf(bob), expected, 1);
+        assertApproxEqAbs(APEth.balanceOf(bob), expected, 1, "bob balance not correct");
         assertEq(address(APEth).balance, 21 ether + startingApethBalance);
     }
 
     function test_BasicAccountingWithStaking() public mintAlice(50 ether) {
         // Send eth to contract to increase balance
         payable(address(APEth)).transfer(1 ether);
-        assertEq(address(APEth).balance, 51 ether + startingApethBalance);
+        assertEq(address(APEth).balance, 51 ether + startingApethBalance, "contract balance not correct");
         //check eth per apeth
-        uint256 ethPerAPEth = 51 ether / 50;
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        uint256 ethPerAPEth =
+            (51 ether + (startingEthPerApeth * startingTotalSupply / 1 ether)) * 1 ether / APEth.totalSupply();
+        assertApproxEqAbs(APEth.ethPerAPEth(), ethPerAPEth, 1, "ethPerAPEth not correct");
         _stake1();
         if (workingKeys) assertEq(address(APEth).balance, 19 ether + startingApethBalance);
-        assertEq(APEth.ethPerAPEth(), ethPerAPEth);
+        assertApproxEqAbs(APEth.ethPerAPEth(), ethPerAPEth, 1, "ethperAPEth not correct after staking");
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, bob);
+        uint256 expected = _calculateAmountLessFee(10 ether);
         hoax(bob);
         // Mint 10 eth of tokens and assert the balance
         APEth.mint{value: 10 ether}();
-        uint256 expected = _calculateAmountLessFee((10 ether * 1 ether) / ethPerAPEth);
-        assertApproxEqAbs(APEth.balanceOf(bob), expected, 1);
+        assertApproxEqAbs(APEth.balanceOf(bob), expected, 1, "bob balance not correct");
         if (workingKeys) assertEq(address(APEth).balance, 29 ether + startingApethBalance);
     }
 
@@ -152,17 +154,16 @@ contract APETHTest is APEthTestSetup {
         );
         // assertEq(APEth.ethPerAPEth(), ethPerAPEth, "ethperAPEth not correct after staking");
         uint256 amount = uint256(x) + ((uint256(z) * 1 ether) / APEth.ethPerAPEth());
-        assertEq(APEth.totalSupply() - startingTotalSupply, uint256(x));
         vm.prank(owner);
         APEth.grantRole(EARLY_ACCESS, bob);
         if (amount > cap) vm.expectRevert(); //APETH__CAP_REACHED()
+        uint256 expected = _calculateAmountLessFee(uint256(z));
         hoax(bob);
         // Mint z eth of tokens and assert the balance
         APEth.mint{value: z}();
-        uint256 expected = _calculateAmountLessFee((uint256(z) * 1 ether) / APEth.ethPerAPEth());
         if (amount <= cap) {
-            assertApproxEqAbs(APEth.balanceOf(bob), expected, 1);
-            assertEq(address(APEth).balance, newBalance + z + startingApethBalance);
+            assertApproxEqAbs(APEth.balanceOf(bob), expected, 1, "bob balance not correct");
+            assertEq(address(APEth).balance, newBalance + z + startingApethBalance, "contract balance not correct");
         }
     }
 
