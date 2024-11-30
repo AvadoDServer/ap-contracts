@@ -247,11 +247,13 @@ contract APETHV2 is
      * @return uint256 assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
      */
     function _ethPerAPEth(uint256 _value) internal view returns (uint256) {
-        // TODO: add in the eigen pod eth balance
+        // TODO: add in the eigen pod eth balance??
         // don't divide by 0
         if (totalSupply() == 0 && withdrawalQueue == 0) {
             return 1 ether;
         } else {
+            //get eigen pod eth balance??
+            // address eigenPod = address(EIGEN_POD_MANAGER.getPod(address(this)));
             // subtract the amount a user has deposited from contract balance
             uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
