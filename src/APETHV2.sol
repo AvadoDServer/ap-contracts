@@ -257,7 +257,7 @@ contract APETHV2 is
             // subtract the amount a user has deposited from contract balance
             uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
-            return ((totalEth * 1 ether) / (totalSupply() + withdrawalQueue)); //TODO: this implies that withdrawalQueue is in APEth, whenit is actually in ETH, must be fixed.
+            return (((totalEth - withdrawalQueue) * 1 ether) / totalSupply());
         }
     }
 
