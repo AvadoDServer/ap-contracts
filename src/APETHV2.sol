@@ -200,9 +200,10 @@ contract APETHV2 is
         } else {
             //if the contract doesn't have enough eth to cover the withdrawal, the user will get a partial withdrawal
             // TODO: double check this accounting (make a test)
+            // TODO: consider removing the partial withdrawal feature, force the user to make 2 seperate transactions for this (simplifies the code, partial withdrawal is a very specific edge case)
             uint256 remainingAmount = ethToWithdraw - contractBalance;
             withdrawalQueue += remainingAmount;
-            _mintWithdrawQueueTicket(remainingAmount); //TODO: fix reentrancy
+            _mintWithdrawQueueTicket(remainingAmount); //TODO: fix reentrancy (?)
             payable(msg.sender).transfer(contractBalance);
         }
     }
