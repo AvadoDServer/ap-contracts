@@ -14,8 +14,6 @@ import {
     console
 } from "./APEthTestSetup.t.sol";
 
-// TODO: refactor test to stasrt with a contract upgrade
-
 contract WithdrawalTicketTest is APEthTestSetup {
     function test_SimpleWithdrawal() public mintAlice(10 ether) {
         // Send eth to contract to increase balance
