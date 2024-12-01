@@ -61,6 +61,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
     }
 
     function test_withdrawalWithTicket() public mintAlice(30 ether) mintBob(2 ether) {
+        // TODO: consider setting initial balance to a known amount to fix test conditions
         assertEq(address(APEth).balance, 32 ether + startingApethBalance);
         _stake1();
         if (workingKeys) {
@@ -89,6 +90,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_partialWithdrawal() public {
         //partial withdrawal is not always testable because the eth balance of the live contract changes
         //calling the previous test here, bc this function is uses in the following tests
+        // TODO: remove this.
         test_withdrawalWithTicket();
     }
 
@@ -274,6 +276,8 @@ contract WithdrawalTicketTest is APEthTestSetup {
             }
         }
     }
+
+    function test_Z_art() public {}
 
     function test_revert_directMint() public {
         vm.expectRevert(); //AccessControl...
