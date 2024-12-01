@@ -22,6 +22,8 @@ import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {Base64} from "openzeppelin-contracts/contracts/utils/Base64.sol";
+
 
 /**
  *
@@ -111,7 +113,7 @@ contract APETHWithdrawalQueueTicket is
         override(IAPETHWithdrawalQueueTicket, ERC721Upgradeable)
         returns (string memory)
     {
-        require(_exists(id), "not exist");
+        require(_ownerOf(tokenId) != address(0), "token does not exist");
         string memory name = string(abi.encodePacked("APETH Withdrawal Queue Ticket #", tokenId.toString()));
         string memory description =
             string(abi.encodePacked("APETH Withdrawal Queue Ticket #", tokenId.toString(), " for validator exit queue"));

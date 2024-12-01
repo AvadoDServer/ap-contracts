@@ -277,7 +277,11 @@ contract WithdrawalTicketTest is APEthTestSetup {
         }
     }
 
-    function test_Z_art() public {}
+    function test_Z_art() public {
+        test_withdrawalWithTicket();
+        string memory uri = withdrawalQueueTicket.tokenURI(1);
+        console.log("uri", uri);
+    }
 
     function test_revert_directMint() public {
         vm.expectRevert(); //AccessControl...
