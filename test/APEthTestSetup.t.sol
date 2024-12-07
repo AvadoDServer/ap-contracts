@@ -65,6 +65,7 @@ contract APEthTestSetup is Test, Deploy {
         bob = vm.addr(2);
         newOwner = vm.addr(3);
         run();
+        vm.deal(address(APEth), 0); // set balance to 0 for testing
         startingApethBalance = address(APEth).balance;
         startingTotalSupply = APEth.totalSupply();
         startingEthPerApeth = APEth.ethPerAPEth();
