@@ -87,15 +87,8 @@ contract WithdrawalTicketTest is APEthTestSetup {
         }
     }
 
-    function test_partialWithdrawal() public {
-        //partial withdrawal is not always testable because the eth balance of the live contract changes
-        //calling the previous test here, bc this function is uses in the following tests
-        // TODO: remove this.
-        test_withdrawalWithTicket();
-    }
-
     function test_multipleWithdrawalsWithTicket() public {
-        test_partialWithdrawal();
+        test_withdrawalWithTicket();
         mintBob2(64 ether);
         _stake2();
         _stake3();
@@ -174,14 +167,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         // Send eth to contract to increase balance
         vm.deal(address(this), c256);
         payable(address(APEth)).transfer(c256);
-        // assuming no cap on this release
         uint256 balance = a256 + b256 + c256 + startingApethBalance;
-        // if (a256 > cap && b256 > cap) {
-        //     balance = c256;
-        // } else if (a256 > cap) {
-        //     balance = b256 + c256;
-        // } else if (b256 > cap || a256 + b256 > cap) {
-        //     balance = a256 + c256;
         // }
         assertEq(address(APEth).balance, balance, "contract balance does not match calculated");
         //check eth per apeth
