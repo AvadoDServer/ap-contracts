@@ -52,7 +52,11 @@ contract APETHWithdrawalQueueTicket is
     mapping(uint256 => uint256) public tokenIdToExitQueueTimestamp;
 
     /// @dev uses storage slots (caution when upgrading)
+    /// @notice denominated in APETH until readyToWithdraw is set to true, then denominated in ETH
     mapping(uint256 => uint256) public tokenIdToExitQueueExitAmount;
+
+    /// @dev uses storage slots (caution when upgrading)
+    mapping(uint256 => bool) public readyToWithdraw;
 
     /**
      *
@@ -79,6 +83,12 @@ contract APETHWithdrawalQueueTicket is
         tokenIdToExitQueueExitAmount[tokenIdCounter] = exitQueueExitAmount;
         _safeMint(to, tokenIdCounter);
         emit Mint(to, tokenIdCounter);
+    }
+
+    function setReadyToWithdraw(uint256 tokenId, uint256 newAmount) public onlyRole(APETH_CONTRACT) {
+        tokenIdToExitQueueExitAmount[tokenId] = newAmount;
+        readyToWithdraw[tokenId] = true;
+        emit ReadyToWithdraw(msg.sender, tokenId);
     }
 
     function burn(uint256 tokenId) public onlyRole(APETH_CONTRACT) {

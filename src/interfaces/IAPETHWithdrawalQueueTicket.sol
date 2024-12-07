@@ -29,6 +29,9 @@ interface IAPETHWithdrawalQueueTicket {
     /// @notice occurs when a ticket is burned
     event Burn(address burner, uint256 tokenId);
 
+    /// @notice occurs when a ticket is set to ready to withdraw
+    event ReadyToWithdraw(uint256 tokenId);
+
     /**
      *
      * FUNCTIONS

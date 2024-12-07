@@ -111,7 +111,8 @@ contract APETHV2 is
     /// @dev uses storage slots (caution when upgrading)
     uint256 public activeValidators;
     address public feeRecipient;
-    uint256 public withdrawalQueue;
+    uint256 public withdrawalQueueETH;
+    uint256 public withdrawalQueueAPETH;
     uint256 public withdrawalDelay;
     IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
 
