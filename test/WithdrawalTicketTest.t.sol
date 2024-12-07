@@ -61,7 +61,6 @@ contract WithdrawalTicketTest is APEthTestSetup {
     }
 
     function test_withdrawalWithTicket() public mintAlice(30 ether) mintBob(2 ether) {
-        // TODO: consider setting initial balance to a known amount to fix test conditions
         assertEq(address(APEth).balance, 32 ether + startingApethBalance);
         _stake1();
         if (workingKeys) {
