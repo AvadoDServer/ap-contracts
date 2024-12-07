@@ -190,10 +190,10 @@ contract WithdrawalTicketTest is APEthTestSetup {
             vm.prank(alice);
             APEth.withdraw(d256);
             if (expectedWithdrawal > balance) {
-                assertEq(alice.balance - aliceEthBalanceBefore, balance, "alice  partial balance");
-                assertEq(APEth.withdrawalQueue(), expectedWithdrawal - balance);
+                assertEq(alice.balance, aliceEthBalanceBefore, "alice  partial balance");
+                assertEq(APEth.withdrawalQueue(), expectedWithdrawal);
                 assertEq(withdrawalQueueTicket.ownerOf(1), alice);
-                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal - balance);
+                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal);
                 assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
             } else {
                 assertApproxEqAbs(alice.balance - aliceEthBalanceBefore, expectedWithdrawal, 1, "alice balance");
@@ -221,10 +221,10 @@ contract WithdrawalTicketTest is APEthTestSetup {
                 assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), expectedWithdrawal);
                 assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(2), block.timestamp);
             } else if (expectedWithdrawal > contractBalance) {
-                assertEq(bob.balance - bobEthBalanceBefore, contractBalance);
-                assertEq(APEth.withdrawalQueue(), expectedWithdrawal - contractBalance);
+                assertEq(bob.balance, bobEthBalanceBefore);
+                assertEq(APEth.withdrawalQueue(), expectedWithdrawal);
                 assertEq(withdrawalQueueTicket.ownerOf(1), bob);
-                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal - contractBalance);
+                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal);
                 assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
             } else {
                 assertEq(bob.balance - bobEthBalanceBefore, expectedWithdrawal);
