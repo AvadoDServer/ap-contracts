@@ -157,10 +157,6 @@ contract APETHV2 is
     function mint() external payable onlyRole(EARLY_ACCESS) returns (uint256) {
         uint256 amount = (msg.value * 1 ether) / _ethPerAPEth(msg.value);
 
-        // if (totalSupply() + amount > INITIAL_CAP) {
-        //     revert APETH__CAP_REACHED();
-        // } TODO: is this to be removed in this version?
-
         uint256 fee = (amount * FEE_AMOUNT) / PRECISION;
         amount = amount - fee;
 
@@ -175,9 +171,10 @@ contract APETHV2 is
     /**
      * @notice This function allows users to withdraw their APEth tokens for ETH
      * @param amount the amount of APEth tokens to withdraw
-     * @dev if there is a withdrawal queue, the user will mint a ticket for their withdrawal (joining the queue)
-     * @dev if there is not enough eth in the contract to cover the withdrawal,and there is no queue,
-     * the user will get a partial withdrawal, and a queue ticket for the remaining amount
+     * @dev if there is a withdrawal queue, or there is not enough eth in the contract to cover the entire withdrawal,
+     * the user will mint a ticket for their withdrawal (joining the queue)
+     * @dev if there is enough eth in the contract to cover the withdrawal,and there is no queue,
+     * the user will recieve the full amount of eth
      */
     function withdraw(uint256 amount) external {
         if (address(withdrawalQueueTicket) == address(0)) {
@@ -190,21 +187,13 @@ contract APETHV2 is
         uint256 contractBalance = address(this).balance;
         uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
         _burn(msg.sender, amount);
-        if (withdrawalQueue > 0) {
+        if (withdrawalQueue > 0 || contractBalance < ethToWithdraw) {
             //if there is a withdrawal queue, there is no partial withdrawal allowed
             withdrawalQueue += ethToWithdraw;
             _mintWithdrawQueueTicket(ethToWithdraw);
-        } else if (contractBalance >= ethToWithdraw) {
+        } else {
             //if the contract has enough eth to cover the withdrawal, the user will get the full withdrawal
             payable(msg.sender).transfer(ethToWithdraw);
-        } else {
-            //if the contract doesn't have enough eth to cover the withdrawal, the user will get a partial withdrawal
-            // TODO: double check this accounting (make a test)
-            // TODO: consider removing the partial withdrawal feature, force the user to make 2 seperate transactions for this (simplifies the code, partial withdrawal is a very specific edge case)
-            uint256 remainingAmount = ethToWithdraw - contractBalance;
-            withdrawalQueue += remainingAmount;
-            _mintWithdrawQueueTicket(remainingAmount); //TODO: fix reentrancy (?)
-            payable(msg.sender).transfer(contractBalance);
         }
     }
 
