@@ -188,10 +188,10 @@ contract APETHV2 is
         uint256 contractBalance = address(this).balance;
         uint256 ethToWithdraw = amount * _ethPerAPEth(0) / 1 ether;
         _burn(msg.sender, amount);
-        if (withdrawalQueue > 0 || contractBalance < ethToWithdraw) {
-            //if there is a withdrawal queue, there is no partial withdrawal allowed
-            withdrawalQueue += ethToWithdraw;
-            _mintWithdrawQueueTicket(ethToWithdraw);
+        if (withdrawalQueueAPETH > 0 || contractBalance - withdrawalQueueETH < ethToWithdraw) {
+            //if there is a withdrawal queue, there is no eth withdrawal allowed
+            withdrawalQueueAPETH += amount;
+            _mintWithdrawQueueTicket(amount);
         } else {
             //if the contract has enough eth to cover the withdrawal, the user will get the full withdrawal
             payable(msg.sender).transfer(ethToWithdraw);
@@ -209,8 +209,11 @@ contract APETHV2 is
         if (address(withdrawalQueueTicket) == address(0)) {
             revert APETH__WITHDRAWALS_NOT_ENABLED();
         }
-        if (block.timestamp < withdrawalQueueTicket.tokenIdToExitQueueTimestamp(ticketId)) {
-            revert APETH__TOO_EARLY();
+        // if (block.timestamp < withdrawalQueueTicket.tokenIdToExitQueueTimestamp(ticketId)) {
+        //     revert APETH__TOO_EARLY();
+        // } //no longer based on a time requirement
+        if (!withdrawalQueueTicket.readyToWithdraw(ticketId)) {
+            revert APETH__TOO_EARLY(); // TODO: rename this error
         }
         if (withdrawalQueueTicket.ownerOf(ticketId) != msg.sender) {
             revert APETH__NOT_OWNER();
@@ -219,7 +222,7 @@ contract APETHV2 is
         if (address(this).balance < amount) {
             revert APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL();
         }
-        withdrawalQueue -= amount;
+        withdrawalQueueETH -= amount;
         withdrawalQueueTicket.burn(ticketId);
         payable(msg.sender).transfer(amount);
     }
@@ -233,6 +236,17 @@ contract APETHV2 is
     }
 
     /**
+     * @notice This is a temporary test function to allow the withdrawal ticket to be marked withdrawable
+     */
+    function setReadyToWithdraw(uint256 ticketId) external {
+        uint256 apethAmount = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(ticketId);
+        uint256 ethAmount = apethAmount * _ethPerAPEth(0) / 1 ether;
+        withdrawalQueueETH += ethAmount;
+        withdrawalQueueAPETH -= apethAmount;
+        withdrawalQueueTicket.setReadyToWithdraw(ticketId, ethAmount);
+    }
+
+    /**
      * @notice This function calculates the ratio of ETH per APEth token - adjusting for what a user just sent into the contract
      * @param _value is the amount in wei deposited to the APEth contract, used to calculate the return value of APEth
      * @return uint256 assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
@@ -240,7 +254,7 @@ contract APETHV2 is
     function _ethPerAPEth(uint256 _value) internal view returns (uint256) {
         // TODO: add in the eigen pod eth balance??
         // don't divide by 0
-        if (totalSupply() == 0 && withdrawalQueue == 0) {
+        if (totalSupply() == 0 && withdrawalQueueAPETH == 0) {
             return 1 ether;
         } else {
             //get eigen pod eth balance??
@@ -248,7 +262,7 @@ contract APETHV2 is
             // subtract the amount a user has deposited from contract balance
             uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
-            return (((totalEth - withdrawalQueue) * 1 ether) / totalSupply());
+            return (((totalEth - withdrawalQueueETH) * 1 ether) / (totalSupply() + withdrawalQueueAPETH)); //TODO: double check this math
         }
     }
 
