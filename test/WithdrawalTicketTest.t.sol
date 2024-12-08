@@ -61,27 +61,19 @@ contract WithdrawalTicketTest is APEthTestSetup {
     }
 
     function test_withdrawalWithTicket() public mintAlice(30 ether) mintBob(2 ether) {
-        assertEq(address(APEth).balance, 32 ether + startingApethBalance);
+        assertEq(address(APEth).balance, 32 ether);
+        console.log("eth per apeth", APEth.ethPerAPEth());
         _stake1();
         if (workingKeys) {
-            assertEq(address(APEth).balance, startingApethBalance);
+            assertEq(address(APEth).balance, 0);
             uint256 aliceApethBalance = APEth.balanceOf(alice);
             uint256 aliceEthBalance = alice.balance;
-            uint256 aliceExpectedWithdrawal = aliceApethBalance * APEth.ethPerAPEth() / 1 ether;
             vm.prank(alice);
             APEth.withdraw(aliceApethBalance);
-            if (startingApethBalance < aliceExpectedWithdrawal) {
-                assertEq(APEth.withdrawalQueue(), aliceExpectedWithdrawal - startingApethBalance);
-                assertEq(withdrawalQueueTicket.ownerOf(1), alice);
-                assertEq(
-                    withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1),
-                    aliceExpectedWithdrawal - startingApethBalance
-                );
-                assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
-            } else {
-                assertEq(APEth.withdrawalQueue(), 0);
-                assertEq(alice.balance - aliceEthBalance, aliceExpectedWithdrawal);
-            }
+            assertEq(APEth.withdrawalQueueAPETH(), aliceApethBalance);
+            assertEq(withdrawalQueueTicket.ownerOf(1), alice);
+            assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), aliceApethBalance);
+            assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
             assertEq(APEth.balanceOf(alice), 0);
         }
     }
@@ -89,73 +81,92 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_multipleWithdrawalsWithTicket() public {
         test_withdrawalWithTicket();
         mintBob2(64 ether);
+        console.log("eth per apeth (after bob's second mint)", APEth.ethPerAPEth());
         _stake2();
         _stake3();
         // bob withdrawal
         uint256 bobEthBalanceBefore = bob.balance;
         uint256 bobApethBalance = APEth.balanceOf(bob);
-        uint256 withdrawalQueue = APEth.withdrawalQueue();
+        uint256 withdrawalQueueAPETH = APEth.withdrawalQueueAPETH();
         uint256 ethPerAPEth = APEth.ethPerAPEth();
         uint256 contractBalance = address(APEth).balance;
         console.log("contract balance", contractBalance);
         vm.prank(bob);
         APEth.withdraw(bobApethBalance);
         assertEq(bob.balance, bobEthBalanceBefore);
-        assertEq(APEth.withdrawalQueue(), withdrawalQueue + bobApethBalance * ethPerAPEth / 1 ether);
+        assertEq(APEth.withdrawalQueueAPETH(), withdrawalQueueAPETH + bobApethBalance);
         assertEq(withdrawalQueueTicket.ownerOf(2), bob);
-        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), bobApethBalance * ethPerAPEth / 1 ether);
+        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), bobApethBalance);
         assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(2), block.timestamp);
-        // }
     }
 
     function test_ticketClaim() public {
         test_multipleWithdrawalsWithTicket();
-        vm.deal(address(APEth), 96 ether);
+        vm.deal(address(APEth), 30 ether);
+        console.log("eth per apeth (after deal 30)", APEth.ethPerAPEth());
         //advance block.timestamp by one week
-        skip(1 weeks);
+        // skip(1 weeks);
+        APEth.setReadyToWithdraw(1);
+        console.log("eth per apeth (after setReadyToWithdraw 1)", APEth.ethPerAPEth());
+        vm.deal(address(APEth), 96 ether);
+        console.log("eth per apeth (after deal 96)", APEth.ethPerAPEth());
+        APEth.setReadyToWithdraw(2);
+        console.log("eth per apeth (after setReadyToWithdraw 2)", APEth.ethPerAPEth());
+        vm.deal(address(APEth), 116 ether);
+        console.log("eth per apeth (after deal 116)", APEth.ethPerAPEth());
         // alice claim
         uint256 aliceEthBalanceBefore = alice.balance;
         uint256 aliceExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
-        uint256 withdrawalQueue = APEth.withdrawalQueue();
+        uint256 withdrawalQueueETH = APEth.withdrawalQueueETH();
         vm.prank(alice);
+        console.log("contract balance before redeemWithdrawQueueTicket 1", address(APEth).balance);
         APEth.redeemWithdrawQueueTicket(1);
+        console.log("eth per apeth (after redeemWithdrawQueueTicket 1)", APEth.ethPerAPEth());
+        console.log("contract balance after redeemWithdrawQueueTicket 1", address(APEth).balance);
         assertEq(alice.balance - aliceEthBalanceBefore, aliceExpectedWithdrawal, "alice balance");
-        assertEq(APEth.withdrawalQueue(), withdrawalQueue - aliceExpectedWithdrawal);
+        assertEq(APEth.withdrawalQueueETH(), withdrawalQueueETH - aliceExpectedWithdrawal);
         // bob claim
         uint256 bobEthBalanceBefore = bob.balance;
         uint256 bobExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2);
         vm.prank(bob);
         APEth.redeemWithdrawQueueTicket(2);
+        console.log("contract balance after redeemWithdrawQueueTicket 2", address(APEth).balance);
+        console.log("eth per apeth (after redeemWithdrawQueueTicket 2)", APEth.ethPerAPEth());
         assertEq(bob.balance - bobEthBalanceBefore, bobExpectedWithdrawal, "bob balance");
-        assertEq(APEth.withdrawalQueue(), 0 ether);
+        assertEq(APEth.withdrawalQueueETH(), 0 ether);
     }
 
     function test_changeWithdrawalDelay() public {
         vm.prank(upgrader);
         APEth.setWithdrawalDelay(2 weeks);
         test_multipleWithdrawalsWithTicket();
-        vm.deal(address(APEth), 96 ether);
+        vm.deal(address(APEth), 30 ether);
         //advance block.timestamp by one week
-        skip(1 weeks);
+        skip(1 weeks); //TODO: change this to match current design (works but is wrong lol)
         // alice claim
         uint256 aliceEthBalanceBefore = alice.balance;
-        uint256 aliceExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
-        uint256 withdrawalQueue = APEth.withdrawalQueue();
         vm.expectRevert(0x72bf9c5a); //"APETH__TOO_EARLY()"
         vm.prank(alice);
         APEth.redeemWithdrawQueueTicket(1);
-        skip(1 weeks);
+
+        // skip(1 weeks);
+        APEth.setReadyToWithdraw(1);
+        vm.deal(address(APEth), 96 ether);
+        APEth.setReadyToWithdraw(2);
+        vm.deal(address(APEth), 116 ether);
+        uint256 aliceExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
+        uint256 withdrawalQueueETH = APEth.withdrawalQueueETH();
         vm.prank(alice);
         APEth.redeemWithdrawQueueTicket(1);
         assertEq(alice.balance - aliceEthBalanceBefore, aliceExpectedWithdrawal, "alice balance");
-        assertEq(APEth.withdrawalQueue(), withdrawalQueue - aliceExpectedWithdrawal);
+        assertEq(APEth.withdrawalQueueETH(), withdrawalQueueETH - aliceExpectedWithdrawal);
         // bob claim
         uint256 bobEthBalanceBefore = bob.balance;
         uint256 bobExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2);
         vm.prank(bob);
         APEth.redeemWithdrawQueueTicket(2);
         assertEq(bob.balance - bobEthBalanceBefore, bobExpectedWithdrawal, "bob balance");
-        assertEq(APEth.withdrawalQueue(), 0 ether);
+        assertEq(APEth.withdrawalQueueETH(), 0 ether);
     }
 
     function test_fuzz_partialWithdrawal(uint128 a, uint128 b, uint64 c, uint128 d) public mintAlice(a) mintBob(b) {
@@ -167,7 +178,6 @@ contract WithdrawalTicketTest is APEthTestSetup {
         vm.deal(address(this), c256);
         payable(address(APEth)).transfer(c256);
         uint256 balance = a256 + b256 + c256 + startingApethBalance;
-        // }
         assertEq(address(APEth).balance, balance, "contract balance does not match calculated");
         //check eth per apeth
         // this will not work if cap is set to something less than type(uint128).max
@@ -190,13 +200,13 @@ contract WithdrawalTicketTest is APEthTestSetup {
             vm.prank(alice);
             APEth.withdraw(d256);
             if (expectedWithdrawal > balance) {
-                assertEq(alice.balance, aliceEthBalanceBefore, "alice  partial balance");
-                assertEq(APEth.withdrawalQueue(), expectedWithdrawal);
+                assertEq(alice.balance, aliceEthBalanceBefore, "alice balance 1");
+                assertEq(APEth.withdrawalQueueAPETH(), d256);
                 assertEq(withdrawalQueueTicket.ownerOf(1), alice);
-                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal);
+                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), d256);
                 assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
             } else {
-                assertApproxEqAbs(alice.balance - aliceEthBalanceBefore, expectedWithdrawal, 1, "alice balance");
+                assertApproxEqAbs(alice.balance - aliceEthBalanceBefore, expectedWithdrawal, 1, "alice balance 2");
             }
         }
     }
@@ -207,24 +217,24 @@ contract WithdrawalTicketTest is APEthTestSetup {
         // bob withdrawal
         uint256 bobEthBalanceBefore = bob.balance;
         uint256 bobApethBalance = APEth.balanceOf(bob);
-        uint256 withdrawalQueue = APEth.withdrawalQueue();
+        uint256 withdrawalQueueAPETH = APEth.withdrawalQueueAPETH();
         uint256 contractBalance = address(APEth).balance;
         if (bobApethBalance > 0 && e256 > 0) {
             e256 = e256 % bobApethBalance;
             uint256 expectedWithdrawal = e256 * APEth.ethPerAPEth() / 1 ether;
             vm.prank(bob);
             APEth.withdraw(e256);
-            if (withdrawalQueue > 0) {
+            if (withdrawalQueueAPETH > 0) {
                 assertEq(bob.balance, bobEthBalanceBefore);
-                assertEq(APEth.withdrawalQueue(), withdrawalQueue + expectedWithdrawal);
+                assertEq(APEth.withdrawalQueueAPETH(), withdrawalQueueAPETH + e256);
                 assertEq(withdrawalQueueTicket.ownerOf(2), bob);
-                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), expectedWithdrawal);
+                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2), e256);
                 assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(2), block.timestamp);
             } else if (expectedWithdrawal > contractBalance) {
                 assertEq(bob.balance, bobEthBalanceBefore);
-                assertEq(APEth.withdrawalQueue(), expectedWithdrawal);
+                assertEq(APEth.withdrawalQueueAPETH(), e256);
                 assertEq(withdrawalQueueTicket.ownerOf(1), bob);
-                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), expectedWithdrawal);
+                assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), e256);
                 assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
             } else {
                 assertEq(bob.balance - bobEthBalanceBefore, expectedWithdrawal);
@@ -234,11 +244,11 @@ contract WithdrawalTicketTest is APEthTestSetup {
 
     function test_fuzz_ticketClaim(uint128 a, uint128 b, uint64 c, uint128 d, uint128 e) public {
         test_fuzz_multipleWithdrawalsWithTicket(a, b, c, d, e);
-        if (APEth.withdrawalQueue() > 0) {
-            vm.deal(address(this), 32 ether);
-            payable(address(APEth)).transfer(32 ether);
+        if (APEth.withdrawalQueueAPETH() > 0) {
+            vm.deal(address(APEth), address(APEth).balance + 32 ether);
             //advance block.timestamp by one week
-            skip(1 weeks);
+            // skip(1 weeks);
+            APEth.setReadyToWithdraw(1);
             if (withdrawalQueueTicket.ownerOf(1) == alice) {
                 uint256 aliceEthBalanceBefore = alice.balance;
                 uint256 expectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
@@ -252,7 +262,8 @@ contract WithdrawalTicketTest is APEthTestSetup {
                 APEth.redeemWithdrawQueueTicket(1);
                 assertEq(bob.balance - bobEthBalanceBefore, expectedWithdrawal, "bob balance");
             }
-            if (APEth.withdrawalQueue() > 0) {
+            if (APEth.withdrawalQueueAPETH() > 0) {
+                APEth.setReadyToWithdraw(2);
                 uint256 bobEthBalanceBefore = bob.balance;
                 uint256 expectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2);
                 vm.prank(bob);
@@ -295,7 +306,8 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_revert_redeemNotEnoughEth() public {
         test_multipleWithdrawalsWithTicket();
         //advance block.timestamp by one week
-        skip(1 weeks);
+        // skip(1 weeks);
+        APEth.setReadyToWithdraw(1);
         // alice claim
         vm.expectRevert(0x57b43b8f); //"APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL()"
         vm.prank(alice);
@@ -306,7 +318,8 @@ contract WithdrawalTicketTest is APEthTestSetup {
         test_multipleWithdrawalsWithTicket();
         vm.deal(address(APEth), 15 ether);
         //advance block.timestamp by one week
-        skip(1 weeks);
+        // skip(1 weeks);
+        APEth.setReadyToWithdraw(1);
         vm.expectRevert(0x4b63d80d); // APETH__NOT_OWNER()
         vm.prank(vm.addr(69));
         APEth.redeemWithdrawQueueTicket(1);

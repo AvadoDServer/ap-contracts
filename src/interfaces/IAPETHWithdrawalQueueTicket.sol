@@ -30,7 +30,7 @@ interface IAPETHWithdrawalQueueTicket {
     event Burn(address burner, uint256 tokenId);
 
     /// @notice occurs when a ticket is set to ready to withdraw
-    event ReadyToWithdraw(uint256 tokenId);
+    event ReadyToWithdraw(address sender, uint256 tokenId);
 
     /**
      *
@@ -47,7 +47,11 @@ interface IAPETHWithdrawalQueueTicket {
 
     function tokenIdToExitQueueExitAmount(uint256 tokenId) external view returns (uint256);
 
+    function readyToWithdraw(uint256 tokenId) external view returns (bool);
+
     function ownerOf(uint256 tokenId) external view returns (address);
 
     function tokenURI(uint256 tokenId) external view returns (string memory);
+
+    function setReadyToWithdraw(uint256 tokenId, uint256 newAmount) external;
 }
