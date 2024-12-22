@@ -5,6 +5,7 @@ import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
 import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
 import {APETHWithdrawalQueueTicket} from "../src/APETHWithdrawalQueueTicket.sol";
+import {APVault} from "../src/APVault.sol";
 import {HelperConfig, NetworkConfig} from "./HelperConfig.s.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Script} from "forge-std/Script.sol";
@@ -14,6 +15,7 @@ import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {IAPETHWithdrawalQueueTicket} from "../src/interfaces/IAPETHWithdrawalQueueTicket.sol";
+import {IAPVault} from "../src/interfaces/IAPVault.sol";
 
 error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 

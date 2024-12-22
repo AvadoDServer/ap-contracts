@@ -15,8 +15,9 @@ pragma solidity 0.8.21;
  *
  */
 import {AccessControlUpgradeable} from
-    "@openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+    "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {IAPVault} from "./interfaces/IAPVault.sol";
 
 /**
  *
@@ -29,7 +30,7 @@ import {UUPSUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/pro
  * CONTRACT
  *
  */
-contract APVault is AccessControlUpgradeable, UUPSUpgradeable {
+contract APVault is AccessControlUpgradeable, UUPSUpgradeable, IAPVault {
     /**
      *
      * STORAGE

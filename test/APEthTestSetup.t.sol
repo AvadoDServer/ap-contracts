@@ -22,6 +22,9 @@ contract APEthTestSetup is Test, Deploy {
     uint256 startingTotalSupply;
     uint256 startingEthPerApeth;
 
+    uint256[] ticOne = new uint256[](1);
+    uint256[] ticTwo = new uint256[](1);
+
     //set bool to "true" when fresh keys are added, set to "false" to kill "reconstructed DepositData does not match supplied deposit_data_root"
     bool public workingKeys = true;
 
@@ -69,6 +72,8 @@ contract APEthTestSetup is Test, Deploy {
         startingApethBalance = address(APEth).balance;
         startingTotalSupply = APEth.totalSupply();
         startingEthPerApeth = APEth.ethPerAPEth();
+        ticOne[0] = 1;
+        ticTwo[0] = 2;
     }
 
     modifier mintAlice(uint256 amount) {

@@ -291,12 +291,13 @@ contract APETHV2 is
      * @param amount the amount of eth to be returned to the contract from the vault
      *
      */
+    // TODO: consider this arrangement, it allows the admin to give different users different rewards :/
     function withdrawFromVault(uint256 validatorsExited, uint256[] calldata ticketIds, uint256 amount)
         external
         onlyRole(ETH_STAKER)
     {
         // withdraw from the vault
-        apVault.withdraw(address(this), amount);
+        apVault.withdraw(amount);
         // reduce the number of active validators
         activeValidators -= validatorsExited;
         // set the tickets as claimable

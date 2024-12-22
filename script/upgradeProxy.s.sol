@@ -1,17 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ScriptBase, APETH, APETHV2, Upgrades, IAPETHWithdrawalQueueTicket, Options} from "./scriptBase.s.sol";
+import {
+    ScriptBase, APETH, APETHV2, Upgrades, IAPETHWithdrawalQueueTicket, IAPVault, Options
+} from "./scriptBase.s.sol";
 
 contract UpgradeProxy is ScriptBase {
     address _proxyAddress;
     Options _options;
 
-    function run(address apEth, address upgrader, IAPETHWithdrawalQueueTicket withdrawalQueue, Options memory options)
-        public
-    {
+    function run(
+        address apEth,
+        address upgrader,
+        IAPETHWithdrawalQueueTicket withdrawalQueue,
+        IAPVault apVault,
+        Options memory options
+    ) public {
         Upgrades.upgradeProxy(
-            apEth, "APETHV2.sol:APETHV2", abi.encodeCall(APETHV2.initialize, (withdrawalQueue)), options, upgrader
+            apEth,
+            "APETHV2.sol:APETHV2",
+            abi.encodeCall(APETHV2.initialize, (withdrawalQueue, apVault)),
+            options,
+            upgrader
         );
     }
 
