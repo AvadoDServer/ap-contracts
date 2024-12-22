@@ -56,4 +56,6 @@ interface IAPETH {
     function callEigenPodManager(bytes memory data) external;
 
     function transferToken(address tokenAddress, address to, uint256 amount) external;
+
+    function withdrawalFromVault(uint256 validatorsExited, uint256[] calldata ticketIds, uint256 amount) external;
 }
