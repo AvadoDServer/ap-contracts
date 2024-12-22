@@ -9,7 +9,6 @@ pragma solidity 0.8.21;
  * - ERC20 token functionality
  * - Earns fees from staking (provided by DVT operators screened by Avado)
  * - Earns Restaking Fees from Eigenlayer
- * - withdrawals are not yet enabled
  */
 
 /**
@@ -30,6 +29,7 @@ import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
 import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
+import {IAPVault} from "./interfaces/IAPVault.sol";
 
 /**
  *
@@ -115,6 +115,7 @@ contract APETHV2 is
     uint256 public withdrawalQueueAPETH;
     uint256 public withdrawalDelay;
     IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
+    IAPVault public apVault;
 
     /**
      *
@@ -139,9 +140,13 @@ contract APETHV2 is
         FEE_AMOUNT = feeAmount;
     }
 
-    function initialize(IAPETHWithdrawalQueueTicket _withdrawalQueueTicket) public reinitializer(2) {
+    function initialize(IAPETHWithdrawalQueueTicket _withdrawalQueueTicket, IAPVault _apVault)
+        public
+        reinitializer(2)
+    {
         withdrawalDelay = 1 weeks;
         withdrawalQueueTicket = _withdrawalQueueTicket;
+        apVault = _apVault;
     }
 
     /**
@@ -236,17 +241,6 @@ contract APETHV2 is
     }
 
     /**
-     * @notice This is a temporary test function to allow the withdrawal ticket to be marked withdrawable
-     */
-    function setReadyToWithdraw(uint256 ticketId) external {
-        uint256 apethAmount = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(ticketId);
-        uint256 ethAmount = apethAmount * _ethPerAPEth(0) / 1 ether;
-        withdrawalQueueETH += ethAmount;
-        withdrawalQueueAPETH -= apethAmount;
-        withdrawalQueueTicket.setReadyToWithdraw(ticketId, ethAmount);
-    }
-
-    /**
      * @notice This function calculates the ratio of ETH per APEth token - adjusting for what a user just sent into the contract
      * @param _value is the amount in wei deposited to the APEth contract, used to calculate the return value of APEth
      * @return uint256 assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
@@ -290,6 +284,34 @@ contract APETHV2 is
 
     /**
      *
+     * @notice allows the contract owner to withdrawal from APVault, set some withdrawal tickets as claimable, and reduce validator count
+     * @notice this must all be done in one txn, so that the validator count is reduced in the same block as the eth is returned
+     * @param validatorsExited the number of validators-worth-of-eth which will be returned in this transaction (plus beacon rewards)
+     * @param ticketIds an array of ticketIds to be marked as claimable
+     * @param amount the amount of eth to be returned to the contract from the vault
+     *
+     */
+    function withdrawFromVault(uint256 validatorsExited, uint256[] calldata ticketIds, uint256 amount)
+        external
+        onlyRole(ETH_STAKER)
+    {
+        // withdraw from the vault
+        apVault.withdraw(address(this), amount);
+        // reduce the number of active validators
+        activeValidators -= validatorsExited;
+        // set the tickets as claimable
+        for (uint256 i = 0; i < ticketIds.length; i++) {
+            uint256 ticketId = ticketIds[i];
+            uint256 apethAmount = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(ticketId);
+            uint256 ethAmount = apethAmount * _ethPerAPEth(0) / 1 ether;
+            withdrawalQueueETH += ethAmount;
+            withdrawalQueueAPETH -= apethAmount;
+            withdrawalQueueTicket.setReadyToWithdraw(ticketId, ethAmount);
+        }
+    }
+
+    /**
+     *
      * @notice allows contract owner to call functions on the ssvNetwork
      * @dev the likley functions called would include "registerValidator" and "setFeeRecipientAddress"
      * @param data the calldata for the ssvNetwork
@@ -312,6 +334,8 @@ contract APETHV2 is
         (bool success,) = eigenPod.call(data);
         require(success, "Call failed");
     }
+
+    // TODO: does this need a function that will only let the admin withdrawal to the valut???
 
     /**
      *
