@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 import {APETHV2} from "../src/APETHV2.sol";
 import {APETHWithdrawalQueueTicket} from "../src/APETHWithdrawalQueueTicket.sol";
+import {APVault} from "../src/APVault.sol";
 import {IAPETH} from "../src/interfaces/IAPETH.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Script} from "forge-std/Script.sol";
@@ -15,6 +16,7 @@ import {Utils} from "./utils/Utils.sol";
 contract Deploy is Script, Utils {
     APETHV2 public APEth;
     APETHWithdrawalQueueTicket public withdrawalQueueTicket;
+    APVault public apVault;
     ERC1967Proxy public proxy;
 
     bytes32 public constant ETH_STAKER = keccak256("ETH_STAKER");
@@ -57,6 +59,7 @@ contract Deploy is Script, Utils {
         //build constructor for APETHV2
         options.constructorData = abi.encode(eigenPodManager, delegationManager, ssvNetwork, feeAmount);
         _deployWithdrawalQueue();
+        _deployAPVault();
         _upgradeApeth();
     }
 
@@ -74,12 +77,26 @@ contract Deploy is Script, Utils {
         withdrawalQueueTicket = APETHWithdrawalQueueTicket(address(apethWQT1967Proxy));
     }
 
+    function _deployAPVault() internal {
+        console.log("Deploying APVault");
+        vm.startBroadcast();
+        APVault apVaultImplementation = new APVault();
+        if (debug) console.log("apVaultImplementation", address(apVaultImplementation));
+        if (debug) console.log("code length: ", address(apVaultImplementation).code.length);
+        ERC1967Proxy apVault1967Proxy = new ERC1967Proxy(
+            address(apVaultImplementation), abi.encodeCall(APVault.initialize, (owner, address(proxy)))
+        );
+        vm.stopBroadcast();
+        if (debug) console.log("apVault1967Proxy", address(apVault1967Proxy));
+        apVault = APVault(address(apVault1967Proxy));
+    }
+
     function _upgradeApeth() internal {
         vm.startBroadcast(upgrader);
         Upgrades.upgradeProxy(
             address(proxy),
             "APETHV2.sol:APETHV2",
-            abi.encodeCall(APETHV2.initialize, (withdrawalQueueTicket)),
+            abi.encodeCall(APETHV2.initialize, (withdrawalQueueTicket, apVault)),
             options,
             upgrader
         );
