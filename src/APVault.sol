@@ -63,6 +63,10 @@ contract APVault is AccessControlUpgradeable, UUPSUpgradeable, IAPVault {
         emit Withdraw(tx.origin, _amount);
     }
 
+    receive() external payable {}
+
+    fallback() external payable {}
+
     /**
      *
      * INTERNAL FUNCTIONS

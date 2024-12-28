@@ -88,7 +88,7 @@ contract Deploy is Script, Utils {
         );
         vm.stopBroadcast();
         if (debug) console.log("apVault1967Proxy", address(apVault1967Proxy));
-        apVault = APVault(address(apVault1967Proxy));
+        apVault = APVault(payable(address(apVault1967Proxy)));
     }
 
     function _upgradeApeth() internal {
