@@ -102,10 +102,9 @@ contract WithdrawalTicketTest is APEthTestSetup {
 
     function test_ticketClaim() public {
         test_multipleWithdrawalsWithTicket();
-        vm.deal(address(apVault), 116 ether); // TODO: look at this number more closely...
+        vm.deal(address(apVault), 100 ether); 
         vm.prank(staker);
-        // TODO: once accounting is confirmed, combine these to test multiple claims in one txn
-        APEth.withdrawFromVault(1, ticOne, 33 ether);
+        APEth.withdrawFromVault(1, ticOne, 34 ether);
         console.log("eth per apeth (after withdrawFromVault 1)", APEth.ethPerAPEth());
         vm.prank(staker);
         APEth.withdrawFromVault(2, ticTwo, 66 ether);
@@ -132,41 +131,33 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(APEth.withdrawalQueueETH(), 0 ether);
     }
 
-    // TODO: remove or update to match current design
-    // function test_changeWithdrawalDelay() public {
-    //     vm.prank(upgrader);
-    //     APEth.setWithdrawalDelay(2 weeks);
-    //     test_multipleWithdrawalsWithTicket();
-    //     vm.deal(address(APEth), 30 ether);
-    //     //advance block.timestamp by one week
-    //     skip(1 weeks); //TODO: change this to match current design (works but is wrong lol)
-    //     // alice claim
-    //     uint256 aliceEthBalanceBefore = alice.balance;
-    //     vm.expectRevert(0x72bf9c5a); //"APETH__TOO_EARLY()"
-    //     vm.prank(alice);
-    //     APEth.redeemWithdrawQueueTicket( ?????);
-    //     //set as ready
-    //     vm.prank(staker);
-    //     APEth.withdrawFromVault(1);
-    //     vm.deal(address(APEth), 96 ether);
-
-    //     vm.prank(staker);
-    //     APEth.withdrawFromVault( ?????? );
-    //     vm.deal(address(APEth), 116 ether);
-    //     uint256 aliceExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
-    //     uint256 withdrawalQueueETH = APEth.withdrawalQueueETH();
-    //     vm.prank(alice);
-    //     APEth.redeemWithdrawQueueTicket(1);
-    //     assertEq(alice.balance - aliceEthBalanceBefore, aliceExpectedWithdrawal, "alice balance");
-    //     assertEq(APEth.withdrawalQueueETH(), withdrawalQueueETH - aliceExpectedWithdrawal);
-    //     // bob claim
-    //     uint256 bobEthBalanceBefore = bob.balance;
-    //     uint256 bobExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2);
-    //     vm.prank(bob);
-    //     APEth.redeemWithdrawQueueTicket(2);
-    //     assertEq(bob.balance - bobEthBalanceBefore, bobExpectedWithdrawal, "bob balance");
-    //     assertEq(APEth.withdrawalQueueETH(), 0 ether);
-    // }
+    function test_ticketClaimJointWithdrawFromVault() public {
+        test_multipleWithdrawalsWithTicket();
+        vm.deal(address(apVault), 100 ether); 
+        console.log("eth per apeth (before withdrawFromVault)", APEth.ethPerAPEth());
+        vm.prank(staker);
+        APEth.withdrawFromVault(3, ticBoth, 100 ether);
+        console.log("eth per apeth (after withdrawFromVault)", APEth.ethPerAPEth());
+        // alice claim
+        uint256 aliceEthBalanceBefore = alice.balance;
+        uint256 aliceExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
+        uint256 withdrawalQueueETH = APEth.withdrawalQueueETH();
+        vm.prank(alice);
+        APEth.redeemWithdrawQueueTicket(1);
+        console.log("eth per apeth (after redeemWithdrawQueueTicket 1)", APEth.ethPerAPEth());
+        console.log("contract balance after redeemWithdrawQueueTicket 1", address(APEth).balance);
+        assertEq(alice.balance - aliceEthBalanceBefore, aliceExpectedWithdrawal, "alice balance");
+        assertEq(APEth.withdrawalQueueETH(), withdrawalQueueETH - aliceExpectedWithdrawal);
+        // bob claim
+        uint256 bobEthBalanceBefore = bob.balance;
+        uint256 bobExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2);
+        vm.prank(bob);
+        APEth.redeemWithdrawQueueTicket(2);
+        console.log("contract balance after redeemWithdrawQueueTicket 2", address(APEth).balance);
+        console.log("eth per apeth (after redeemWithdrawQueueTicket 2)", APEth.ethPerAPEth());
+        assertEq(bob.balance - bobEthBalanceBefore, bobExpectedWithdrawal, "bob balance");
+        assertEq(APEth.withdrawalQueueETH(), 0 ether);
+    }
 
     function test_fuzz_partialWithdrawal(uint128 a, uint128 b, uint64 c, uint128 d)
         public
