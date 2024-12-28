@@ -48,8 +48,8 @@ error APETH__CAP_REACHED();
 /// @notice thrown when the user tries to withdraw more than they have
 error APETH__WITHDRAWAL_TOO_LARGE(uint256 amount);
 
-/// @notice thrown when the user tries to claim a ticket too early
-error APETH__TOO_EARLY();
+/// @notice thrown when the user tries to claim a ticket before it has been set as withdrawable
+error APETH__PETH__WITHDRAWAL_NOT_READY();
 
 /// @notice thrown when the user tries to claim a ticket that is not theirs
 error APETH__NOT_OWNER();
@@ -94,7 +94,6 @@ contract APETHV2 is
     uint256 private constant PRECISION = 1e6;
 
     /// @dev Immutables because will disappear in the next upgrade
-    // uint256 private immutable INITIAL_CAP; //TODO: if the cap is NOT going to be removed in this version, reinitialize it
 
     /// @dev Immutables because these are not going to change
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -214,11 +213,8 @@ contract APETHV2 is
         if (address(withdrawalQueueTicket) == address(0)) {
             revert APETH__WITHDRAWALS_NOT_ENABLED();
         }
-        // if (block.timestamp < withdrawalQueueTicket.tokenIdToExitQueueTimestamp(ticketId)) {
-        //     revert APETH__TOO_EARLY();
-        // } //no longer based on a time requirement
         if (!withdrawalQueueTicket.readyToWithdraw(ticketId)) {
-            revert APETH__TOO_EARLY(); // TODO: rename this error
+            revert APETH__WITHDRAWAL_NOT_READY();
         }
         if (withdrawalQueueTicket.ownerOf(ticketId) != msg.sender) {
             revert APETH__NOT_OWNER();
@@ -246,7 +242,6 @@ contract APETHV2 is
      * @return uint256 assumes 18 decimals (divide by 1e18 to get ratio of eth/apeth)
      */
     function _ethPerAPEth(uint256 _value) internal view returns (uint256) {
-        // TODO: add in the eigen pod eth balance??
         // don't divide by 0
         if (totalSupply() == 0 && withdrawalQueueAPETH == 0) {
             return 1 ether;
@@ -256,7 +251,7 @@ contract APETHV2 is
             // subtract the amount a user has deposited from contract balance
             uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
-            return (((totalEth - withdrawalQueueETH) * 1 ether) / (totalSupply() + withdrawalQueueAPETH)); //TODO: double check this math
+            return (((totalEth - withdrawalQueueETH) * 1 ether) / (totalSupply() + withdrawalQueueAPETH));
         }
     }
 
@@ -291,7 +286,6 @@ contract APETHV2 is
      * @param amount the amount of eth to be returned to the contract from the vault
      *
      */
-    // TODO: consider this arrangement, it allows the admin to give different users different rewards :/
     function withdrawFromVault(uint256 validatorsExited, uint256[] calldata ticketIds, uint256 amount)
         external
         onlyRole(ETH_STAKER)
