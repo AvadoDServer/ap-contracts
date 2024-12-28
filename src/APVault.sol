@@ -57,7 +57,6 @@ contract APVault is AccessControlUpgradeable, UUPSUpgradeable, IAPVault {
      * PUBLIC FUNCTIONS
      *
      */
-    // TODO: Consider: The problem with this construction is that admin can set any address as APETH_CONTRACT, but since the contract is upgradeable... it's not a big deal
     function withdraw(uint256 _amount) public onlyRole(APETH_CONTRACT) {
         payable(msg.sender).transfer(_amount);
         emit Withdraw(tx.origin, _amount);
