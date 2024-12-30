@@ -49,7 +49,7 @@ error APETH__CAP_REACHED();
 error APETH__WITHDRAWAL_TOO_LARGE(uint256 amount);
 
 /// @notice thrown when the user tries to claim a ticket before it has been set as withdrawable
-error APETH__PETH__WITHDRAWAL_NOT_READY();
+error APETH__WITHDRAWAL_NOT_READY();
 
 /// @notice thrown when the user tries to claim a ticket that is not theirs
 error APETH__NOT_OWNER();
