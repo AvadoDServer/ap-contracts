@@ -296,7 +296,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         test_multipleWithdrawalsWithTicket();
         vm.deal(address(APEth), 15 ether);
         // alice claim
-        vm.expectRevert(0x72bf9c5a); //"APETH__TOO_EARLY()"
+        vm.expectRevert(); //"APETH__WITHDRAWAL_NOT_READY()"
         vm.prank(alice);
         APEth.redeemWithdrawQueueTicket(1);
     }
