@@ -98,4 +98,12 @@ contract APETHTestRevert is APEthTestSetup {
         vm.expectRevert("Call failed");
         APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
+
+    function test_Revert_MintPublic_WhenLocked() public {
+        vm.prank(owner);
+        APEth.setIsUnlocked(false);
+        hoax(alice);
+        vm.expectRevert(); //"APETH__CONTRACT_LOCKED()"
+        APEth.mintPublic{value: 1 ether}();
+    }
 }

@@ -70,6 +70,11 @@ contract APEthTestSetup is Test, Deploy {
         newOwner = vm.addr(3);
         run();
         vm.deal(address(APEth), 0); // set balance to 0 for testing
+
+        // Unlock public minting
+        vm.prank(owner);
+        APEth.setIsUnlocked(true);
+
         startingApethBalance = address(APEth).balance;
         startingTotalSupply = APEth.totalSupply();
         startingEthPerApeth = APEth.ethPerAPEth();
@@ -80,15 +85,13 @@ contract APEthTestSetup is Test, Deploy {
     }
 
     modifier mintAlice(uint256 amount) {
-        vm.prank(owner);
-        APEth.grantRole(EARLY_ACCESS, alice);
         uint256 aliceBalance = _calculateAmountLessFee(amount);
         if (amount > cap) {
             aliceBalance = 0;
             vm.expectRevert(); //APETH__CAP_REACHED()
         }
         hoax(alice);
-        APEth.mint{value: amount}();
+        APEth.mintPublic{value: amount}();
         assertApproxEqAbs(APEth.balanceOf(alice), aliceBalance, 3);
         if (amount > cap) {
             vm.expectRevert(); //APETH__CAP_REACHED()
@@ -98,15 +101,13 @@ contract APEthTestSetup is Test, Deploy {
     }
 
     modifier mintBob(uint256 amount) {
-        vm.prank(owner);
-        APEth.grantRole(EARLY_ACCESS, bob);
         uint256 bobBalance = _calculateAmountLessFee(amount) + APEth.balanceOf(bob);
         if (amount > cap) {
             bobBalance = 0;
             vm.expectRevert(); //APETH__CAP_REACHED()
         }
         hoax(bob);
-        APEth.mint{value: amount}();
+        APEth.mintPublic{value: amount}();
         assertApproxEqAbs(APEth.balanceOf(bob), bobBalance, 3);
         _;
     }
