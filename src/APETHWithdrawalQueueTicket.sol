@@ -191,7 +191,7 @@ contract APETHWithdrawalQueueTicket is
     }
 
     function getTime(uint256 timestamp) public view returns (string memory) {
-        (uint256 year, uint256 month, uint256 day, uint256 hour, uint256 minute, /*uint256 second*/) =
+        (uint256 year, uint256 month, uint256 day, uint256 hour, uint256 minute, /*uint256 second*/ ) =
             dateTimeContract.timestampToDateTime(timestamp);
         string[12] memory months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         string memory leadingZeroHr = hour < 10 ? "0" : "";

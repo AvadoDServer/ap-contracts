@@ -29,7 +29,6 @@ import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
 import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
-import {IAPVault} from "./interfaces/IAPVault.sol";
 
 /**
  *
@@ -114,7 +113,6 @@ contract APETHV2 is
     uint256 public withdrawalQueueAPETH;
     uint256 public withdrawalDelay;
     IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
-    IAPVault public apVault;
 
     /**
      *
@@ -139,13 +137,9 @@ contract APETHV2 is
         FEE_AMOUNT = feeAmount;
     }
 
-    function initialize(IAPETHWithdrawalQueueTicket _withdrawalQueueTicket, IAPVault _apVault)
-        public
-        reinitializer(2)
-    {
+    function initialize(IAPETHWithdrawalQueueTicket _withdrawalQueueTicket) public reinitializer(2) {
         withdrawalDelay = 1 weeks;
         withdrawalQueueTicket = _withdrawalQueueTicket;
-        apVault = _apVault;
     }
 
     /**
@@ -279,7 +273,7 @@ contract APETHV2 is
 
     /**
      *
-     * @notice allows the contract owner to withdrawal from APVault, set some withdrawal tickets as claimable, and reduce validator count
+     * @notice allows the contract owner to set some withdrawal tickets as claimable, and reduce validator count
      * @notice this must all be done in one txn, so that the validator count is reduced in the same block as the eth is returned
      * @param validatorsExited the number of validators-worth-of-eth which will be returned in this transaction (plus beacon rewards)
      * @param ticketIds an array of ticketIds to be marked as claimable
@@ -291,7 +285,7 @@ contract APETHV2 is
         onlyRole(ETH_STAKER)
     {
         // withdraw from the vault
-        apVault.withdraw(amount);
+        // apVault.withdraw(amount); TODO: figure out how this works without the vault contract...
         // reduce the number of active validators
         activeValidators -= validatorsExited;
         // set the tickets as claimable

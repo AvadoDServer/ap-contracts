@@ -100,7 +100,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
 
     function test_ticketClaim() public {
         test_multipleWithdrawalsWithTicket();
-        vm.deal(address(apVault), 100 ether);
+        vm.deal(address(APEth), 100 ether);
         vm.prank(staker);
         APEth.withdrawFromVault(1, ticOne, 34 ether);
         console.log("eth per apeth (after withdrawFromVault 1)", APEth.ethPerAPEth());
@@ -131,7 +131,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
 
     function test_ticketClaimJointWithdrawFromVault() public {
         test_multipleWithdrawalsWithTicket();
-        vm.deal(address(apVault), 100 ether);
+        vm.deal(address(APEth), 100 ether);
         console.log("eth per apeth (before withdrawFromVault)", APEth.ethPerAPEth());
         vm.prank(staker);
         APEth.withdrawFromVault(3, ticBoth, 100 ether);
@@ -243,7 +243,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_fuzz_ticketClaim(uint128 a, uint128 b, uint64 c, uint128 d, uint128 e) public {
         uint256 ethInValidators = test_fuzz_multipleWithdrawalsWithTicket(a, b, c, d, e);
         if (APEth.withdrawalQueueAPETH() > 0) {
-            vm.deal(address(apVault), ethInValidators);
+            vm.deal(address(APEth), ethInValidators); // TODO: double check the logic (apvault was just ripped out)
             vm.prank(staker);
             APEth.withdrawFromVault(1, ticOne, ethInValidators);
             if (withdrawalQueueTicket.ownerOf(1) == alice) {
@@ -313,7 +313,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
 
     function test_revert_redeemNotOwner() public {
         test_multipleWithdrawalsWithTicket();
-        vm.deal(address(apVault), 33 ether);
+        vm.deal(address(APEth), 33 ether);
         vm.prank(staker);
         APEth.withdrawFromVault(1, ticOne, 33);
         vm.expectRevert(0x4b63d80d); // APETH__NOT_OWNER()
