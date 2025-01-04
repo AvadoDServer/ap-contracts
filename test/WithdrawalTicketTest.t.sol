@@ -243,7 +243,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_fuzz_ticketClaim(uint128 a, uint128 b, uint64 c, uint128 d, uint128 e) public {
         uint256 ethInValidators = test_fuzz_multipleWithdrawalsWithTicket(a, b, c, d, e);
         if (APEth.withdrawalQueueAPETH() > 0) {
-            vm.deal(address(APEth), ethInValidators); // TODO: double check the logic (apvault was just ripped out)
+            vm.deal(address(APEth), ethInValidators + startingApethBalance);
             vm.prank(staker);
             APEth.withdrawFromVault(1, ticOne, ethInValidators);
             if (withdrawalQueueTicket.ownerOf(1) == alice) {
