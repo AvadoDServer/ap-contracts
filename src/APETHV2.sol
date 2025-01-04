@@ -417,6 +417,7 @@ contract APETHV2 is
     }
 
     function setIsUnlocked(bool _isUnlocked) external onlyRole(UPGRADER) {
+        // TODO: another way to handle this would be to lock when withdrawalQueueAPETH > 0
         isUnlocked = _isUnlocked;
     }
 }
