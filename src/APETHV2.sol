@@ -59,6 +59,9 @@ error APETH__WITHDRAWALS_NOT_ENABLED();
 /// @notice thrown if the upgrader tries to set the withdrawal queue ticket after it has already been set
 error APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
 
+/// @notice thrown if the contract is locked
+error APETH__CONTRACT_LOCKED();
+
 /**
  *
  * CONTRACT
@@ -121,7 +124,7 @@ contract APETHV2 is
      *
      */
     modifier onlyWhenUnlocked() {
-        require(isUnlocked, "Contract is locked");
+        if (!isUnlocked) revert APETH__CONTRACT_LOCKED();
         _;
     }
 
@@ -414,5 +417,9 @@ contract APETHV2 is
 
     function setWithdrawalDelay(uint256 _withdrawalDelay) external onlyRole(UPGRADER) {
         withdrawalDelay = _withdrawalDelay;
+    }
+
+    function setIsUnlocked(bool _isUnlocked) external onlyRole(UPGRADER) {
+        isUnlocked = _isUnlocked;
     }
 }
