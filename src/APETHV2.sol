@@ -326,14 +326,11 @@ contract APETHV2 is
      * @notice this must all be done in one txn, so that the validator count is reduced in the same block as the eth is returned
      * @param validatorsExited the number of validators-worth-of-eth which will be returned in this transaction (plus beacon rewards)
      * @param ticketIds an array of ticketIds to be marked as claimable
-     * @param amount the amount of eth to be returned to the contract from the vault
      */
-    function withdrawFromVault(uint256 validatorsExited, uint256[] calldata ticketIds, uint256 amount)
+    function setWithdrawalTickets(uint256 validatorsExited, uint256[] calldata ticketIds)
         external
         onlyRole(ETH_STAKER)
     {
-        // withdraw from the vault
-        // apVault.withdraw(amount); TODO: figure out how this works without the vault contract...
         // reduce the number of active validators
         activeValidators -= validatorsExited;
         // set the tickets as claimable

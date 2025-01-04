@@ -102,11 +102,11 @@ contract WithdrawalTicketTest is APEthTestSetup {
         test_multipleWithdrawalsWithTicket();
         vm.deal(address(APEth), 100 ether);
         vm.prank(staker);
-        APEth.withdrawFromVault(1, ticOne, 34 ether);
-        console.log("eth per apeth (after withdrawFromVault 1)", APEth.ethPerAPEth());
+        APEth.setWithdrawalTickets(1, ticOne);
+        console.log("eth per apeth (after setWithdrawalTickets 1)", APEth.ethPerAPEth());
         vm.prank(staker);
-        APEth.withdrawFromVault(2, ticTwo, 66 ether);
-        console.log("eth per apeth (after withdrawFromVault 2)", APEth.ethPerAPEth());
+        APEth.setWithdrawalTickets(2, ticTwo);
+        console.log("eth per apeth (after setWithdrawalTickets 2)", APEth.ethPerAPEth());
         // alice claim
         uint256 aliceEthBalanceBefore = alice.balance;
         uint256 aliceExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
@@ -129,13 +129,13 @@ contract WithdrawalTicketTest is APEthTestSetup {
         assertEq(APEth.withdrawalQueueETH(), 0 ether);
     }
 
-    function test_ticketClaimJointWithdrawFromVault() public {
+    function test_ticketClaimJointsetWithdrawalTickets() public {
         test_multipleWithdrawalsWithTicket();
         vm.deal(address(APEth), 100 ether);
-        console.log("eth per apeth (before withdrawFromVault)", APEth.ethPerAPEth());
+        console.log("eth per apeth (before setWithdrawalTickets)", APEth.ethPerAPEth());
         vm.prank(staker);
-        APEth.withdrawFromVault(3, ticBoth, 100 ether);
-        console.log("eth per apeth (after withdrawFromVault)", APEth.ethPerAPEth());
+        APEth.setWithdrawalTickets(3, ticBoth);
+        console.log("eth per apeth (after setWithdrawalTickets)", APEth.ethPerAPEth());
         // alice claim
         uint256 aliceEthBalanceBefore = alice.balance;
         uint256 aliceExpectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
@@ -245,7 +245,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         if (APEth.withdrawalQueueAPETH() > 0) {
             vm.deal(address(APEth), ethInValidators + address(APEth).balance);
             vm.prank(staker);
-            APEth.withdrawFromVault(1, ticOne, ethInValidators);
+            APEth.setWithdrawalTickets(1, ticOne);
             if (withdrawalQueueTicket.ownerOf(1) == alice) {
                 uint256 aliceEthBalanceBefore = alice.balance;
                 uint256 expectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1);
@@ -261,7 +261,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
             }
             if (APEth.withdrawalQueueAPETH() > 0) {
                 vm.prank(staker);
-                APEth.withdrawFromVault(0, ticTwo, 0);
+                APEth.setWithdrawalTickets(0, ticTwo);
                 uint256 bobEthBalanceBefore = bob.balance;
                 uint256 expectedWithdrawal = withdrawalQueueTicket.tokenIdToExitQueueExitAmount(2);
                 vm.prank(bob);
@@ -304,7 +304,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
     function test_revert_redeemNotEnoughEth() public {
         test_multipleWithdrawalsWithTicket();
         vm.prank(staker);
-        APEth.withdrawFromVault(0, ticOne, 0); //Alice should be pissed!!!
+        APEth.setWithdrawalTickets(0, ticOne); //Alice should be pissed!!!
         // alice claim
         vm.expectRevert(0x57b43b8f); //"APETH__NOT_ENOUGH_ETH_FOR_WITHDRAWAL()"
         vm.prank(alice);
@@ -315,7 +315,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         test_multipleWithdrawalsWithTicket();
         vm.deal(address(APEth), 33 ether);
         vm.prank(staker);
-        APEth.withdrawFromVault(1, ticOne, 33);
+        APEth.setWithdrawalTickets(1, ticOne);
         vm.expectRevert(0x4b63d80d); // APETH__NOT_OWNER()
         vm.prank(vm.addr(69));
         APEth.redeemWithdrawQueueTicket(1);
