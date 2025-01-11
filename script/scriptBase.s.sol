@@ -14,6 +14,7 @@ import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {IAPETHWithdrawalQueueTicket} from "../src/interfaces/IAPETHWithdrawalQueueTicket.sol";
+import {IAPEthDeposits} from "../src/interfaces/IAPEthDeposits.sol";
 
 error SCRIPT_BASE__MUST_DEPLOY_IMPLEMENTATION_FIRST();
 

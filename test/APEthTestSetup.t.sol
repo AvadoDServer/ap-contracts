@@ -87,7 +87,7 @@ contract APEthTestSetup is Test, Deploy {
             vm.expectRevert(); //APETH__CAP_REACHED()
         }
         hoax(alice);
-        APEth.mintPublic{value: amount}();
+        APEth.mint{value: amount}();
         assertApproxEqAbs(APEth.balanceOf(alice), aliceBalance, 3);
         if (amount > cap) {
             vm.expectRevert(); //APETH__CAP_REACHED()
@@ -103,7 +103,7 @@ contract APEthTestSetup is Test, Deploy {
             vm.expectRevert(); //APETH__CAP_REACHED()
         }
         hoax(bob);
-        APEth.mintPublic{value: amount}();
+        APEth.mint{value: amount}();
         assertApproxEqAbs(APEth.balanceOf(bob), bobBalance, 3);
         _;
     }

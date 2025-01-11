@@ -99,18 +99,18 @@ contract APETHTestRevert is APEthTestSetup {
         APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
 
-    function test_Revert_MintPublic_WhenLocked() public mintAlice(10 ether) {
+    function test_Revert_Mint_WhenLocked() public mintAlice(10 ether) {
         vm.deal(address(APEth), 0);
         startHoax(alice);
         APEth.withdraw(APEth.balanceOf(alice));
         vm.expectRevert(); //"APETH__CONTRACT_LOCKED()"
-        APEth.mintPublic{value: 1 ether}();
+        APEth.mint{value: 1 ether}();
     }
 
     function test_Revert_SetWithdrawalTickets_ValidatorCountNegative() public {
         uint256 currentValCount = APEth.activeValidators();
         vm.prank(owner);
         vm.expectRevert();
-        APEth.setWithdrawalTickets(currentValCount + 1, new uint256[](0));
+        APEth.setWithdrawalTickets(currentValCount + 1, new uint256[](0), 0);
     }
 }

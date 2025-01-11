@@ -29,6 +29,7 @@ import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
 import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
+import {IAPEthDeposits} from "./interfaces/IAPEthDeposits.sol";
 
 /**
  *
@@ -98,8 +99,6 @@ contract APETHV2 is
     bytes32 private constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
     uint256 private constant PRECISION = 1e6;
 
-    /// @dev Immutables because will disappear in the next upgrade
-
     /// @dev Immutables because these are not going to change
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IEigenPodManager private immutable EIGEN_POD_MANAGER;
@@ -120,6 +119,7 @@ contract APETHV2 is
     uint256 public withdrawalDelay;
     bool public isUnlocked;
     IAPETHWithdrawalQueueTicket public withdrawalQueueTicket;
+    IAPEthDeposits public apEthDeposits;
 
     /**
      *
@@ -156,9 +156,13 @@ contract APETHV2 is
         FEE_AMOUNT = feeAmount;
     }
 
-    function initialize(IAPETHWithdrawalQueueTicket _withdrawalQueueTicket) public reinitializer(2) {
+    function initialize(IAPETHWithdrawalQueueTicket _withdrawalQueueTicket, IAPEthDeposits _apEthDeposits)
+        public
+        reinitializer(2)
+    {
         withdrawalDelay = 1 weeks;
         withdrawalQueueTicket = _withdrawalQueueTicket;
+        apEthDeposits = _apEthDeposits;
     }
 
     // === Receive Function ===
@@ -183,9 +187,9 @@ contract APETHV2 is
      * @notice there is an early access list which only allows approved minters
      * @dev A deposit fee in APEth is taken and sent to a fee recipient - this is the only fee charged by this protocol
      */
-    function mint() external payable onlyRole(EARLY_ACCESS) returns (uint256) {
+    function mint(address recipient) external payable onlyRole(EARLY_ACCESS) returns (uint256) {
         uint256 amount = (msg.value * 1 ether) / _ethPerAPEth(msg.value);
-        uint256 amountMinted = _mint(amount);
+        uint256 amountMinted = _mint(amount, recipient);
         return amountMinted;
     }
 
@@ -194,9 +198,9 @@ contract APETHV2 is
      * @dev A deposit fee in APEth is taken and sent to a fee recipient - this is the only fee charged by this protocol
      * @return uint256 The amount of APEth tokens minted to the sender (after fees)
      */
-    function mintPublic() external payable onlyWhenUnlocked returns (uint256) {
+    function mint() external payable onlyWhenUnlocked returns (uint256) {
         uint256 amount = (msg.value * 1 ether) / _ethPerAPEth(msg.value);
-        uint256 amountMinted = _mint(amount);
+        uint256 amountMinted = _mint(amount, msg.sender);
         return amountMinted;
     }
 
@@ -289,11 +293,11 @@ contract APETHV2 is
      * @notice there is an early access list which only allows approved minters
      * @dev A deposit fee in APEth is taken and sent to a fee recipient - this is the only fee charged by this protocol
      */
-    function _mint(uint256 amount) internal returns (uint256) {
+    function _mint(uint256 amount, address recipient) internal returns (uint256) {
         uint256 fee = (amount * FEE_AMOUNT) / PRECISION;
         amount = amount - fee;
 
-        _mint(msg.sender, amount);
+        _mint(recipient, amount);
         _mint(feeRecipient, fee);
 
         emit Mint(msg.sender, amount);
@@ -330,10 +334,10 @@ contract APETHV2 is
      * @param validatorsExited the number of validators-worth-of-eth which will be returned in this transaction (plus beacon rewards)
      * @param ticketIds an array of ticketIds to be marked as claimable
      */
-    function setWithdrawalTickets(
-        uint256 validatorsExited,
-        uint256[] calldata ticketIds //number of deposits to flush from deposit contract (deposit contract must be ordered)
-    ) external onlyRole(ETH_STAKER) {
+    function setWithdrawalTickets(uint256 validatorsExited, uint256[] calldata ticketIds, uint128 numberOfDeposits)
+        external
+        onlyRole(ETH_STAKER)
+    {
         // reduce the number of active validators
         if (validatorsExited > activeValidators) revert APETH__VALIDATOR_COUNT_CANNOT_BE_NEGATIVE();
         activeValidators -= validatorsExited;
@@ -346,8 +350,9 @@ contract APETHV2 is
             withdrawalQueueAPETH -= apethAmount;
             withdrawalQueueTicket.setReadyToWithdraw(ticketId, ethAmount);
         }
-        // TODO: new deposit contract. auto flush deposits once the withdrawal queue is empty
-        // (avoid infinite loops wehn flushing deposit contract)
+        // flush deposit contract
+        bool success = apEthDeposits.mintAPEthBulk(numberOfDeposits);
+        assert(success);
     }
 
     /**

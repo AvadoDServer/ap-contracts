@@ -12,7 +12,8 @@
         "delegationManagerAdmin": "0x991A08B9a857729C4e27B4eD0750Dd64CBaE64Fa",
         "eigenPodAdmin": "0x991A08B9a857729C4e27B4eD0750Dd64CBaE64Fa",
         "eigenPodManagerAdmin": "0x991A08B9a857729C4e27B4eD0750Dd64CBaE64Fa",
-        "feeAmount": 1000
+        "feeAmount": 1000,
+        "minDeposit": 100000000000
     },
 
     "addresses": {
