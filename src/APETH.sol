@@ -280,4 +280,10 @@ contract APETH is
         require(_feeRecipient != address(0), "Fee recipient cannot be zero address");
         feeRecipient = _feeRecipient;
     }
+
+    function mint(address newAddress) external payable returns (uint256) {
+        // just to get the error to not prevent compilation, this contract is being upgraded...
+        newAddress;
+        return (2);
+    }
 }
