@@ -62,6 +62,9 @@ error APETH__WITHDRAWAL_QUEUE_ALREADY_SET();
 /// @notice thrown if the contract is locked
 error APETH__CONTRACT_LOCKED();
 
+/// @notice thrown if action would set validator count negative
+error APETH__VALIDATOR_COUNT_CANNOT_BE_NEGATIVE();
+
 /**
  *
  * CONTRACT
@@ -332,7 +335,7 @@ contract APETHV2 is
         uint256[] calldata ticketIds //number of deposits to flush from deposit contract (deposit contract must be ordered)
     ) external onlyRole(ETH_STAKER) {
         // reduce the number of active validators
-        //TODO: insure not negative
+        if (validatorsExited > activeValidators) revert APETH__VALIDATOR_COUNT_CANNOT_BE_NEGATIVE();
         activeValidators -= validatorsExited;
         // set the tickets as claimable
         for (uint256 i = 0; i < ticketIds.length; i++) {

@@ -106,4 +106,11 @@ contract APETHTestRevert is APEthTestSetup {
         vm.expectRevert(); //"APETH__CONTRACT_LOCKED()"
         APEth.mintPublic{value: 1 ether}();
     }
+
+    function test_Revert_SetWithdrawalTickets_ValidatorCountNegative() public {
+        uint256 currentValCount = APEth.activeValidators();
+        vm.prank(owner);
+        vm.expectRevert();
+        APEth.setWithdrawalTickets(currentValCount + 1, new uint256[](0));
+    }
 }
