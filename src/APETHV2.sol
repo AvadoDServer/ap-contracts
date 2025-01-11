@@ -124,7 +124,7 @@ contract APETHV2 is
      *
      */
     modifier onlyWhenUnlocked() {
-        if (!isUnlocked) revert APETH__CONTRACT_LOCKED();
+        if (withdrawalQueueAPETH > 0) revert APETH__CONTRACT_LOCKED();
         _;
     }
 
@@ -327,11 +327,12 @@ contract APETHV2 is
      * @param validatorsExited the number of validators-worth-of-eth which will be returned in this transaction (plus beacon rewards)
      * @param ticketIds an array of ticketIds to be marked as claimable
      */
-    function setWithdrawalTickets(uint256 validatorsExited, uint256[] calldata ticketIds)
-        external
-        onlyRole(ETH_STAKER)
-    {
+    function setWithdrawalTickets(
+        uint256 validatorsExited,
+        uint256[] calldata ticketIds //number of deposits to flush from deposit contract (deposit contract must be ordered)
+    ) external onlyRole(ETH_STAKER) {
         // reduce the number of active validators
+        //TODO: insure not negative
         activeValidators -= validatorsExited;
         // set the tickets as claimable
         for (uint256 i = 0; i < ticketIds.length; i++) {
@@ -342,6 +343,8 @@ contract APETHV2 is
             withdrawalQueueAPETH -= apethAmount;
             withdrawalQueueTicket.setReadyToWithdraw(ticketId, ethAmount);
         }
+        // TODO: new deposit contract. auto flush deposits once the withdrawal queue is empty
+        // (avoid infinite loops wehn flushing deposit contract)
     }
 
     /**
@@ -414,10 +417,5 @@ contract APETHV2 is
 
     function setWithdrawalDelay(uint256 _withdrawalDelay) external onlyRole(UPGRADER) {
         withdrawalDelay = _withdrawalDelay;
-    }
-
-    function setIsUnlocked(bool _isUnlocked) external onlyRole(UPGRADER) {
-        // TODO: another way to handle this would be to lock when withdrawalQueueAPETH > 0
-        isUnlocked = _isUnlocked;
     }
 }

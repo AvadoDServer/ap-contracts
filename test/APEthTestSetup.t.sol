@@ -71,10 +71,6 @@ contract APEthTestSetup is Test, Deploy {
         run();
         vm.deal(address(APEth), 0); // set balance to 0 for testing
 
-        // Unlock public minting
-        vm.prank(owner);
-        APEth.setIsUnlocked(true);
-
         startingApethBalance = address(APEth).balance;
         startingTotalSupply = APEth.totalSupply();
         startingEthPerApeth = APEth.ethPerAPEth();

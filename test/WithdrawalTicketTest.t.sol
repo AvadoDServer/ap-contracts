@@ -77,12 +77,23 @@ contract WithdrawalTicketTest is APEthTestSetup {
         }
     }
 
-    function test_multipleWithdrawalsWithTicket() public {
-        test_withdrawalWithTicket();
+    function test_multipleWithdrawalsWithTicket() public mintAlice(30 ether) mintBob(2 ether) {
+        assertEq(address(APEth).balance, 32 ether);
+        console.log("eth per apeth", APEth.ethPerAPEth());
+        _stake1();
         mintBob2(64 ether);
         console.log("eth per apeth (after bob's second mint)", APEth.ethPerAPEth());
         _stake2();
         _stake3();
+        assertEq(address(APEth).balance, 0);
+        uint256 aliceApethBalance = APEth.balanceOf(alice);
+        vm.prank(alice);
+        APEth.withdraw(aliceApethBalance);
+        assertEq(APEth.withdrawalQueueAPETH(), aliceApethBalance);
+        assertEq(withdrawalQueueTicket.ownerOf(1), alice);
+        assertEq(withdrawalQueueTicket.tokenIdToExitQueueExitAmount(1), aliceApethBalance);
+        assertGt(withdrawalQueueTicket.tokenIdToExitQueueTimestamp(1), block.timestamp);
+        assertEq(APEth.balanceOf(alice), 0);
         // bob withdrawal
         uint256 bobEthBalanceBefore = bob.balance;
         uint256 bobApethBalance = APEth.balanceOf(bob);

@@ -99,10 +99,10 @@ contract APETHTestRevert is APEthTestSetup {
         APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
 
-    function test_Revert_MintPublic_WhenLocked() public {
-        vm.prank(owner);
-        APEth.setIsUnlocked(false);
-        hoax(alice);
+    function test_Revert_MintPublic_WhenLocked() public mintAlice(10 ether) {
+        vm.deal(address(APEth), 0);
+        startHoax(alice);
+        APEth.withdraw(APEth.balanceOf(alice));
         vm.expectRevert(); //"APETH__CONTRACT_LOCKED()"
         APEth.mintPublic{value: 1 ether}();
     }
