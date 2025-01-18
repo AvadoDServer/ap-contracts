@@ -93,6 +93,7 @@ contract APEthDeposits is IAPEthDeposits, Initializable, AccessControlUpgradeabl
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(APETH_CONTRACT, address(_APETH));
+        _grantRole(UPGRADER, admin);
         _nextMint++;
         minDeposit = minDeposit_;
     }
@@ -119,7 +120,7 @@ contract APEthDeposits is IAPEthDeposits, Initializable, AccessControlUpgradeabl
     }
 
     function mintAPEthBulk(uint128 numberOfDeposits) external onlyRole(APETH_CONTRACT) returns (bool) {
-        if (numberOfDeposits + _nextMint >= _depositIndex) revert APETH_DEPOSITS__NUMBER_OF_DEPOSITS_TOO_HIGH();
+        if (numberOfDeposits + _nextMint > ++_depositIndex) revert APETH_DEPOSITS__NUMBER_OF_DEPOSITS_TOO_HIGH();
         for (uint128 i = _nextMint; i <= _nextMint + numberOfDeposits; i++) {
             Deposit storage d = deposits[i];
             uint256 newCoins;
@@ -130,7 +131,7 @@ contract APEthDeposits is IAPEthDeposits, Initializable, AccessControlUpgradeabl
                 emit Minted(d.depositor, newCoins, i);
             }
         }
-        _nextMint += numberOfDeposits;
+        _nextMint += numberOfDeposits; //TODO: check math
         return (true);
     }
 

@@ -163,6 +163,7 @@ contract APETHV2 is
         withdrawalDelay = 1 weeks;
         withdrawalQueueTicket = _withdrawalQueueTicket;
         apEthDeposits = _apEthDeposits;
+        _grantRole(EARLY_ACCESS, address(_apEthDeposits));
     }
 
     // === Receive Function ===
@@ -351,8 +352,10 @@ contract APETHV2 is
             withdrawalQueueTicket.setReadyToWithdraw(ticketId, ethAmount);
         }
         // flush deposit contract
-        bool success = apEthDeposits.mintAPEthBulk(numberOfDeposits);
-        assert(success);
+        if (numberOfDeposits > 0) {
+            bool success = apEthDeposits.mintAPEthBulk(numberOfDeposits);
+            assert(success);
+        }
     }
 
     /**

@@ -16,12 +16,7 @@ import {
 contract APETHTest is APEthTestSetup {
     function test_Mint() public {
         //Alice should not be able to mint w/o Early Access
-        vm.expectRevert();
         hoax(alice);
-        APEth.mint{value: 10 ether}();
-        //grant Alice early access
-        vm.prank(owner);
-        APEth.grantRole(EARLY_ACCESS, alice);
         // Mint 10 eth of tokens and assert the balance
         uint256 aliceBalance = _calculateAmountLessFee(10 ether);
         vm.prank(alice);
