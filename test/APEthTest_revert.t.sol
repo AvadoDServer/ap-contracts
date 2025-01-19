@@ -9,7 +9,8 @@ import {
     MockSsvNetwork,
     IMockEigenPodManager,
     IMockEigenPod,
-    IMockDelegationManager
+    IMockDelegationManager,
+    Upgrades
 } from "./APEthTestSetup.t.sol";
 
 contract APETHTestRevert is APEthTestSetup {
@@ -112,5 +113,17 @@ contract APETHTestRevert is APEthTestSetup {
         vm.prank(owner);
         vm.expectRevert();
         APEth.setWithdrawalTickets(currentValCount + 1, new uint256[](0), 0);
+    }
+
+    function test_Revert_SetFeeRecipient_NotAdmin() public {
+        vm.prank(alice);
+        vm.expectRevert(); // AccessControl error
+        APEth.setFeeRecipient(alice);
+    }
+
+    function test_Revert_SetWithdrawalDelay_NotAdmin() public {
+        vm.prank(alice);
+        vm.expectRevert(); // AccessControl error
+        APEth.setWithdrawalDelay(1 days);
     }
 }

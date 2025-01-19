@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {Deploy, APETHV2} from "../script/Deploy.s.sol";
+import {Deploy, APETHV2, Upgrades} from "../script/Deploy.s.sol";
 
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {MockSsvNetwork} from "./mocks/MockSsvNetwork.sol";

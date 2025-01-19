@@ -117,4 +117,24 @@ contract APEthDepositsTest is APEthTestSetup {
         vm.expectRevert(APETH_DEPOSITS__LESS_THAN_MINIMUM_DEPOSIT.selector);
         apEthDeposits.deposit{value: 1}();
     }
+
+    function test_ReceiveFunction() public {
+        uint256 minDeposit = apEthDeposits.minDeposit();
+        hoax(alice);
+        (bool success,) = address(apEthDeposits).call{value: minDeposit}("");
+        require(success, "transfer failed");
+
+        // Verify deposit was recorded
+        (address depositor, uint256 amount,) = apEthDeposits.deposits(1);
+        assertEq(depositor, alice);
+        assertEq(amount, minDeposit);
+    }
+
+    function test_Revert_ReceiveFunction_BelowMinimum() public {
+        uint256 minDeposit = apEthDeposits.minDeposit();
+        hoax(alice);
+        vm.expectRevert(APETH_DEPOSITS__LESS_THAN_MINIMUM_DEPOSIT.selector);
+        (bool success,) = address(apEthDeposits).call{value: minDeposit - 1}("");
+        require(success, "transfer failed");
+    }
 }

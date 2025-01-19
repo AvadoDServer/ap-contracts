@@ -212,6 +212,22 @@ contract APETHTest is APEthTestSetup {
         APEth.callEigenPod(abi.encodeWithSelector(IMockEigenPod.podOwner.selector));
     }
 
+    function test_SetFeeRecipient() public {
+        assertEq(APEth.balanceOf(alice), 0, "alice starts with non-zero balance");
+        vm.prank(owner);
+        APEth.setFeeRecipient(alice);
+        // Verify fee recipient was set by making a mint and checking where fees went
+        hoax(bob);
+        APEth.mint{value: 1 ether}();
+        assertGt(APEth.balanceOf(alice), 0, "alice did not recieve fee");
+    }
+
+    function test_SetWithdrawalDelay() public {
+        vm.prank(owner);
+        APEth.setWithdrawalDelay(2 days);
+        // since the delay is really just an indication, real testing here is not necessary
+    }
+
     /*
     function test_FeeChange() public {
         vm.prank(storageContract.getGuardian());

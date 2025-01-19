@@ -331,4 +331,18 @@ contract WithdrawalTicketTest is APEthTestSetup {
         vm.prank(vm.addr(69));
         APEth.redeemWithdrawQueueTicket(1);
     }
+
+    function test_SupportsInterface() public {
+        // Test ERC721 interface support
+        bytes4 erc721InterfaceId = 0x80ac58cd;
+        assertTrue(withdrawalQueueTicket.supportsInterface(erc721InterfaceId));
+
+        // Test AccessControl interface support
+        bytes4 accessControlInterfaceId = 0x7965db0b;
+        assertTrue(withdrawalQueueTicket.supportsInterface(accessControlInterfaceId));
+
+        // Test non-supported interface
+        bytes4 randomInterfaceId = 0x12345678;
+        assertFalse(withdrawalQueueTicket.supportsInterface(randomInterfaceId));
+    }
 }
