@@ -55,9 +55,9 @@ contract APEthDepositsTest is APEthTestSetup {
         // deposit into APEthDeposits
         vm.prank(charlie);
         apEthDeposits.deposit{value: 10 ether}();
-        // check mintAPEthBulk() by changing the 0 below to a 1
+        vm.deal(address(APEth), 98 ether);
         vm.prank(staker);
-        APEth.setWithdrawalTickets(3, ticBoth, 1); // TODO: figure out why eth/apeth goes below 1 ??????
+        APEth.setWithdrawalTickets(3, ticBoth, 1);
         assertApproxEqAbs(9 ether, APEth.balanceOf(charlie), 1 ether, "charlie's apeth balance");
         console.log("eth per apeth (after setWithdrawalTickets)", APEth.ethPerAPEth());
         console.log("charlie's apeth balance", APEth.balanceOf(charlie));
