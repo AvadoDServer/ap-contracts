@@ -121,7 +121,7 @@ contract APEthDeposits is IAPEthDeposits, Initializable, AccessControlUpgradeabl
 
     function mintAPEthBulk(uint128 numberOfDeposits) external onlyRole(APETH_CONTRACT) returns (bool) {
         if (numberOfDeposits + _nextMint > ++_depositIndex) revert APETH_DEPOSITS__NUMBER_OF_DEPOSITS_TOO_HIGH();
-        for (uint128 i = _nextMint; i <= _nextMint + numberOfDeposits; i++) {
+        for (uint128 i = _nextMint; i < _nextMint + numberOfDeposits; i++) {
             Deposit storage d = deposits[i];
             uint256 newCoins;
             if (!d.withdrawn) {
