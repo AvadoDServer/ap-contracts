@@ -17,6 +17,8 @@ contract APEthTestSetup is Test, Deploy {
 
     address public alice;
     address public bob;
+    address public charlie;
+    address public david;
     uint256 cap = type(uint256).max; // assuming no cap for this version
     uint256 startingApethBalance;
     uint256 startingTotalSupply;
@@ -67,6 +69,8 @@ contract APEthTestSetup is Test, Deploy {
         }
         alice = vm.addr(1);
         bob = vm.addr(2);
+        charlie = vm.addr(4);
+        david = vm.addr(5);
         newOwner = vm.addr(3);
         run();
         vm.deal(address(APEth), 0); // set balance to 0 for testing
