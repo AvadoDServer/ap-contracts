@@ -332,7 +332,7 @@ contract WithdrawalTicketTest is APEthTestSetup {
         APEth.redeemWithdrawQueueTicket(1);
     }
 
-    function test_SupportsInterface() public {
+    function test_SupportsInterface() public view{
         // Test ERC721 interface support
         bytes4 erc721InterfaceId = 0x80ac58cd;
         assertTrue(withdrawalQueueTicket.supportsInterface(erc721InterfaceId));
