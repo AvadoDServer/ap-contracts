@@ -131,7 +131,7 @@ contract APEthDeposits is IAPEthDeposits, Initializable, AccessControlUpgradeabl
                 emit Minted(d.depositor, newCoins, i);
             }
         }
-        _nextMint += numberOfDeposits; //TODO: check math
+        _nextMint += numberOfDeposits;
         return (true);
     }
 
