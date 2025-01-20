@@ -154,7 +154,7 @@ contract APETHWithdrawalQueueTicket is
                             '", "attributes": [{"trait_type": "value", "value": "',
                             ethAmount,
                             ticketUnits,
-                            '"},{"trait_type": "exitQueueTimestamp", "value": "',
+                            '"},{"trait_type": "exit queue timestamp", "value": "',
                             available,
                             '"}], "image": "',
                             "data:image/svg+xml;base64,",
@@ -218,13 +218,20 @@ contract APETHWithdrawalQueueTicket is
 
     function getEthAmount(uint256 amount) public pure returns (string memory) {
         if (amount < 1e15) {
-            uint256 remainderInGwei = amount % 1e9;
+            uint256 remainderInGwei = amount / 1e9;
             return string(abi.encodePacked(remainderInGwei.toString(), " gwei"));
         }
         uint256 wholeEth = amount / 1e18;
         uint256 remainder = amount % 1e18;
         uint256 remainderInFinney = remainder / 1e15;
-        return string(abi.encodePacked(wholeEth.toString(), ".", remainderInFinney.toString()));
+
+        // Add leading zeros if needed
+        string memory decimals = remainderInFinney.toString();
+        while (bytes(decimals).length < 3) {
+            decimals = string(abi.encodePacked("0", decimals));
+        }
+
+        return string(abi.encodePacked(wholeEth.toString(), ".", decimals));
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
