@@ -26,7 +26,7 @@ populate values in .env.example save as .env
 
 on Mainnet
 ```shell
-forge clean && forge test --f mainnet
+forge clean && forge test -f mainnet
 ```
 or (temporary)
 ```shell
