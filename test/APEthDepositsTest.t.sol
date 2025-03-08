@@ -119,6 +119,7 @@ contract APEthDepositsTest is APEthTestSetup {
         APEth.setWithdrawalTickets(3, ticBoth, 1);
         assertApproxEqAbs(9 ether, APEth.balanceOf(charlie), 1 ether, "charlie's apeth balance");
         uint256[] memory empty = new uint256[](0);
+        vm.prank(staker);
         APEth.setWithdrawalTickets(0, empty, 1);
         assertApproxEqAbs(APEth.balanceOf(charlie) / 2, APEth.balanceOf(david), 1, "david's apeth balance");
         console.log("eth per apeth (after setWithdrawalTickets)", APEth.ethPerAPEth());
