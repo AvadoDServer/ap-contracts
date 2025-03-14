@@ -29,7 +29,8 @@ on Mainnet
 forge clean && forge test -f mainnet
 ```
 
-or to run on anvil:
+### To Run on Anvil
+
 ```shell
 anvil -f mainnet --hardfork shanghai
 ```
