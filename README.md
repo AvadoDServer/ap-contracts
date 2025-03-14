@@ -28,10 +28,22 @@ on Mainnet
 ```shell
 forge clean && forge test -f mainnet
 ```
-or (temporary)
+
+or to run on anvil:
 ```shell
-forge clean && forge script script/Deploy.s.sol:Deploy -f mainnet --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 -vvvv 
+anvil -f mainnet --hardfork shanghai
 ```
+then in another terminal
+```shell
+cast s --value 1000000000000000000 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84
+```
+```shell
+cast rpc anvil_impersonateAccount 0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84
+```
+```shell
+forge clean && forge script script/Deploy.s.sol:Deploy --sender 0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84 --broadcast -vvv --unlocked --rpc-url http://127.0.0.1:8545
+```
+
 
 
 ### Deploy
