@@ -31,20 +31,44 @@ forge clean && forge test -f mainnet
 
 ### To Run on Anvil
 
+We are using chainID 9753 to avoid accidental replays on mainnet
+Copy the input values from mainnet to our new chain-ID
+
 ```shell
-anvil -f mainnet --hardfork shanghai
+cp -Rp ./script/input/1 ./script/input/9753
 ```
-then in another terminal
+
+
 ```shell
-cast s --value 1000000000000000000 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84
+anvil -f mainnet --hardfork shanghai --chain-id 9753
 ```
+
+Then in another terminal fund the owner account with some ETH to do the upgrades
+
+```shell
+cast send --rpc-url http://127.0.0.1:8545 --legacy --unlocked --from 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --value 1ether 0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84
+```
+
+Then impersonate this account
+
 ```shell
 cast rpc anvil_impersonateAccount 0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84
 ```
+
+And run the deploy script as this account
+
 ```shell
 forge clean && forge script script/Deploy.s.sol:Deploy --sender 0x42B3B0C3741696d8fBb4E46f0dA16e676133Fc84 --broadcast -vvv --unlocked --rpc-url http://127.0.0.1:8545
 ```
 
+To interact through the wallet dapp using Metamask, add a custom network with these settings:
+
+- network name: "anvil"
+- default RPC URL: http://localhost:8545
+- chain ID : 9753
+- currency symbol: anvil-eth
+
+And you can now use the dapp with the settings
 
 
 ### Deploy
