@@ -2,6 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {APETHV2} from "../src/APETHV2.sol";
+import {APETHV3} from "../src/APETHV3.sol";
 import {APETHWithdrawalQueueTicket} from "../src/APETHWithdrawalQueueTicket.sol";
 import {APEthDeposits} from "../src/APEthDeposits.sol";
 import {IAPETH} from "../src/interfaces/IAPETH.sol";
@@ -14,7 +15,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {Utils} from "./utils/Utils.sol";
 
 contract Deploy is Script, Utils {
-    APETHV2 public APEth;
+    APETHV3 public APEth;
     APETHWithdrawalQueueTicket public withdrawalQueueTicket;
     APEthDeposits public apEthDeposits;
     ERC1967Proxy public proxy;
@@ -58,10 +59,10 @@ contract Deploy is Script, Utils {
         ssvNetwork = stdJson.readAddress(configData, ".addresses.ssvNetwork");
         feeAmount = stdJson.readUint(configData, ".permissions.feeAmount");
         minDeposit = stdJson.readUint(configData, ".permissions.minDeposit");
-        //build constructor for APETHV2
+        //build constructor for APETHV3
         options.constructorData = abi.encode(eigenPodManager, delegationManager, ssvNetwork, feeAmount);
-        _deployWithdrawalQueue();
-        _deployDepositQueue();
+        // _deployWithdrawalQueue();
+        // _deployDepositQueue();
         _upgradeApeth();
     }
 
@@ -97,16 +98,16 @@ contract Deploy is Script, Utils {
         vm.startBroadcast(upgrader);
         Upgrades.upgradeProxy(
             address(proxy),
-            "APETHV2.sol:APETHV2",
-            abi.encodeCall(APETHV2.initialize, (withdrawalQueueTicket, apEthDeposits)),
+            "APETHV3.sol:APETHV3",
+            abi.encodeCall(APETHV3.initialize,()),
             options,
             upgrader
         );
         // since this must be called by the upgrader (same address as owner),
         // we will set the permission in the withdrwawl queue here.
-        withdrawalQueueTicket.grantRole(APETH_CONTRACT, address(proxy));
+        // withdrawalQueueTicket.grantRole(APETH_CONTRACT, address(proxy));
         vm.stopBroadcast();
-        APEth = APETHV2(payable(address(proxy)));
+        APEth = APETHV3(payable(address(proxy)));
         if (debug) console.log("APEth", address(APEth));
     }
 }

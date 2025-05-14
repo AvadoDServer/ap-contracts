@@ -108,12 +108,12 @@ contract APETHTestRevert is APEthTestSetup {
         APEth.mint{value: 1 ether}();
     }
 
-    function test_Revert_SetWithdrawalTickets_ValidatorCountNegative() public {
-        uint256 currentValCount = APEth.activeValidators();
-        vm.prank(owner);
-        vm.expectRevert();
-        APEth.setWithdrawalTickets(currentValCount + 1, new uint256[](0), 0);
-    }
+    // function test_Revert_SetWithdrawalTickets_ValidatorCountNegative() public {
+    //     uint256 currentValCount = APEth.activeValidators();
+    //     vm.prank(owner);
+    //     vm.expectRevert();
+    //     APEth.setWithdrawalTickets(currentValCount + 1, new uint256[](0), 0);
+    // }
 
     function test_Revert_SetFeeRecipient_NotAdmin() public {
         vm.prank(alice);

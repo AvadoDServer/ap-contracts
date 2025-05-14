@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 import {APETH} from "../src/APETH.sol";
 import {APETHV2} from "../src/APETHV2.sol";
+import {APETHV3} from "../src/APETHV3.sol";
 import {APEthEarlyDeposits} from "../src/APEthEarlyDeposits.sol";
 import {APETHWithdrawalQueueTicket} from "../src/APETHWithdrawalQueueTicket.sol";
 import {HelperConfig, NetworkConfig} from "./HelperConfig.s.sol";
