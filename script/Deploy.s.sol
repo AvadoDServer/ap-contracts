@@ -97,11 +97,7 @@ contract Deploy is Script, Utils {
     function _upgradeApeth() internal {
         vm.startBroadcast(upgrader);
         Upgrades.upgradeProxy(
-            address(proxy),
-            "APETHV3.sol:APETHV3",
-            abi.encodeCall(APETHV3.initialize,()),
-            options,
-            upgrader
+            address(proxy), "APETHV3.sol:APETHV3", abi.encodeCall(APETHV3.initialize, ()), options, upgrader
         );
         // since this must be called by the upgrader (same address as owner),
         // we will set the permission in the withdrwawl queue here.
