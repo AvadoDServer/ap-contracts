@@ -18,8 +18,10 @@ pragma solidity 0.8.21;
  */
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import {AccessControlUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import {ERC20PermitUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {AccessControlUpgradeable} from
+    "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
@@ -98,11 +100,9 @@ contract APETHV3 is
     bytes32 private constant UPGRADER = keccak256("UPGRADER");
     bytes32 private constant MISCELLANEOUS = keccak256("MISCELLANEOUS");
     bytes32 private constant SSV_NETWORK_ADMIN = keccak256("SSV_NETWORK_ADMIN");
-    bytes32 private constant DELEGATION_MANAGER_ADMIN =
-        keccak256("DELEGATION_MANAGER_ADMIN");
+    bytes32 private constant DELEGATION_MANAGER_ADMIN = keccak256("DELEGATION_MANAGER_ADMIN");
     bytes32 private constant EIGEN_POD_ADMIN = keccak256("EIGEN_POD_ADMIN");
-    bytes32 private constant EIGEN_POD_MANAGER_ADMIN =
-        keccak256("EIGEN_POD_MANAGER_ADMIN");
+    bytes32 private constant EIGEN_POD_MANAGER_ADMIN = keccak256("EIGEN_POD_MANAGER_ADMIN");
     uint256 private constant PRECISION = 1e6;
 
     /// @dev Immutables because these are not going to change
@@ -213,10 +213,14 @@ contract APETHV3 is
     /**
      * @notice This function allows users to withdraw their APEth tokens for ETH
      * @param amount the amount of APEth tokens to withdraw
-     **/
-
+     *
+     */
     function withdraw(uint256 amount) external {
         if (activeValidators > 0) {
+            revert APETH__WITHDRAWALS_NOT_ENABLED();
+        }
+
+        if (!withdrawalMode) {
             revert APETH__WITHDRAWALS_NOT_ENABLED();
         }
 
@@ -292,9 +296,7 @@ contract APETHV3 is
             //get eigen pod eth balance??
             // address eigenPod = address(EIGEN_POD_MANAGER.getPod(address(this)));
             // subtract the amount a user has deposited from contract balance
-            uint256 totalEth = address(this).balance +
-                (32 ether * activeValidators) -
-                _value;
+            uint256 totalEth = address(this).balance + (32 ether * activeValidators) - _value;
             // multiplied by 1 ether so there is an implied 18 decimal response
             return (((totalEth) * 1 ether) / (totalSupply()));
         }
@@ -329,9 +331,7 @@ contract APETHV3 is
     //     return amount;
     // }
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(UPGRADER) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER) {}
 
     // === Admin/Restricted Functions ===
     function stake(
@@ -385,15 +385,18 @@ contract APETHV3 is
     //     }
     // }
 
+    function setWithdrawalMode(bool _withdrawalMode) external onlyRole(UPGRADER) {
+        withdrawalMode = _withdrawalMode;
+        emit WithdrawalModeSet(withdrawalMode);
+    }
+
     /**
      * @notice allows contract owner to call functions on the ssvNetwork
      * @dev the likley functions called would include "registerValidator" and "setFeeRecipientAddress"
      * @param data the calldata for the ssvNetwork
      */
-    function callSSVNetwork(
-        bytes memory data
-    ) external onlyRole(SSV_NETWORK_ADMIN) {
-        (bool success, ) = SSV_NETWORK.call(data);
+    function callSSVNetwork(bytes memory data) external onlyRole(SSV_NETWORK_ADMIN) {
+        (bool success,) = SSV_NETWORK.call(data);
         require(success, "Call failed");
     }
 
@@ -402,11 +405,9 @@ contract APETHV3 is
      * @dev the likley functions called would include "recoverTokens" and "withdrawNonBeaconChainETHBalanceWei"
      * @param data the calldata for the eigenPod
      */
-    function callEigenPod(
-        bytes memory data
-    ) external onlyRole(EIGEN_POD_ADMIN) {
+    function callEigenPod(bytes memory data) external onlyRole(EIGEN_POD_ADMIN) {
         address eigenPod = address(EIGEN_POD_MANAGER.getPod(address(this)));
-        (bool success, ) = eigenPod.call(data);
+        (bool success,) = eigenPod.call(data);
         require(success, "Call failed");
     }
 
@@ -416,10 +417,8 @@ contract APETHV3 is
      * @dev these functions are handled elsewhere in this contract, so this method may be redundant
      * @param data the calldata for the eigenPodManager
      */
-    function callEigenPodManager(
-        bytes memory data
-    ) external onlyRole(EIGEN_POD_MANAGER_ADMIN) {
-        (bool success, ) = address(EIGEN_POD_MANAGER).call(data);
+    function callEigenPodManager(bytes memory data) external onlyRole(EIGEN_POD_MANAGER_ADMIN) {
+        (bool success,) = address(EIGEN_POD_MANAGER).call(data);
         require(success, "Call failed");
     }
 
@@ -432,11 +431,11 @@ contract APETHV3 is
      * @dev it is important that the amount of eth returned to this contract in this call corresponds to the number of validators exited
      * @dev if there is not some multiple of 32 ETH being recieved from this txn, validatorsExited should be zero.
      */
-    function callDelegationManager(
-        bytes memory data,
-        uint256 validatorsExited
-    ) external onlyRole(DELEGATION_MANAGER_ADMIN) {
-        (bool success, ) = DELEGATION_MANAGER.call(data);
+    function callDelegationManager(bytes memory data, uint256 validatorsExited)
+        external
+        onlyRole(DELEGATION_MANAGER_ADMIN)
+    {
+        (bool success,) = DELEGATION_MANAGER.call(data);
         require(success, "Call failed");
         activeValidators -= validatorsExited;
     }
@@ -447,11 +446,7 @@ contract APETHV3 is
      * @param to the token recipient
      * @param amount the amount to transfer
      */
-    function transferToken(
-        address tokenAddress,
-        address to,
-        uint256 amount
-    ) external onlyRole(MISCELLANEOUS) {
+    function transferToken(address tokenAddress, address to, uint256 amount) external onlyRole(MISCELLANEOUS) {
         IERC20 token = IERC20(tokenAddress);
         token.safeTransfer(to, amount);
     }
@@ -474,7 +469,7 @@ contract APETHV3 is
     }
 
     function setActiveValidators(uint256 _activeValidators) external 
-    // onlyRole(UPGRADER) 
+    // onlyRole(UPGRADER)
     {
         activeValidators = _activeValidators;
     }

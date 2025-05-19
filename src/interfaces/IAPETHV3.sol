@@ -36,6 +36,9 @@ interface IAPETH {
     /// @notice occurs when new APEth coins are minted
     event Mint(address minter, uint256 amount);
 
+    /// @notice occurs when withdrawalMode is set
+    event WithdrawalModeSet(bool withdrawalMode);
+
     /**
      *
      * FUNCTIONS
