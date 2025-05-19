@@ -24,7 +24,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
  * INTERFACE
  *
  */
-interface IAPETH {
+interface IAPETHV3 {
     /**
      *
      * EVENTS
@@ -59,6 +59,4 @@ interface IAPETH {
     function callEigenPodManager(bytes memory data) external;
 
     function transferToken(address tokenAddress, address to, uint256 amount) external;
-
-    function withdrawalFromVault(uint256 validatorsExited, uint256[] calldata ticketIds, uint256 amount) external;
 }

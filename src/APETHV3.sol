@@ -27,7 +27,8 @@ import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/prox
 import {IEigenPodManager} from "@eigenlayer-contracts/interfaces/IEigenPodManager.sol";
 import {IEigenPod} from "@eigenlayer-contracts/interfaces/IEigenPod.sol";
 import {IDelegationManager} from "@eigenlayer-contracts/interfaces/IDelegationManager.sol";
-import {IAPETH, IERC20} from "./interfaces/IAPETH.sol";
+import {IERC20} from "./interfaces/IAPETH.sol";
+import {IAPETHV3} from "./interfaces/IAPETHV3.sol";
 // import {IAPETHWithdrawalQueueTicket} from "./interfaces/IAPETHWithdrawalQueueTicket.sol";
 // import {IAPEthDeposits} from "./interfaces/IAPEthDeposits.sol";
 
@@ -80,7 +81,7 @@ error APETH__VALIDATOR_COUNT_CANNOT_BE_NEGATIVE();
 
 /// @custom:oz-upgrades-from APETH
 contract APETHV3 is
-    IAPETH,
+    IAPETHV3,
     Initializable,
     ERC20Upgradeable,
     AccessControlUpgradeable,
@@ -254,7 +255,7 @@ contract APETHV3 is
         return _ethEquivalent(amount);
     }
 
-    /**
+    /* *
      * @notice This function allows users to redeem their withdrawal queue tickets for ETH
      * @param ticketId the tokenId of the ticket to redeem
      * @dev the user must wait 1 week after the ticket was minted to redeem
@@ -302,7 +303,7 @@ contract APETHV3 is
         }
     }
 
-    /**
+    /* *
      * @notice mints a withdrawal queue ticket, with a date when the withdrawal will be enabled, and the amount withdrawalable by the ticket
      * @param amount this is the ETh value (in wei) if the withdrawal ticket
      */
@@ -311,7 +312,7 @@ contract APETHV3 is
     //     withdrawalQueueTicket.mint(msg.sender, withdrawTimeStamp, amount);
     // }
 
-    /**
+    /* *
      * @notice This function mints new APEth tokens when ETH is deposited
      * @notice there is an early access list which only allows approved minters
      * @dev A deposit fee in APEth is taken and sent to a fee recipient - this is the only fee charged by this protocol
@@ -353,7 +354,7 @@ contract APETHV3 is
         // emit Stake(_pubKey, msg.sender);
     }
 
-    /**
+    /* *
      * @notice allows the contract owner to set some withdrawal tickets as claimable, and reduce validator count
      * @notice this must all be done in one txn, so that the validator count is reduced in the same block as the eth is returned
      * @param validatorsExited the number of validators-worth-of-eth which will be returned in this transaction (plus beacon rewards)
@@ -422,7 +423,7 @@ contract APETHV3 is
         require(success, "Call failed");
     }
 
-    /**
+    /* *
      * @notice allows contract owner to call functions on the delegationManager
      * @dev this is how the pod will delegate and undelegate its stake to an operator,
      * @dev this is also how ETH is removed from the eigen pod.

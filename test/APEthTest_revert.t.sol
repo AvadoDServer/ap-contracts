@@ -14,17 +14,17 @@ import {
 } from "./APEthTestSetup.t.sol";
 
 contract APETHTestRevert is APEthTestSetup {
-    function test_Revert_Stake_NotEnoughEth() public mintAlice(5 ether) {
-        vm.prank(staker);
-        vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
-    }
+    // function test_Revert_Stake_NotEnoughEth() public mintAlice(5 ether) {
+    //     vm.prank(staker);
+    //     vm.expectRevert(0x82deecdf); //"APETH__NOT_ENOUGH_ETH()"
+    //     APEth.stake(_pubKey, _signature, _deposit_data_root);
+    // }
 
-    function test_Revert_Stake_NotOwner() public mintAlice(32 ether) {
-        vm.prank(vm.addr(69));
-        vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
-        APEth.stake(_pubKey, _signature, _deposit_data_root);
-    }
+    // function test_Revert_Stake_NotOwner() public mintAlice(32 ether) {
+    //     vm.prank(vm.addr(69));
+    //     vm.expectRevert(); // "OwnableUnauthorizedAccount(0x1326324f5A9fb193409E10006e4EA41b970Df321)"
+    //     APEth.stake(_pubKey, _signature, _deposit_data_root);
+    // }
 
     function test_Revert_ERC20Call_NotOwner() public {
         ERC20Mock mockCoin = new ERC20Mock();
@@ -100,13 +100,13 @@ contract APETHTestRevert is APEthTestSetup {
         APEth.callEigenPod(abi.encodeWithSelector(bytes4(keccak256("someFunctionThatDoesNotExist()"))));
     }
 
-    function test_Revert_Mint_WhenLocked() public mintAlice(10 ether) {
-        vm.deal(address(APEth), 0);
-        startHoax(alice);
-        APEth.withdraw(APEth.balanceOf(alice));
-        vm.expectRevert(); //"APETH__CONTRACT_LOCKED()"
-        APEth.mint{value: 1 ether}();
-    }
+    // function test_Revert_Mint_WhenLocked() public mintAlice(10 ether) {
+    //     vm.deal(address(APEth), 0);
+    //     startHoax(alice);
+    //     APEth.withdraw(APEth.balanceOf(alice));
+    //     vm.expectRevert(); //"APETH__CONTRACT_LOCKED()"
+    //     APEth.mint{value: 1 ether}();
+    // }
 
     // function test_Revert_SetWithdrawalTickets_ValidatorCountNegative() public {
     //     uint256 currentValCount = APEth.activeValidators();
@@ -126,4 +126,6 @@ contract APETHTestRevert is APEthTestSetup {
         vm.expectRevert(); // AccessControl error
         APEth.setWithdrawalDelay(1 days);
     }
+
+    // TODO: test obsolete functions revert
 }
