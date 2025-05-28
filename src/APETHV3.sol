@@ -166,6 +166,9 @@ contract APETHV3 is
 
     function initialize() public reinitializer(2) {
         withdrawalMode = false;
+        activeValidators = 0;
+        // node operator payout amount
+        _mint(0xEEbCd119c1419A11940bEa291a3C286586Cb0258,470476987400000000);
     }
 
     // === Receive Function ===
@@ -432,13 +435,12 @@ contract APETHV3 is
      * @dev it is important that the amount of eth returned to this contract in this call corresponds to the number of validators exited
      * @dev if there is not some multiple of 32 ETH being recieved from this txn, validatorsExited should be zero.
      */
-    function callDelegationManager(bytes memory data, uint256 validatorsExited)
+    function callDelegationManager(bytes memory data)
         external
         onlyRole(DELEGATION_MANAGER_ADMIN)
     {
         (bool success,) = DELEGATION_MANAGER.call(data);
         require(success, "Call failed");
-        activeValidators -= validatorsExited;
     }
 
     /**
@@ -469,9 +471,9 @@ contract APETHV3 is
         // withdrawalDelay = _withdrawalDelay;
     }
 
-    function setActiveValidators(uint256 _activeValidators) external 
-    // onlyRole(UPGRADER)
-    {
-        activeValidators = _activeValidators;
-    }
+    // function setActiveValidators(uint256 _activeValidators) external 
+    // // onlyRole(UPGRADER)
+    // {
+    //     activeValidators = _activeValidators;
+    // }
 }
